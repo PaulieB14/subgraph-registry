@@ -14,16 +14,38 @@ Tools:
 import json
 import sqlite3
 import sys
+import urllib.request
+import tempfile
+import os
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent / "data"
 DB_PATH = DATA_DIR / "registry.db"
 
+# GitHub raw URL for the pre-built registry
+GITHUB_DB_URL = "https://github.com/PaulieB14/subgraph-registry/raw/main/python/data/registry.db"
+
+
+def ensure_db():
+    """Download the registry DB from GitHub if not present locally."""
+    if DB_PATH.exists():
+        return
+
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"Registry not found locally. Downloading from GitHub...", file=sys.stderr)
+
+    try:
+        urllib.request.urlretrieve(GITHUB_DB_URL, str(DB_PATH))
+        size_mb = DB_PATH.stat().st_size / 1024 / 1024
+        print(f"Downloaded registry.db ({size_mb:.1f} MB)", file=sys.stderr)
+    except Exception as e:
+        print(f"Failed to download registry: {e}", file=sys.stderr)
+        print(f"Run `python registry.py` to build it locally.", file=sys.stderr)
+        sys.exit(1)
+
 
 def get_db():
-    if not DB_PATH.exists():
-        print(f"Error: {DB_PATH} not found. Run `python registry.py` first.", file=sys.stderr)
-        sys.exit(1)
+    ensure_db()
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     return conn
@@ -366,10 +388,8 @@ def main():
     """Run MCP server over stdio (JSON-RPC)."""
     print("Subgraph Registry MCP server starting...", file=sys.stderr)
 
-    # Verify DB exists
-    if not DB_PATH.exists():
-        print(f"Error: {DB_PATH} not found. Run `python registry.py` first.", file=sys.stderr)
-        sys.exit(1)
+    # Download from GitHub if not local
+    ensure_db()
 
     conn = get_db()
     count = conn.execute("SELECT COUNT(*) FROM subgraphs").fetchone()[0]
