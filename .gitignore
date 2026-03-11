@@ -4,6 +4,6 @@ __pycache__/
 *.pyc
 python/data/crawl-*
 python/data/registry.json
-src/data/
+package-lock.json
 node_modules/
 .DS_Store

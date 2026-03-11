@@ -1,13 +1,31 @@
 {
-  "name": "subgraph-registry",
+  "name": "subgraph-registry-mcp",
   "version": "0.1.0",
-  "description": "Agent-friendly semantic classification registry for all subgraphs on The Graph Network",
+  "description": "MCP server for agent-friendly subgraph discovery on The Graph Network. 15,500+ classified subgraphs with reliability scoring.",
   "type": "module",
-  "scripts": {
-    "crawl": "node src/crawler.js",
-    "classify": "node src/classifier.js",
-    "build-registry": "node src/build-registry.js",
-    "serve": "node src/server.js"
+  "bin": {
+    "subgraph-registry-mcp": "src/index.js"
   },
-  "dependencies": {}
+  "files": [
+    "src/",
+    "data/registry.db"
+  ],
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "subgraph",
+    "the-graph",
+    "web3",
+    "defi",
+    "agent",
+    "ai"
+  ],
+  "author": "PaulieB14",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "better-sqlite3": "^11.8.2"
+  }
 }

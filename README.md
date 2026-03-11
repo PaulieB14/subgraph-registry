@@ -17,7 +17,7 @@ Agents querying The Graph need to discover and select the right subgraph before 
    - **Protocol Type**: DEX, Lending, Bridge, Staking, Options, Perpetuals, Marketplace, etc.
    - **Canonical Entities**: Maps schema types to a standard vocabulary (Pool -> `liquidity_pool`, Swap -> `trade`, etc.)
    - **Schema Family**: Groups forks/clones by schema fingerprint
-4. **Scores** reliability using on-chain signal (curation signal, indexer stake, query fees)
+4. **Scores** reliability (see [Reliability Score](#reliability-score) below)
 5. **Publishes** as JSON registry + SQLite database + REST API
 
 ## Quick Start
@@ -118,6 +118,54 @@ scheduler.py -- weekly incremental sync via updatedAt filtering
 | Analytics | 348 | | Optimism | 593 |
 | Gaming | 255 | | Avalanche | 454 |
 | Social | 78 | | | |
+
+## Reliability Score
+
+Each subgraph gets a composite reliability score (0–1) based on four on-chain signals, equally weighted at 25% each:
+
+| Signal | What it measures | Scale |
+|---|---|---|
+| **Curation Signal** | GRT tokens curated on the subgraph — community vote of confidence | log10 / 6 |
+| **Indexer Stake** | GRT staked by indexers serving this subgraph — skin in the game | log10 / 8 |
+| **Query Fees** | Fees earned from actual usage — proves real demand | log10 / 4 |
+| **Query Volume** | 30-day query count — recent activity level | log10 / 8 |
+
+All values are log-scaled (to handle the massive range from 0 to billions of wei) and capped at 1.0. The final score is the average of all four, with a 0.5 penalty applied if the subgraph has been denied/deprecated.
+
+**What the scores mean:**
+- **0.7–1.0**: High reliability — strong signal, active indexers, real usage (e.g. Uniswap, Aave)
+- **0.3–0.7**: Moderate — some signal and usage, likely functional
+- **0.0–0.3**: Low — minimal signal, may be inactive or a test deployment
+
+## MCP Server
+
+The registry is available as an MCP server for agent integration. It exposes 4 tools:
+
+- **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
+- **recommend_subgraph** — natural language goal to best subgraphs
+- **get_subgraph_detail** — full classification for a specific subgraph
+- **list_registry_stats** — registry overview (domains, networks, counts)
+
+### Install via NPM
+
+```bash
+npx subgraph-registry-mcp
+```
+
+### Add to Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "subgraph-registry": {
+      "command": "npx",
+      "args": ["subgraph-registry-mcp"]
+    }
+  }
+}
+```
+
+The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run — no local build needed.
 
 ## How It Stays Current
 
