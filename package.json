@@ -1,0 +1,13 @@
+{
+  "name": "subgraph-registry",
+  "version": "0.1.0",
+  "description": "Agent-friendly semantic classification registry for all subgraphs on The Graph Network",
+  "type": "module",
+  "scripts": {
+    "crawl": "node src/crawler.js",
+    "classify": "node src/classifier.js",
+    "build-registry": "node src/build-registry.js",
+    "serve": "node src/server.js"
+  },
+  "dependencies": {}
+}
