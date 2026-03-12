@@ -9,11 +9,22 @@ Agent-friendly discovery of 15,500+ classified subgraphs on The Graph Network. S
 - **get_subgraph_detail** — Full classification, entities, reliability score, and query instructions for a specific subgraph
 - **list_registry_stats** — Registry overview with available domains, networks, and protocol types
 
+## Requirements
+
+- **Runtime:** Node.js >= 18 (runs via `npx`)
+- **Environment variables:** None required. The registry is pre-built and bundled — no API key needed for read-only use.
+
 ## Install
 
 ```bash
 npx subgraph-registry-mcp
 ```
+
+## Network & Data Behavior
+
+- On first run, the server downloads a pre-built `registry.db` (SQLite) from the [GitHub repository](https://github.com/PaulieB14/subgraph-registry) (~5 MB). This is cached locally and reused on subsequent runs.
+- All tool queries run against this local database — no external API calls are made at query time.
+- The SSE transport (`--http` / `--http-only`) starts a local HTTP server on port 3848 (configurable via `MCP_HTTP_PORT` env var).
 
 ## Use Cases
 
