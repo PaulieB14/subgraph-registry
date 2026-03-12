@@ -118,6 +118,8 @@ function searchSubgraphs({
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  // Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)
+  const fetchLimit = limit * 3;
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
@@ -127,23 +129,31 @@ function searchSubgraphs({
     ORDER BY reliability_score DESC
     LIMIT ?
   `;
-  params.push(limit);
+  params.push(fetchLimit);
 
   const rows = getDb().prepare(sql).all(...params);
-  const results = rows.map((r) => ({
-    id: r.id,
-    display_name: r.display_name,
-    description: (r.description || r.auto_description || "").slice(0, 300),
-    domain: r.domain,
-    protocol_type: r.protocol_type,
-    network: r.network,
-    reliability_score: r.reliability_score,
-    ipfs_hash: r.ipfs_hash,
-    entity_count: r.entity_count,
-    canonical_entities: JSON.parse(r.canonical_entities),
-    powered_by_substreams: Boolean(r.powered_by_substreams),
-    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
-  }));
+  // Dedup by IPFS hash — keep highest reliability per deployment
+  const seenIpfs = new Set();
+  const results = [];
+  for (const r of rows) {
+    if (r.ipfs_hash && seenIpfs.has(r.ipfs_hash)) continue;
+    if (r.ipfs_hash) seenIpfs.add(r.ipfs_hash);
+    results.push({
+      id: r.id,
+      display_name: r.display_name,
+      description: (r.description || r.auto_description || "").slice(0, 300),
+      domain: r.domain,
+      protocol_type: r.protocol_type,
+      network: r.network,
+      reliability_score: r.reliability_score,
+      ipfs_hash: r.ipfs_hash,
+      entity_count: r.entity_count,
+      canonical_entities: JSON.parse(r.canonical_entities),
+      powered_by_substreams: Boolean(r.powered_by_substreams),
+      query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
+    });
+    if (results.length >= limit) break;
+  }
 
   return {
     total: results.length,
@@ -215,22 +225,29 @@ function recommendSubgraph({ goal, chain = "" }) {
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
-    LIMIT 5
+    LIMIT 15
   `;
 
   const rows = getDb().prepare(sql).all(...params);
-  const recommendations = rows.map((r) => ({
-    id: r.id,
-    display_name: r.display_name,
-    description: (r.description || r.auto_description || "").slice(0, 300),
-    domain: r.domain,
-    protocol_type: r.protocol_type,
-    network: r.network,
-    reliability_score: r.reliability_score,
-    ipfs_hash: r.ipfs_hash,
-    canonical_entities: JSON.parse(r.canonical_entities),
-    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
-  }));
+  const seenIpfs = new Set();
+  const recommendations = [];
+  for (const r of rows) {
+    if (r.ipfs_hash && seenIpfs.has(r.ipfs_hash)) continue;
+    if (r.ipfs_hash) seenIpfs.add(r.ipfs_hash);
+    recommendations.push({
+      id: r.id,
+      display_name: r.display_name,
+      description: (r.description || r.auto_description || "").slice(0, 300),
+      domain: r.domain,
+      protocol_type: r.protocol_type,
+      network: r.network,
+      reliability_score: r.reliability_score,
+      ipfs_hash: r.ipfs_hash,
+      canonical_entities: JSON.parse(r.canonical_entities),
+      query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
+    });
+    if (recommendations.length >= 5) break;
+  }
 
   return {
     goal,

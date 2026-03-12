@@ -91,8 +91,10 @@ def search_subgraphs(
         params.extend([f"%{query}%", f"%{query}%"])
 
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    # Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)
+    fetch_limit = limit * 3
     sql = f"""
-        SELECT id, display_name, description, domain, protocol_type, network,
+        SELECT id, display_name, description, auto_description, domain, protocol_type, network,
                reliability_score, ipfs_hash, entity_count, canonical_entities,
                powered_by_substreams
         FROM subgraphs
@@ -100,17 +102,24 @@ def search_subgraphs(
         ORDER BY reliability_score DESC
         LIMIT ?
     """
-    params.append(limit)
+    params.append(fetch_limit)
 
     rows = conn.execute(sql, params).fetchall()
     conn.close()
 
+    # Dedup by IPFS hash — keep highest reliability per deployment
     results = []
+    seen_ipfs = set()
     for r in rows:
+        ipfs = r["ipfs_hash"]
+        if ipfs and ipfs in seen_ipfs:
+            continue
+        if ipfs:
+            seen_ipfs.add(ipfs)
         results.append({
             "id": r["id"],
             "display_name": r["display_name"],
-            "description": (r["description"] or r.get("auto_description") or "")[:300],
+            "description": (r["description"] or r["auto_description"] or "")[:300],
             "domain": r["domain"],
             "protocol_type": r["protocol_type"],
             "network": r["network"],
@@ -121,6 +130,8 @@ def search_subgraphs(
             "powered_by_substreams": bool(r["powered_by_substreams"]),
             "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
         })
+        if len(results) >= limit:
+            break
 
     return json.dumps({
         "total": len(results),
@@ -184,23 +195,30 @@ def recommend_subgraph(goal: str, chain: str = "") -> str:
 
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     sql = f"""
-        SELECT id, display_name, description, domain, protocol_type, network,
+        SELECT id, display_name, description, auto_description, domain, protocol_type, network,
                reliability_score, ipfs_hash, canonical_entities
         FROM subgraphs
         {where}
         ORDER BY reliability_score DESC
-        LIMIT 5
+        LIMIT 15
     """
 
     rows = conn.execute(sql, params).fetchall()
     conn.close()
 
+    # Dedup by IPFS hash
     recommendations = []
+    seen_ipfs = set()
     for r in rows:
+        ipfs = r["ipfs_hash"]
+        if ipfs and ipfs in seen_ipfs:
+            continue
+        if ipfs:
+            seen_ipfs.add(ipfs)
         recommendations.append({
             "id": r["id"],
             "display_name": r["display_name"],
-            "description": (r["description"] or r.get("auto_description") or "")[:300],
+            "description": (r["description"] or r["auto_description"] or "")[:300],
             "domain": r["domain"],
             "protocol_type": r["protocol_type"],
             "network": r["network"],
@@ -209,6 +227,8 @@ def recommend_subgraph(goal: str, chain: str = "") -> str:
             "canonical_entities": json.loads(r["canonical_entities"]),
             "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
         })
+        if len(recommendations) >= 5:
+            break
 
     return json.dumps({
         "goal": goal,
