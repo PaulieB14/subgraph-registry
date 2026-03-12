@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.PaulieB14/subgraph-registry-mcp",
-  "description": "Agent-friendly discovery of 14,700+ classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language. Includes reliability scoring, auto-descriptions, and query instructions.",
+  "description": "Discover and query 14,700+ classified subgraphs on The Graph Network",
   "repository": {
     "url": "https://github.com/PaulieB14/subgraph-registry",
     "source": "github"
