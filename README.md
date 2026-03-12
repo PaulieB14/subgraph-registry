@@ -96,10 +96,15 @@ classifier.py - rule-based domain/protocol classification + schema fingerprintin
 registry.py --- builds JSON registry + SQLite + indices
     |
     v
-server.py ----- FastAPI REST API with /recommend endpoint
+server.py ----- FastAPI REST API with /recommend endpoint (:3847)
     |
     v
 scheduler.py -- weekly incremental sync via updatedAt filtering
+
+MCP Server (src/index.js)
+    |
+    ├── stdio transport  ←── Claude Desktop / Claude Code (npx command)
+    └── SSE/HTTP :3848   ←── OpenClaw / remote agents (--http flag)
 ```
 
 ## Output
@@ -143,7 +148,9 @@ All values are log-scaled and capped at 1.0. Usage signals (fees + volume) are w
 
 ## MCP Server
 
-The registry is available as an MCP server for agent integration. It exposes 4 tools:
+The registry is available as an MCP server for agent integration. It supports **dual transport** — stdio for local clients (Claude Desktop, Claude Code) and SSE/HTTP for remote agents (OpenClaw, custom agent frameworks).
+
+It exposes 4 tools:
 
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
 - **recommend_subgraph** — natural language goal to best subgraphs
@@ -156,7 +163,7 @@ The registry is available as an MCP server for agent integration. It exposes 4 t
 npx subgraph-registry-mcp
 ```
 
-### Add to Claude Desktop
+### Add to Claude Desktop (stdio)
 
 ```json
 {
@@ -168,6 +175,43 @@ npx subgraph-registry-mcp
   }
 }
 ```
+
+### Add to OpenClaw / Remote Agents (SSE)
+
+Start the server with the HTTP transport:
+
+```bash
+# Dual transport — stdio + SSE on port 3848
+npx subgraph-registry-mcp --http
+
+# SSE only (for remote/server deployments)
+npx subgraph-registry-mcp --http-only
+
+# Custom port
+MCP_HTTP_PORT=4000 npx subgraph-registry-mcp --http
+```
+
+Then point your agent at the SSE endpoint:
+
+```json
+{
+  "mcpServers": {
+    "subgraph-registry": {
+      "url": "http://localhost:3848/sse"
+    }
+  }
+}
+```
+
+### Transport Modes
+
+| Invocation | Transports | Use case |
+|---|---|---|
+| `npx subgraph-registry-mcp` | stdio | Claude Desktop, Claude Code |
+| `npx subgraph-registry-mcp --http` | stdio + SSE :3848 | Dual — local + remote agents |
+| `npx subgraph-registry-mcp --http-only` | SSE :3848 | OpenClaw, remote deployments |
+
+A `/health` endpoint is available at `http://localhost:3848/health` when HTTP transport is active.
 
 The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run — no local build needed.
 

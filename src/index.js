@@ -15,11 +15,13 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import Database from "better-sqlite3";
+import express from "express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
@@ -374,11 +376,9 @@ const HANDLERS = {
   list_registry_stats: listRegistryStats,
 };
 
-async function main() {
-  await ensureDb();
-
+function createServer() {
   const server = new Server(
-    { name: "subgraph-registry", version: "0.2.3" },
+    { name: "subgraph-registry", version: "0.3.0" },
     { capabilities: { tools: {} } }
   );
 
@@ -408,9 +408,70 @@ async function main() {
     }
   });
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error(`Subgraph Registry MCP server running (${getDb().prepare("SELECT COUNT(*) as c FROM subgraphs").get().c} subgraphs)`);
+  return server;
+}
+
+// ── SSE/HTTP Transport (OpenClaw + remote agents) ──────────
+
+function startHttpTransport(port) {
+  const app = express();
+  const sessions = new Map();
+
+  app.get("/sse", async (req, res) => {
+    const transport = new SSEServerTransport("/messages", res);
+    sessions.set(transport.sessionId, transport);
+
+    const server = createServer();
+
+    res.on("close", () => {
+      sessions.delete(transport.sessionId);
+    });
+
+    await server.connect(transport);
+  });
+
+  app.post("/messages", async (req, res) => {
+    const sessionId = req.query.sessionId;
+    const transport = sessions.get(sessionId);
+    if (!transport) {
+      res.status(400).json({ error: "Invalid or expired session" });
+      return;
+    }
+    await transport.handlePostMessage(req, res);
+  });
+
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", subgraphs: getDb().prepare("SELECT COUNT(*) as c FROM subgraphs").get().c });
+  });
+
+  app.listen(port, () => {
+    console.error(`SSE transport listening on http://localhost:${port}/sse`);
+  });
+}
+
+// ── Entry Point ────────────────────────────────────────────
+
+async function main() {
+  await ensureDb();
+
+  const subgraphCount = getDb().prepare("SELECT COUNT(*) as c FROM subgraphs").get().c;
+  const httpPort = process.env.MCP_HTTP_PORT || (process.argv.includes("--http") ? "3848" : null);
+  const httpOnly = process.argv.includes("--http-only");
+
+  // Start SSE/HTTP transport if requested
+  if (httpPort || httpOnly) {
+    const port = parseInt(httpPort || "3848", 10);
+    startHttpTransport(port);
+  }
+
+  // Start stdio transport (default, skip if --http-only)
+  if (!httpOnly) {
+    const server = createServer();
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+  }
+
+  console.error(`Subgraph Registry MCP server running (${subgraphCount} subgraphs)`);
 }
 
 main().catch((err) => {
