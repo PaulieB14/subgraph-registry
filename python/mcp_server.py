@@ -110,7 +110,7 @@ def search_subgraphs(
         results.append({
             "id": r["id"],
             "display_name": r["display_name"],
-            "description": (r["description"] or "")[:200],
+            "description": (r["description"] or r.get("auto_description") or "")[:300],
             "domain": r["domain"],
             "protocol_type": r["protocol_type"],
             "network": r["network"],
@@ -119,9 +119,14 @@ def search_subgraphs(
             "entity_count": r["entity_count"],
             "canonical_entities": json.loads(r["canonical_entities"]),
             "powered_by_substreams": bool(r["powered_by_substreams"]),
+            "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
         })
 
-    return json.dumps({"total": len(results), "subgraphs": results}, indent=2)
+    return json.dumps({
+        "total": len(results),
+        "subgraphs": results,
+        "query_instructions": "To query a subgraph: POST a GraphQL query to the query_url (replace [api-key] with your Graph API key from https://thegraph.com/studio/apikeys/). First fetch the schema with get_subgraph_detail to see available entities and fields.",
+    }, indent=2)
 
 
 def recommend_subgraph(goal: str, chain: str = "") -> str:
@@ -195,14 +200,14 @@ def recommend_subgraph(goal: str, chain: str = "") -> str:
         recommendations.append({
             "id": r["id"],
             "display_name": r["display_name"],
-            "description": (r["description"] or "")[:200],
+            "description": (r["description"] or r.get("auto_description") or "")[:300],
             "domain": r["domain"],
             "protocol_type": r["protocol_type"],
             "network": r["network"],
             "reliability_score": r["reliability_score"],
             "ipfs_hash": r["ipfs_hash"],
             "canonical_entities": json.loads(r["canonical_entities"]),
-            "usage": f"Query via subgraph ID '{r['id']}' or IPFS hash '{r['ipfs_hash']}'",
+            "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
         })
 
     return json.dumps({

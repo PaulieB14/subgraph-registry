@@ -265,6 +265,9 @@ class Classification:
     created_at: int
     updated_at: int
 
+    # Auto-generated description
+    auto_description: str = ""
+
     # Family (set after grouping)
     schema_family: dict | None = None
 
@@ -374,10 +377,14 @@ def _wei_to_float(wei_str: str) -> float:
 
 
 def _reliability_score(sg: dict, query_volume: int = 0) -> float:
-    signal = math.log10(_wei_to_float(sg.get("signalled_tokens", "0")) + 1) / 6
-    stake = math.log10(_wei_to_float(sg.get("staked_tokens", "0")) + 1) / 8
-    fees = math.log10(_wei_to_float(sg.get("query_fees", "0")) + 1) / 4
-    qv = math.log10(query_volume + 1) / 8
+    # Curation signal: log10(GRT) / 5 — 100K GRT = 1.0
+    signal = math.log10(_wei_to_float(sg.get("signalled_tokens", "0")) + 1) / 5
+    # Indexer stake: log10(GRT) / 7 — 10M GRT = 1.0
+    stake = math.log10(_wei_to_float(sg.get("staked_tokens", "0")) + 1) / 7
+    # Query fees: log10(GRT) / 5 — 100K GRT fees = 1.0
+    fees = math.log10(_wei_to_float(sg.get("query_fees", "0")) + 1) / 5
+    # 30d query volume from QoS: log10(queries) / 8 — 100M queries = 1.0
+    qv = math.log10(query_volume + 1) / 8 if query_volume > 0 else 0.0
 
     signal = min(1.0, signal)
     stake = min(1.0, stake)
@@ -386,8 +393,138 @@ def _reliability_score(sg: dict, query_volume: int = 0) -> float:
 
     penalty = 0.5 if sg.get("denied_at", 0) > 0 else 0.0
 
-    raw = (signal * 0.25 + stake * 0.25 + fees * 0.25 + qv * 0.25) - penalty
+    # Weighted: fees 30%, volume 30% (both prove real usage), signal 20%, stake 20%
+    raw = (signal * 0.20 + stake * 0.20 + fees * 0.30 + qv * 0.30) - penalty
     return round(max(0.0, min(1.0, raw)), 4)
+
+
+# ── Auto-Description Generator ──────────────────────────────
+
+NETWORK_NAMES = {
+    "mainnet": "Ethereum",
+    "arbitrum-one": "Arbitrum",
+    "base": "Base",
+    "matic": "Polygon",
+    "bsc": "BNB Chain",
+    "optimism": "Optimism",
+    "avalanche": "Avalanche",
+    "gnosis": "Gnosis",
+    "fantom": "Fantom",
+    "celo": "Celo",
+    "linea": "Linea",
+    "scroll": "Scroll",
+    "zksync-era": "zkSync Era",
+    "moonbeam": "Moonbeam",
+    "blast-mainnet": "Blast",
+    "polygon-zkevm": "Polygon zkEVM",
+    "sonic": "Sonic",
+    "near-mainnet": "NEAR",
+    "mode-mainnet": "Mode",
+    "sei-mainnet": "Sei",
+}
+
+PROTOCOL_TYPE_LABELS = {
+    "dex": "decentralized exchange (DEX)",
+    "lending": "lending/borrowing protocol",
+    "bridge": "cross-chain bridge",
+    "staking": "staking protocol",
+    "options": "options protocol",
+    "perpetuals": "perpetuals/derivatives protocol",
+    "nft-marketplace": "NFT marketplace",
+    "yield-aggregator": "yield aggregator",
+    "governance": "governance protocol",
+    "name-service": "name service",
+    "general": None,
+}
+
+ENTITY_DESCRIPTIONS = {
+    "liquidity_pool": "liquidity pools",
+    "trade": "trades/swaps",
+    "token": "tokens",
+    "position": "user positions",
+    "vault": "vaults/strategies",
+    "loan": "loans/borrows",
+    "collateral": "collateral/reserves",
+    "liquidation": "liquidations",
+    "nft_collection": "NFT collections",
+    "nft_item": "NFT items",
+    "nft_sale": "NFT sales/listings",
+    "proposal": "governance proposals",
+    "delegate": "delegates/voters",
+    "domain_name": "domain name registrations",
+    "daily_snapshot": "daily snapshots",
+    "hourly_snapshot": "hourly snapshots",
+    "transaction": "transactions",
+    "account": "accounts/users",
+}
+
+
+def _generate_description(
+    display_name: str | None,
+    network: str | None,
+    domain: str,
+    protocol_type: str,
+    canonical_entities: list[dict],
+    all_entities: list[dict],
+    entity_count: int,
+) -> str:
+    """Generate a description from classification data."""
+    name = display_name or "Unknown"
+    chain = NETWORK_NAMES.get(network, network.title() if network else "an unknown chain")
+    ptype_label = PROTOCOL_TYPE_LABELS.get(protocol_type)
+
+    # Build entity summary (deduplicated canonical types)
+    seen = set()
+    entity_types = []
+    for ce in canonical_entities:
+        ct = ce.get("canonical_type") if isinstance(ce, dict) else ce
+        if ct and ct not in seen:
+            seen.add(ct)
+            label = ENTITY_DESCRIPTIONS.get(ct, ct.replace("_", " "))
+            entity_types.append(label)
+
+    # Core entities (skip snapshots and generic ones for the summary)
+    core_entities = [e for e in entity_types if e not in (
+        "daily snapshots", "hourly snapshots", "transactions", "accounts/users"
+    )]
+    has_snapshots = any(e in entity_types for e in ("daily snapshots", "hourly snapshots"))
+
+    # Build the description
+    parts = []
+
+    # Opening line
+    if ptype_label:
+        parts.append(f"Indexes {name} {ptype_label} on {chain}.")
+    else:
+        domain_label = domain.upper() if domain in ("dao", "nfts") else domain.title()
+        parts.append(f"Indexes {name} ({domain_label}) on {chain}.")
+
+    # What it tracks
+    if core_entities:
+        if len(core_entities) <= 4:
+            parts.append(f"Tracks {', '.join(core_entities)}.")
+        else:
+            parts.append(f"Tracks {', '.join(core_entities[:4])}, and {len(core_entities) - 4} more entity types.")
+
+    # Snapshots
+    if has_snapshots:
+        snapshot_types = []
+        if "hourly snapshots" in entity_types:
+            snapshot_types.append("hourly")
+        if "daily snapshots" in entity_types:
+            snapshot_types.append("daily")
+        parts.append(f"Includes {' and '.join(snapshot_types)} time-series data.")
+
+    # Schema size hint for rich subgraphs
+    if entity_count > 15:
+        # List unclassified entities that might be interesting
+        unclassified = [e["name"] for e in all_entities if e.get("type") is None and not e["name"].startswith("_")]
+        if unclassified and len(unclassified) <= 6:
+            parts.append(f"Also includes: {', '.join(unclassified)}.")
+        elif entity_count > 25:
+            parts.append(f"Rich schema with {entity_count} entity types.")
+
+    return " ".join(parts)
 
 
 def classify_one(sg: dict, query_volume: int = 0) -> Classification:
@@ -397,6 +534,21 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
     canonical = _map_canonical(entities)
     fp = schema_fingerprint(entities)
     reliability = _reliability_score(sg, query_volume)
+
+    all_ents = [
+        {"name": e.name, "type": next((c["canonical_type"] for c in canonical if c["name"] == e.name), None), "fields": e.field_count}
+        for e in entities
+    ]
+
+    auto_desc = _generate_description(
+        display_name=sg.get("display_name"),
+        network=sg.get("network"),
+        domain=domain,
+        protocol_type=protocol_type,
+        canonical_entities=canonical,
+        all_entities=all_ents,
+        entity_count=len(entities),
+    )
 
     return Classification(
         id=sg["id"],
@@ -416,10 +568,8 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
         schema_fingerprint=fp,
         entity_count=len(entities),
         canonical_entities=canonical,
-        all_entities=[
-            {"name": e.name, "type": next((c["canonical_type"] for c in canonical if c["name"] == e.name), None), "fields": e.field_count}
-            for e in entities
-        ],
+        all_entities=all_ents,
+        auto_description=auto_desc,
         reliability_score=reliability,
         signalled_tokens=sg.get("signalled_tokens", "0"),
         staked_tokens=sg.get("staked_tokens", "0"),

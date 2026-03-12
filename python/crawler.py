@@ -233,6 +233,107 @@ def flatten_subgraph(sg: dict, schemas: dict[str, str]) -> dict:
     }
 
 
+QOS_SUBGRAPH_ID = "Dtr9rETvwokot4BSXaD5tECanXfqfJKcvHuaaEgPDD2D"
+QOS_EPOCH_START = 1608163200  # Day 0 of QoS day numbering (2020-12-17)
+
+QOS_DAY_QUERY = """
+query($dayStart: BigInt!, $nextDay: BigInt!, $lastId: String!) {
+  queryDailyDataPoints(
+    first: 1000
+    orderBy: id
+    orderDirection: asc
+    where: { dayStart_gte: $dayStart, dayStart_lt: $nextDay, id_gt: $lastId }
+  ) {
+    id
+    subgraphDeployment { id }
+    query_count
+  }
+}
+"""
+
+
+async def _fetch_qos_day(client: httpx.AsyncClient, qos_url: str, day_start: int) -> dict[str, int]:
+    """Fetch all query volumes for a single UTC day."""
+    next_day = day_start + 86400
+    volumes: dict[str, int] = {}
+    last_id = ""
+
+    for _ in range(10):  # Max pages per day
+        for attempt in range(3):
+            try:
+                resp = await client.post(
+                    qos_url,
+                    json={
+                        "query": QOS_DAY_QUERY,
+                        "variables": {
+                            "dayStart": str(day_start),
+                            "nextDay": str(next_day),
+                            "lastId": last_id,
+                        },
+                    },
+                    timeout=60,
+                )
+                resp_json = resp.json()
+                if "errors" in resp_json:
+                    if attempt < 2:
+                        await asyncio.sleep(3)
+                        continue
+                    return volumes  # Return what we have
+                points = resp_json.get("data", {}).get("queryDailyDataPoints", [])
+                break
+            except Exception:
+                if attempt < 2:
+                    await asyncio.sleep(3)
+                    continue
+                return volumes
+        else:
+            break
+
+        if not points:
+            break
+
+        for p in points:
+            dep = p.get("subgraphDeployment")
+            if dep and dep.get("id"):
+                qc = int(float(p.get("query_count", "0")))
+                volumes[dep["id"]] = volumes.get(dep["id"], 0) + qc
+
+        last_id = points[-1]["id"]
+        if len(points) < 1000:
+            break
+
+    return volumes
+
+
+async def fetch_qos_volumes(client: httpx.AsyncClient, deployment_hashes: list[str]) -> dict[str, int]:
+    """Fetch 30-day query volumes from the QoS subgraph, one day at a time."""
+    if GATEWAY_API_KEY:
+        qos_url = f"https://gateway.thegraph.com/api/{GATEWAY_API_KEY}/subgraphs/id/{QOS_SUBGRAPH_ID}"
+    else:
+        qos_url = f"https://gateway.thegraph.com/api/subgraphs/id/{QOS_SUBGRAPH_ID}"
+
+    # Start from yesterday (today resets at midnight UTC)
+    now = int(time.time())
+    today_start = now - (now % 86400)
+
+    volumes: dict[str, int] = {}
+    days_fetched = 0
+
+    for days_ago in range(1, 31):
+        day_start = today_start - (days_ago * 86400)
+        day_volumes = await _fetch_qos_day(client, qos_url, day_start)
+
+        for ipfs, qc in day_volumes.items():
+            volumes[ipfs] = volumes.get(ipfs, 0) + qc
+
+        days_fetched += 1
+        if days_ago % 10 == 0:
+            print(f"  ... {days_ago} days fetched, {len(volumes)} deployments so far")
+
+    print(f"  Fetched {days_fetched} days of QoS data, {len(volumes)} deployments with volume")
+    return volumes
+
+
 async def full_crawl(
     min_updated_at: int = 0,
     fetch_schemas_flag: bool = True,
@@ -280,19 +381,36 @@ async def full_crawl(
             schemas = await fetch_schemas(client, unique_hashes)
             print(f"  Total schemas: {len(schemas)}")
 
+        # Fetch 30d query volumes from QoS subgraph
+        print("\n=== Fetching Query Volumes (QoS) ===")
+        query_volumes = await fetch_qos_volumes(client, unique_hashes)
+        print(f"  Deployments with volume data: {len(query_volumes)}")
+        if query_volumes:
+            top = sorted(query_volumes.items(), key=lambda x: x[1], reverse=True)[:5]
+            for h, v in top:
+                print(f"    {h[:16]}... = {v:,.0f} queries/30d")
+
     # Flatten
     subgraphs = [flatten_subgraph(sg, schemas) for sg in raw_subgraphs]
+
+    # Attach query volumes
+    for sg in subgraphs:
+        ipfs = sg.get("ipfs_hash")
+        if ipfs and ipfs in query_volumes:
+            sg["query_volume_30d"] = query_volumes[ipfs]
 
     elapsed = time.time() - start
     with_schema = sum(1 for s in subgraphs if s["schema"])
     with_desc = sum(1 for s in subgraphs if s["description"])
     with_cats = sum(1 for s in subgraphs if s["categories"])
+    with_vol = sum(1 for s in subgraphs if s.get("query_volume_30d", 0) > 0)
 
     print(f"\n=== Crawl Complete ({elapsed:.1f}s) ===")
     print(f"  Subgraphs: {len(subgraphs)}")
     print(f"  With schemas: {with_schema}")
     print(f"  With descriptions: {with_desc}")
     print(f"  With categories: {with_cats}")
+    print(f"  With 30d query volume: {with_vol}")
 
     return {
         "crawled_at": datetime.now(timezone.utc).isoformat(),

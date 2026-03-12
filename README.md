@@ -121,16 +121,16 @@ scheduler.py -- weekly incremental sync via updatedAt filtering
 
 ## Reliability Score
 
-Each subgraph gets a composite reliability score (0–1) based on four on-chain signals, equally weighted at 25% each:
+Each subgraph gets a composite reliability score (0–1) based on four on-chain signals:
 
-| Signal | What it measures | Scale |
-|---|---|---|
-| **Curation Signal** | GRT tokens curated on the subgraph — community vote of confidence | log10 / 6 |
-| **Indexer Stake** | GRT staked by indexers serving this subgraph — skin in the game | log10 / 8 |
-| **Query Fees** | Fees earned from actual usage — proves real demand | log10 / 4 |
-| **Query Volume** | 30-day query count — recent activity level | log10 / 8 |
+| Signal | Weight | What it measures | Source |
+|---|---|---|---|
+| **Query Fees** | 30% | GRT fees earned from actual usage — proves real demand | Network subgraph |
+| **Query Volume** | 30% | 30-day query count — recent activity level | QoS subgraph |
+| **Curation Signal** | 20% | GRT tokens curated — community vote of confidence | Network subgraph |
+| **Indexer Stake** | 20% | GRT staked by indexers — skin in the game | Network subgraph |
 
-All values are log-scaled (to handle the massive range from 0 to billions of wei) and capped at 1.0. The final score is the average of all four, with a 0.5 penalty applied if the subgraph has been denied/deprecated.
+All values are log-scaled and capped at 1.0. Usage signals (fees + volume) are weighted higher at 60% because they prove real demand. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
 
 **What the scores mean:**
 - **0.7–1.0**: High reliability — strong signal, active indexers, real usage (e.g. Uniswap, Aave)

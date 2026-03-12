@@ -118,6 +118,7 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
             id TEXT PRIMARY KEY,
             display_name TEXT,
             description TEXT,
+            auto_description TEXT,
             website TEXT,
             code_repository TEXT,
             owner TEXT,
@@ -137,7 +138,8 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
             created_at INTEGER,
             updated_at INTEGER,
             categories TEXT,
-            canonical_entities TEXT
+            canonical_entities TEXT,
+            all_entities TEXT
         )
     """)
 
@@ -149,16 +151,17 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
 
     for sg in classified:
         c.execute("""
-            INSERT INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
-            sg.id, sg.display_name, sg.description, sg.website,
-            sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
+            sg.id, sg.display_name, sg.description, sg.auto_description,
+            sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
             sg.powered_by_substreams, sg.domain, sg.domain_confidence,
             sg.protocol_type, sg.schema_fingerprint, sg.entity_count,
             sg.reliability_score, sg.signalled_tokens, sg.staked_tokens,
             sg.query_fees, sg.query_volume_30d, sg.created_at, sg.updated_at,
             json.dumps(sg.self_reported_categories),
             json.dumps([ce["canonical_type"] for ce in sg.canonical_entities]),
+            json.dumps(sg.all_entities),
         ))
 
     conn.commit()
@@ -194,8 +197,39 @@ async def build_registry(
     # 2. Classify
     print("\n=== Classifying ===")
     t0 = time.time()
-    classified = classify_all(raw_data["subgraphs"])
+    # Build query volume map from crawler data
+    query_volumes = {}
+    for sg in raw_data["subgraphs"]:
+        ipfs = sg.get("ipfs_hash")
+        vol = sg.get("query_volume_30d", 0)
+        if ipfs and vol > 0:
+            query_volumes[ipfs] = query_volumes.get(ipfs, 0) + vol
+    if query_volumes:
+        print(f"  Query volumes available for {len(query_volumes)} deployments")
+
+    classified = classify_all(raw_data["subgraphs"], query_volumes)
     print(f"  Classified {len(classified)} subgraphs in {time.time()-t0:.1f}s")
+
+    # 2b. Deduplicate — keep highest-reliability entry per IPFS hash
+    before_count = len(classified)
+    seen_ipfs: dict[str, int] = {}
+    deduped = []
+    for sg in classified:
+        ipfs = sg.ipfs_hash
+        if not ipfs:
+            deduped.append(sg)
+            continue
+        if ipfs in seen_ipfs:
+            existing_idx = seen_ipfs[ipfs]
+            if sg.reliability_score > deduped[existing_idx].reliability_score:
+                deduped[existing_idx] = sg
+        else:
+            seen_ipfs[ipfs] = len(deduped)
+            deduped.append(sg)
+    classified = deduped
+    removed = before_count - len(classified)
+    if removed > 0:
+        print(f"  Deduplicated: removed {removed} duplicate deployments ({before_count} → {len(classified)})")
 
     # 3. Build summary + indices
     print("\n=== Building Indices ===")

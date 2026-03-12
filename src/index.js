@@ -119,7 +119,7 @@ function searchSubgraphs({
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const sql = `
-    SELECT id, display_name, description, domain, protocol_type, network,
+    SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
            powered_by_substreams
     FROM subgraphs
@@ -133,7 +133,7 @@ function searchSubgraphs({
   const results = rows.map((r) => ({
     id: r.id,
     display_name: r.display_name,
-    description: (r.description || "").slice(0, 200),
+    description: (r.description || r.auto_description || "").slice(0, 300),
     domain: r.domain,
     protocol_type: r.protocol_type,
     network: r.network,
@@ -142,9 +142,14 @@ function searchSubgraphs({
     entity_count: r.entity_count,
     canonical_entities: JSON.parse(r.canonical_entities),
     powered_by_substreams: Boolean(r.powered_by_substreams),
+    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
   }));
 
-  return { total: results.length, subgraphs: results };
+  return {
+    total: results.length,
+    subgraphs: results,
+    query_instructions: "To query a subgraph: POST a GraphQL query to the query_url (replace [api-key] with your Graph API key from https://thegraph.com/studio/apikeys/). First fetch the schema with get_subgraph_detail to see available entities and fields.",
+  };
 }
 
 function recommendSubgraph({ goal, chain = "" }) {
@@ -205,7 +210,7 @@ function recommendSubgraph({ goal, chain = "" }) {
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const sql = `
-    SELECT id, display_name, description, domain, protocol_type, network,
+    SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, canonical_entities
     FROM subgraphs
     ${where}
@@ -217,14 +222,14 @@ function recommendSubgraph({ goal, chain = "" }) {
   const recommendations = rows.map((r) => ({
     id: r.id,
     display_name: r.display_name,
-    description: (r.description || "").slice(0, 200),
+    description: (r.description || r.auto_description || "").slice(0, 300),
     domain: r.domain,
     protocol_type: r.protocol_type,
     network: r.network,
     reliability_score: r.reliability_score,
     ipfs_hash: r.ipfs_hash,
     canonical_entities: JSON.parse(r.canonical_entities),
-    usage: `Query via subgraph ID '${r.id}' or IPFS hash '${r.ipfs_hash}'`,
+    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
   }));
 
   return {
@@ -247,6 +252,17 @@ function getSubgraphDetail({ subgraph_id }) {
   const result = { ...row };
   result.canonical_entities = JSON.parse(result.canonical_entities);
   result.categories = JSON.parse(result.categories);
+  if (result.all_entities) result.all_entities = JSON.parse(result.all_entities);
+  if (!result.description && result.auto_description) {
+    result.description = result.auto_description;
+  }
+  result.query_url = `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${result.id}`;
+  result.query_instructions = {
+    step_1: "Get an API key from https://thegraph.com/studio/apikeys/",
+    step_2: `Replace [api-key] in the query_url: https://gateway.thegraph.com/api/YOUR_KEY/subgraphs/id/${result.id}`,
+    step_3: "POST a GraphQL query to that URL. Example: { pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) { id token0 { symbol } token1 { symbol } totalValueLockedUSD } }",
+    note: "Use the all_entities field above to see what entities and fields are available to query.",
+  };
   return result;
 }
 
@@ -277,7 +293,7 @@ const TOOLS = [
   {
     name: "search_subgraphs",
     description:
-      "Search and filter the classified subgraph registry. Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score.",
+      "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score with query URLs. To query data: POST GraphQL to https://gateway.thegraph.com/api/[api-key]/subgraphs/id/[subgraph-id] (get API key from https://thegraph.com/studio/apikeys/).",
     inputSchema: {
       type: "object",
       properties: {
@@ -294,7 +310,7 @@ const TOOLS = [
   {
     name: "recommend_subgraph",
     description:
-      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores and query instructions. Automatically infers domain and protocol type from the goal.",
+      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores and query URLs. Automatically infers domain and protocol type from the goal. Each result includes a query_url — replace [api-key] with your Graph API key to query live data.",
     inputSchema: {
       type: "object",
       properties: {
@@ -307,7 +323,7 @@ const TOOLS = [
   {
     name: "get_subgraph_detail",
     description:
-      "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, reliability score, signal data, and metadata.",
+      "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, all entity names with field counts, reliability score, signal data, query URL, and step-by-step query instructions.",
     inputSchema: {
       type: "object",
       properties: {
@@ -338,7 +354,7 @@ async function main() {
   await ensureDb();
 
   const server = new Server(
-    { name: "subgraph-registry", version: "0.1.0" },
+    { name: "subgraph-registry", version: "0.2.0" },
     { capabilities: { tools: {} } }
   );
 
