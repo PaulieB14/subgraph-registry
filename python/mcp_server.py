@@ -87,8 +87,17 @@ def search_subgraphs(
         conditions.append("reliability_score >= ?")
         params.append(min_reliability)
     if query:
-        conditions.append("(display_name LIKE ? OR description LIKE ?)")
-        params.extend([f"%{query}%", f"%{query}%"])
+        # Split into words and match any word (OR) across name/description/auto_description
+        words = [w for w in query.strip().split() if len(w) > 2]
+        if words:
+            word_conds = []
+            for w in words[:5]:
+                word_conds.append("(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)")
+                params.extend([f"%{w}%", f"%{w}%", f"%{w}%"])
+            conditions.append(f"({' OR '.join(word_conds)})")
+        else:
+            conditions.append("(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)")
+            params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
 
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     # Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)

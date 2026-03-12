@@ -243,7 +243,7 @@ class Classification:
 
     # Classification
     domain: str
-    domain_confidence: int
+    classification_confidence: int
     domain_scores: dict[str, int]
     protocol_type: str
     self_reported_categories: list[str]
@@ -459,6 +459,15 @@ ENTITY_DESCRIPTIONS = {
 }
 
 
+# Canonical types that conflict with certain protocol types — use raw entity names instead
+_CONFLICTING_CANONICAL = {
+    "staking": {"nft_sale", "nft_item", "nft_collection"},
+    "lending": {"nft_sale", "nft_item", "nft_collection"},
+    "bridge": {"nft_sale", "nft_item", "nft_collection"},
+    "governance": {"nft_sale", "nft_item", "nft_collection"},
+}
+
+
 def _generate_description(
     display_name: str | None,
     network: str | None,
@@ -473,12 +482,22 @@ def _generate_description(
     chain = NETWORK_NAMES.get(network, network.title() if network else "an unknown chain")
     ptype_label = PROTOCOL_TYPE_LABELS.get(protocol_type)
 
+    # Get canonical types that conflict with this protocol type
+    conflicts = _CONFLICTING_CANONICAL.get(protocol_type, set())
+
     # Build entity summary (deduplicated canonical types)
+    # When canonical type conflicts with protocol_type, use the raw entity name instead
     seen = set()
     entity_types = []
     for ce in canonical_entities:
         ct = ce.get("canonical_type") if isinstance(ce, dict) else ce
-        if ct and ct not in seen:
+        ename = ce.get("name", "") if isinstance(ce, dict) else ""
+        if ct and ct in conflicts:
+            # Use raw entity name instead of misleading canonical label
+            if ename and ename not in seen:
+                seen.add(ename)
+                entity_types.append(ename)
+        elif ct and ct not in seen:
             seen.add(ct)
             label = ENTITY_DESCRIPTIONS.get(ct, ct.replace("_", " "))
             entity_types.append(label)
@@ -561,7 +580,7 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
         network=sg.get("network"),
         powered_by_substreams=sg.get("powered_by_substreams", False),
         domain=domain,
-        domain_confidence=confidence,
+        classification_confidence=confidence,
         domain_scores=domain_scores,
         protocol_type=protocol_type,
         self_reported_categories=sg.get("categories") or [],

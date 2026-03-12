@@ -117,7 +117,7 @@ def main():
     for c in classified:
         print("─" * 60)
         print(f"  {c.display_name}")
-        print(f"    Domain:        {c.domain} (confidence: {c.domain_confidence})")
+        print(f"    Domain:        {c.domain} (confidence: {c.classification_confidence})")
         print(f"    Protocol Type: {c.protocol_type}")
         print(f"    Network:       {c.network}")
         print(f"    Reliability:   {c.reliability_score}")

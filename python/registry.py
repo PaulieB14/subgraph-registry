@@ -126,7 +126,7 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
             network TEXT,
             powered_by_substreams BOOLEAN,
             domain TEXT,
-            domain_confidence INTEGER,
+            classification_confidence INTEGER,
             protocol_type TEXT,
             schema_fingerprint TEXT,
             entity_count INTEGER,
@@ -155,7 +155,7 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
-            sg.powered_by_substreams, sg.domain, sg.domain_confidence,
+            sg.powered_by_substreams, sg.domain, sg.classification_confidence,
             sg.protocol_type, sg.schema_fingerprint, sg.entity_count,
             sg.reliability_score, sg.signalled_tokens, sg.staked_tokens,
             sg.query_fees, sg.query_volume_30d, sg.created_at, sg.updated_at,

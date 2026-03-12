@@ -113,8 +113,15 @@ function searchSubgraphs({
     params.push(min_reliability);
   }
   if (query) {
-    conditions.push("(display_name LIKE ? OR description LIKE ?)");
-    params.push(`%${query}%`, `%${query}%`);
+    const words = query.trim().split(/\s+/).filter((w) => w.length > 2).slice(0, 5);
+    if (words.length) {
+      const wordConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
+      words.forEach((w) => params.push(`%${w}%`, `%${w}%`, `%${w}%`));
+      conditions.push(`(${wordConds.join(" OR ")})`);
+    } else {
+      conditions.push("(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
+      params.push(`%${query}%`, `%${query}%`, `%${query}%`);
+    }
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
