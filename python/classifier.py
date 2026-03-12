@@ -534,11 +534,15 @@ def _generate_description(
             snapshot_types.append("daily")
         parts.append(f"Includes {' and '.join(snapshot_types)} time-series data.")
 
-    # Schema size hint for rich subgraphs
-    if entity_count > 15:
-        # List unclassified entities that might be interesting
-        unclassified = [e["name"] for e in all_entities if e.get("type") is None and not e["name"].startswith("_")]
-        if unclassified and len(unclassified) <= 6:
+    # List notable unclassified entities
+    unclassified = [e["name"] for e in all_entities if e.get("type") is None and not e["name"].startswith("_")]
+
+    # When few canonical matches but many unclassified entities, show key schema entities
+    if len(core_entities) <= 1 and unclassified:
+        notable = unclassified[:6]
+        parts.append(f"Key entities: {', '.join(notable)}.")
+    elif entity_count > 15 and unclassified:
+        if len(unclassified) <= 6:
             parts.append(f"Also includes: {', '.join(unclassified)}.")
         elif entity_count > 25:
             parts.append(f"Rich schema with {entity_count} entity types.")
