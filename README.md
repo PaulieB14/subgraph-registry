@@ -4,9 +4,13 @@ Agent-friendly semantic classification of all subgraphs on [The Graph Network](h
 
 Pre-computed index of 15,500+ subgraphs with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
 
+<a href="https://glama.ai/mcp/servers/PaulieB14/subgraph-registry">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/PaulieB14/subgraph-registry/badge" alt="Subgraph Registry MCP server" />
+</a>
+
 ## The Problem
 
-Agents querying The Graph need to discover and select the right subgraph before they can query data. Today this requires 3-4 tool calls (search, check volumes, fetch schema, infer structure) before any real work happens. This registry flips that: agents start with structured knowledge, not a blank slate.
+Agents querying The Graph need to discover and select the right subgraph before they can query data. Today this requires 3-4 tool calls (search, check volumes, fetch schema, infer structure) before any real work begins. This registry flips that: agents start with structured knowledge, not a blank slate.
 
 ## What It Does
 
