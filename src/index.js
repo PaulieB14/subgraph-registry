@@ -378,7 +378,7 @@ async function main() {
   await ensureDb();
 
   const server = new Server(
-    { name: "subgraph-registry", version: "0.2.2" },
+    { name: "subgraph-registry", version: "0.2.3" },
     { capabilities: { tools: {} } }
   );
 

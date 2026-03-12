@@ -1,5 +1,9 @@
 # Subgraph Registry
 
+<a href="https://glama.ai/mcp/servers/PaulieB14/subgraph-registry">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/PaulieB14/subgraph-registry/badge" />
+</a>
+
 Agent-friendly semantic classification of all subgraphs on [The Graph Network](https://thegraph.com).
 
 Pre-computed index of 15,500+ subgraphs with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
