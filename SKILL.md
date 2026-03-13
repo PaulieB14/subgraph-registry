@@ -1,3 +1,10 @@
+---
+name: subgraph-registry-mcp
+description: Discover and filter 15,500+ The Graph subgraphs by domain, network, protocol type, or natural language goal with reliability scores and query URLs.
+metadata:
+  {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
+---
+
 # Subgraph Registry
 
 Agent-friendly discovery of 15,500+ classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language goal — get reliability-scored results with query URLs.
