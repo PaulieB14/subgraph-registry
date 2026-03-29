@@ -232,8 +232,8 @@ def svg_reliability_gauge(reliability, total, width=480, height=160):
     ly = bar_y + bar_h + 30
     items = [
         ("High (0.7+)", high, RELIABILITY_COLORS["high"]),
-        ("Medium (0.3-0.7)", med, RELIABILITY_COLORS["medium"]),
-        ("Low (<0.3)", low, RELIABILITY_COLORS["low"]),
+        ("Medium (0.3&#x2013;0.7)", med, RELIABILITY_COLORS["medium"]),
+        ("Low (&#x3c;0.3)", low, RELIABILITY_COLORS["low"]),
     ]
     for i, (label, cnt, color) in enumerate(items):
         lx = 30 + i * 160
