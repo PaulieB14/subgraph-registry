@@ -6,7 +6,7 @@
 
 Agent-friendly semantic classification of all subgraphs on [The Graph Network](https://thegraph.com).
 
-Pre-computed index of 15,500+ subgraphs with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
+Pre-computed index of **14,700+ subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
 
 ## The Problem
 
@@ -14,37 +14,142 @@ Agents querying The Graph need to discover and select the right subgraph before 
 
 ## What It Does
 
-1. **Crawls** all active subgraphs from the Graph Network meta-subgraph (subgraphs indexing subgraphs)
+1. **Crawls** all active subgraphs from the Graph Network meta-subgraph
 2. **Fetches** the GraphQL schema for every deployment
-3. **Classifies** each subgraph by:
-   - **Domain**: DeFi, NFTs, DAOs, Gaming, Identity, Infrastructure, Social, Analytics
-   - **Protocol Type**: DEX, Lending, Bridge, Staking, Options, Perpetuals, Marketplace, etc.
-   - **Canonical Entities**: Maps schema types to a standard vocabulary (Pool -> `liquidity_pool`, Swap -> `trade`, etc.)
-   - **Schema Family**: Groups forks/clones by schema fingerprint
-4. **Scores** reliability (see [Reliability Score](#reliability-score) below)
-5. **Publishes** as JSON registry + SQLite database + REST API
+3. **Classifies** each subgraph by domain, protocol type, canonical entities, and schema family
+4. **Scores** reliability using on-chain signals (query fees, volume, curation, stake)
+5. **Publishes** as SQLite database + REST API + MCP server
+6. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
 
-## Quick Start
+---
+
+## Registry at a Glance
+
+<p align="center">
+  <img src="docs/charts/domains.svg" alt="Subgraphs by Domain" width="480"/>
+</p>
+
+<p align="center">
+  <img src="docs/charts/networks.svg" alt="Subgraphs by Network" width="600"/>
+</p>
+
+<p align="center">
+  <img src="docs/charts/protocol-types.svg" alt="Subgraphs by Protocol Type" width="600"/>
+</p>
+
+<p align="center">
+  <img src="docs/charts/reliability.svg" alt="Reliability Distribution" width="480"/>
+</p>
+
+> Charts auto-generated from `registry.db` on each sync. See [`python/generate_docs.py`](python/generate_docs.py).
+
+---
+
+## Browse by Category
+
+### Domains
+
+Explore subgraphs by use case — each file lists the top 25 subgraphs ranked by reliability score.
+
+| Domain | Count | File |
+|--------|-------|------|
+| [DeFi](docs/domains/defi.md) | 11,218 | Swaps, pools, lending, vaults, yield |
+| [NFTs](docs/domains/nfts.md) | 857 | Collections, marketplaces, sales |
+| [Infrastructure](docs/domains/infrastructure.md) | 581 | Indexers, oracles, registries |
+| [DAO](docs/domains/dao.md) | 429 | Governance, proposals, voting |
+| [Identity](docs/domains/identity.md) | 401 | ENS, name services, resolvers |
+| [Analytics](docs/domains/analytics.md) | 327 | Snapshots, metrics, historical data |
+| [Gaming](docs/domains/gaming.md) | 247 | Players, quests, items, worlds |
+| [Social](docs/domains/social.md) | 74 | Profiles, posts, follows |
+
+Full index: [`docs/DOMAINS.md`](docs/DOMAINS.md)
+
+### Networks
+
+Explore subgraphs by blockchain — each file lists the top 25 subgraphs on that chain.
+
+| Network | Count | File |
+|---------|-------|------|
+| [Ethereum](docs/networks/mainnet.md) | 2,377 | Largest ecosystem |
+| [Base](docs/networks/base.md) | 1,728 | Fast-growing L2 |
+| [BSC](docs/networks/bsc.md) | 1,582 | BNB Chain |
+| [Arbitrum](docs/networks/arbitrum-one.md) | 1,376 | Leading L2 |
+| [Polygon](docs/networks/matic.md) | 1,266 | Polygon PoS |
+| [Optimism](docs/networks/optimism.md) | 568 | OP Stack L2 |
+| [Avalanche](docs/networks/avalanche.md) | 440 | C-Chain |
+
+Full index: [`docs/NETWORKS.md`](docs/NETWORKS.md)
+
+### Protocol Types
+
+| Type | Count | Description |
+|------|-------|-------------|
+| DEX | 4,176 | Uniswap, Sushi, Curve, Balancer, PancakeSwap |
+| Lending | 1,424 | Aave, Compound, Morpho, Spark, Silo |
+| Staking | 867 | Lido, Rocket Pool, EigenLayer, Graph Network |
+| Bridge | 771 | Hop, Stargate, Across, Wormhole, LayerZero |
+| NFT Marketplace | 436 | OpenSea, Blur, Rarible, Foundation |
+| Governance | 416 | Snapshot, Tally, Compound Governor |
+| Yield Aggregator | 387 | Yearn, Beefy, Harvest, Convex |
+| Perpetuals | 266 | GMX, Gains, dYdX, Hyperliquid |
+| Name Service | 223 | ENS, Space ID, Unstoppable Domains |
+| Options | 179 | Premia, Dopex, Lyra, Hegic |
+
+---
+
+## Reliability Score
+
+Each subgraph gets a composite reliability score (0-1) based on four on-chain signals:
+
+| Signal | Weight | What it measures |
+|--------|--------|------------------|
+| **Query Fees** | 30% | GRT fees earned from actual usage |
+| **Query Volume** | 30% | 30-day query count |
+| **Curation Signal** | 20% | GRT tokens curated by the community |
+| **Indexer Stake** | 20% | GRT staked by indexers |
+
+All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
+
+**Score tiers:** High (0.7+) = strong signal, real usage | Medium (0.3-0.7) = functional, some activity | Low (<0.3) = minimal signal or test deployment
+
+---
+
+## MCP Server
+
+The registry is available as an MCP server with **dual transport** — stdio for local clients and SSE/HTTP for remote agents.
+
+**4 tools:**
+- **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
+- **recommend_subgraph** — natural language goal to best subgraphs
+- **get_subgraph_detail** — full classification for a specific subgraph
+- **list_registry_stats** — registry overview (domains, networks, counts)
+
+### Install
 
 ```bash
-cd python
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+# Claude Code
+claude mcp add subgraph-registry -- npx subgraph-registry-mcp
 
-# Create .env with your Graph API key
-echo "GATEWAY_API_KEY=your-key-here" > .env
+# Claude Desktop
+{
+  "mcpServers": {
+    "subgraph-registry": {
+      "command": "npx",
+      "args": ["subgraph-registry-mcp"]
+    }
+  }
+}
 
-# Full crawl + classify (all 15K+ subgraphs, ~11 min)
-python registry.py
-
-# Or limit to top N by signal
-python registry.py --max 500
-
-# Start API server
-python server.py
+# Remote agents (SSE)
+npx subgraph-registry-mcp --http-only
+# Then connect to http://localhost:3848/sse
 ```
 
-## API Endpoints
+The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run.
+
+---
+
+## REST API
 
 ```
 GET /summary                    Registry overview and stats
@@ -57,29 +162,50 @@ GET /search?q=uniswap           Free-text search
 GET /recommend?goal=...&chain=  Agent-optimized recommendation
 ```
 
-### Example: Agent Recommendation
-
 ```bash
+# Start API server
+cd python && python server.py
+
+# Example: find DEX subgraphs on Arbitrum
 curl "http://localhost:3847/recommend?goal=query+DEX+trades+on+Arbitrum&chain=arbitrum-one"
-```
 
-Returns the top subgraphs matching the intent, with reliability scores and query instructions.
-
-### Example: Filter by Entity Type
-
-```bash
+# Example: filter by entity type
 curl "http://localhost:3847/subgraphs?entity=liquidity_pool&network=base&min_reliability=0.5"
 ```
 
-## Weekly Sync
+---
 
-```bash
-# Run weekly incremental updates (only fetches new/changed subgraphs)
-python scheduler.py
+## Bot-Readable Category Files
 
-# One-shot incremental
-python scheduler.py --once
+The `docs/` directory contains structured `.md` files with YAML frontmatter designed for AI agents and bots to consume:
+
 ```
+docs/
+├── DOMAINS.md           # Index of all domains with counts
+├── NETWORKS.md          # Index of all networks with counts
+├── charts/              # Auto-generated SVG visualizations
+│   ├── domains.svg
+│   ├── networks.svg
+│   ├── protocol-types.svg
+│   └── reliability.svg
+├── domains/             # One file per domain
+│   ├── defi.md          # Top 25 DeFi subgraphs by reliability
+│   ├── nfts.md
+│   ├── dao.md
+│   └── ...
+└── networks/            # One file per network
+    ├── mainnet.md       # Top 25 Ethereum subgraphs by reliability
+    ├── base.md
+    ├── arbitrum-one.md
+    └── ...
+```
+
+Each category file includes:
+- YAML frontmatter (domain/network, count, percentage, last updated)
+- Top 25 subgraphs ranked by reliability score
+- MCP tool and REST API query examples
+
+---
 
 ## Architecture
 
@@ -87,137 +213,49 @@ python scheduler.py --once
 Graph Network Subgraph (meta-subgraph, 140M queries/month)
     |
     v
-crawler.py ---- async httpx, ID-based cursor pagination (bypasses 5K skip limit)
+crawler.py ---- async httpx, ID-based cursor pagination
     |
     v
 classifier.py - rule-based domain/protocol classification + schema fingerprinting
     |
     v
-registry.py --- builds JSON registry + SQLite + indices
+registry.py --- builds SQLite + indices
     |
-    v
-server.py ----- FastAPI REST API with /recommend endpoint (:3847)
-    |
-    v
-scheduler.py -- weekly incremental sync via updatedAt filtering
+    ├── server.py ------ FastAPI REST API (:3847)
+    ├── generate_docs.py SVG charts + category .md files
+    └── scheduler.py --- weekly incremental sync
 
 MCP Server (src/index.js)
-    |
-    ├── stdio transport  ←── Claude Desktop / Claude Code (npx command)
-    └── SSE/HTTP :3848   ←── OpenClaw / remote agents (--http flag)
+    ├── stdio   ←── Claude Desktop / Claude Code
+    └── SSE     ←── OpenClaw / remote agents (:3848)
 ```
 
-## Output
-
-| File | Size | Description |
-|---|---|---|
-| `registry.json` | ~130 MB | Full registry with all entity details |
-| `registry.db` | ~8 MB | SQLite with indexed lookups |
-| `sync-state.json` | <1 KB | Last sync timestamp for incremental updates |
-
-## Classification Results (as of March 2026)
-
-| Domain | Count | | Network | Count |
-|---|---|---|---|---|
-| DeFi | 11,841 | | Ethereum | 2,471 |
-| NFTs | 893 | | Base | 1,845 |
-| Infrastructure | 602 | | BSC | 1,664 |
-| DAO | 450 | | Arbitrum | 1,442 |
-| Identity | 424 | | Polygon | 1,364 |
-| Analytics | 348 | | Optimism | 593 |
-| Gaming | 255 | | Avalanche | 454 |
-| Social | 78 | | | |
-
-## Reliability Score
-
-Each subgraph gets a composite reliability score (0–1) based on four on-chain signals:
-
-| Signal | Weight | What it measures | Source |
-|---|---|---|---|
-| **Query Fees** | 30% | GRT fees earned from actual usage — proves real demand | Network subgraph |
-| **Query Volume** | 30% | 30-day query count — recent activity level | QoS subgraph |
-| **Curation Signal** | 20% | GRT tokens curated — community vote of confidence | Network subgraph |
-| **Indexer Stake** | 20% | GRT staked by indexers — skin in the game | Network subgraph |
-
-All values are log-scaled and capped at 1.0. Usage signals (fees + volume) are weighted higher at 60% because they prove real demand. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
-
-**What the scores mean:**
-- **0.7–1.0**: High reliability — strong signal, active indexers, real usage (e.g. Uniswap, Aave)
-- **0.3–0.7**: Moderate — some signal and usage, likely functional
-- **0.0–0.3**: Low — minimal signal, may be inactive or a test deployment
-
-## MCP Server
-
-The registry is available as an MCP server for agent integration. It supports **dual transport** — stdio for local clients (Claude Desktop, Claude Code) and SSE/HTTP for remote agents (OpenClaw, custom agent frameworks).
-
-It exposes 4 tools:
-
-- **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
-- **recommend_subgraph** — natural language goal to best subgraphs
-- **get_subgraph_detail** — full classification for a specific subgraph
-- **list_registry_stats** — registry overview (domains, networks, counts)
-
-### Install via NPM
+## Quick Start (Local Build)
 
 ```bash
-npx subgraph-registry-mcp
+cd python
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+echo "GATEWAY_API_KEY=your-key-here" > .env
+
+# Full crawl + classify (~11 min)
+python registry.py
+
+# Generate charts and category files
+python generate_docs.py
+
+# Start API server
+python server.py
 ```
-
-### Add to Claude Desktop (stdio)
-
-```json
-{
-  "mcpServers": {
-    "subgraph-registry": {
-      "command": "npx",
-      "args": ["subgraph-registry-mcp"]
-    }
-  }
-}
-```
-
-### Add to OpenClaw / Remote Agents (SSE)
-
-Start the server with the HTTP transport:
-
-```bash
-# Dual transport — stdio + SSE on port 3848
-npx subgraph-registry-mcp --http
-
-# SSE only (for remote/server deployments)
-npx subgraph-registry-mcp --http-only
-
-# Custom port
-MCP_HTTP_PORT=4000 npx subgraph-registry-mcp --http
-```
-
-Then point your agent at the SSE endpoint:
-
-```json
-{
-  "mcpServers": {
-    "subgraph-registry": {
-      "url": "http://localhost:3848/sse"
-    }
-  }
-}
-```
-
-### Transport Modes
-
-| Invocation | Transports | Use case |
-|---|---|---|
-| `npx subgraph-registry-mcp` | stdio | Claude Desktop, Claude Code |
-| `npx subgraph-registry-mcp --http` | stdio + SSE :3848 | Dual — local + remote agents |
-| `npx subgraph-registry-mcp --http-only` | SSE :3848 | OpenClaw, remote deployments |
-
-A `/health` endpoint is available at `http://localhost:3848/health` when HTTP transport is active.
-
-The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run — no local build needed.
 
 ## How It Stays Current
 
-The Graph Network subgraph indexes all subgraph deployments on-chain. The crawler queries `updatedAt_gte: lastSyncTimestamp` to fetch only what changed since the last run. Weekly syncs keep the registry fresh without full rebuilds.
+A GitHub Actions workflow runs every 3 days:
+1. Incremental crawl (`updatedAt_gte: lastSyncTimestamp`)
+2. Reclassify new/changed subgraphs
+3. Regenerate SVG charts and category .md files
+4. Commit and push updates
 
 ## License
 

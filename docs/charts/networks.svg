@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 396" font-family="system-ui,-apple-system,sans-serif">
+<rect width="100%" height="100%" fill="#0d1017" rx="12"/>
+<text x="300.0" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Subgraphs by Network</text>
+<text x="102" y="55.0" text-anchor="end" fill="#7b8394" font-size="11">Mainnet</text>
+<rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
+<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">2,377</text>
+<text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Base</text>
+<rect x="110" y="68" width="334.4" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="450.4047118216239" y="83.0" fill="#e8eaed" font-size="11">1,728</text>
+<text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Bsc</text>
+<rect x="110" y="96" width="306.2" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="422.150610012621" y="111.0" fill="#e8eaed" font-size="11">1,582</text>
+<text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Arbitrum One</text>
+<rect x="110" y="124" width="266.3" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="382.2852334875894" y="139.0" fill="#e8eaed" font-size="11">1,376</text>
+<text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Matic</text>
+<rect x="110" y="152" width="245.0" height="22" rx="4" fill="#10b981" opacity="0.85"/>
+<text x="360.9978965082036" y="167.0" fill="#e8eaed" font-size="11">1,266</text>
+<text x="102" y="195.0" text-anchor="end" fill="#7b8394" font-size="11">Optimism</text>
+<rect x="110" y="180" width="109.9" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
+<text x="225.92006731173748" y="195.0" fill="#e8eaed" font-size="11">568</text>
+<text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Sepolia</text>
+<rect x="110" y="208" width="103.3" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="219.3403449726546" y="223.0" fill="#e8eaed" font-size="11">534</text>
+<text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Avalanche</text>
+<rect x="110" y="236" width="85.1" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
+<text x="201.14934791754314" y="251.0" fill="#e8eaed" font-size="11">440</text>
+<text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Zksync Era</text>
+<rect x="110" y="264" width="73.2" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
+<text x="189.15103071098022" y="279.0" fill="#e8eaed" font-size="11">378</text>
+<text x="102" y="307.0" text-anchor="end" fill="#7b8394" font-size="11">Linea</text>
+<rect x="110" y="292" width="62.7" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
+<text x="178.70088346655447" y="307.0" fill="#e8eaed" font-size="11">324</text>
+<text x="102" y="335.0" text-anchor="end" fill="#7b8394" font-size="11">Gnosis</text>
+<rect x="110" y="320" width="53.6" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
+<text x="169.60538493899872" y="335.0" fill="#e8eaed" font-size="11">277</text>
+<text x="102" y="363.0" text-anchor="end" fill="#7b8394" font-size="11">Scroll</text>
+<rect x="110" y="348" width="53.6" height="22" rx="4" fill="#84cc16" opacity="0.85"/>
+<text x="169.60538493899872" y="363.0" fill="#e8eaed" font-size="11">277</text>
+</svg>

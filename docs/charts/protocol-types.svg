@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 368" font-family="system-ui,-apple-system,sans-serif">
+<rect width="100%" height="100%" fill="#0d1017" rx="12"/>
+<text x="300.0" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Subgraphs by Protocol Type</text>
+<text x="102" y="55.0" text-anchor="end" fill="#7b8394" font-size="11">General</text>
+<rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
+<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">5,588</text>
+<text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Dex</text>
+<rect x="110" y="68" width="343.8" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="459.76521116678595" y="83.0" fill="#e8eaed" font-size="11">4,176</text>
+<text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Lending</text>
+<rect x="110" y="96" width="117.2" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="233.2226198997853" y="111.0" fill="#e8eaed" font-size="11">1,424</text>
+<text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Staking</text>
+<rect x="110" y="124" width="71.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="187.37079455977096" y="139.0" fill="#e8eaed" font-size="11">867</text>
+<text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Bridge</text>
+<rect x="110" y="152" width="63.5" height="22" rx="4" fill="#10b981" opacity="0.85"/>
+<text x="179.46814602720116" y="167.0" fill="#e8eaed" font-size="11">771</text>
+<text x="102" y="195.0" text-anchor="end" fill="#7b8394" font-size="11">Nft Marketpla...</text>
+<rect x="110" y="180" width="35.9" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
+<text x="151.89119541875448" y="195.0" fill="#e8eaed" font-size="11">436</text>
+<text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Governance</text>
+<rect x="110" y="208" width="34.2" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="150.24481030780242" y="223.0" fill="#e8eaed" font-size="11">416</text>
+<text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Yield Aggrega...</text>
+<rect x="110" y="236" width="31.9" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
+<text x="147.85755189692196" y="251.0" fill="#e8eaed" font-size="11">387</text>
+<text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Perpetuals</text>
+<rect x="110" y="264" width="21.9" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
+<text x="137.89692197566214" y="279.0" fill="#e8eaed" font-size="11">266</text>
+<text x="102" y="307.0" text-anchor="end" fill="#7b8394" font-size="11">Name Service</text>
+<rect x="110" y="292" width="18.4" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
+<text x="134.35719398711524" y="307.0" fill="#e8eaed" font-size="11">223</text>
+<text x="102" y="335.0" text-anchor="end" fill="#7b8394" font-size="11">Options</text>
+<rect x="110" y="320" width="14.7" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
+<text x="130.73514674302078" y="335.0" fill="#e8eaed" font-size="11">179</text>
+</svg>

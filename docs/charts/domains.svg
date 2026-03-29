@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" font-family="system-ui,-apple-system,sans-serif">
+<rect width="100%" height="100%" fill="#0d1017" rx="12"/>
+<text x="240.0" y="24" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Subgraphs by Domain</text>
+<text x="160" y="154" text-anchor="middle" fill="#e8eaed" font-size="22" font-weight="700">14,733</text>
+<text x="160" y="174" text-anchor="middle" fill="#7b8394" font-size="11">subgraphs</text>
+<path d="M160.0,40.0 A120,120 0 1,1 40.3,151.4 L90.2,155.0 A70,70 0 1,0 160.0,90.0 Z" fill="#3b82f6" opacity="0.9"/>
+<path d="M40.3,151.4 A120,120 0 0,1 51.3,109.2 L96.6,130.4 A70,70 0 0,0 90.2,155.0 Z" fill="#8b5cf6" opacity="0.9"/>
+<path d="M51.3,109.2 A120,120 0 0,1 67.7,83.4 L106.1,115.3 A70,70 0 0,0 96.6,130.4 Z" fill="#6b7280" opacity="0.9"/>
+<path d="M67.7,83.4 A120,120 0 0,1 89.3,63.1 L118.7,103.5 A70,70 0 0,0 106.1,115.3 Z" fill="#06b6d4" opacity="0.9"/>
+<path d="M89.3,63.1 A120,120 0 0,1 108.1,51.8 L129.7,96.9 A70,70 0 0,0 118.7,103.5 Z" fill="#f59e0b" opacity="0.9"/>
+<path d="M108.1,51.8 A120,120 0 0,1 127.3,44.6 L140.9,92.7 A70,70 0 0,0 129.7,96.9 Z" fill="#10b981" opacity="0.9"/>
+<path d="M127.3,44.6 A120,120 0 0,1 143.6,41.1 L150.4,90.7 A70,70 0 0,0 140.9,92.7 Z" fill="#ec4899" opacity="0.9"/>
+<path d="M143.6,41.1 A120,120 0 0,1 156.2,40.1 L157.8,90.0 A70,70 0 0,0 150.4,90.7 Z" fill="#f97316" opacity="0.9"/>
+<path d="M156.2,40.1 A120,120 0 0,1 160.0,40.0 L160.0,90.0 A70,70 0 0,0 157.8,90.0 Z" fill="#6366f1" opacity="0.9"/>
+<rect x="310" y="50" width="12" height="12" rx="2" fill="#3b82f6"/>
+<text x="328" y="60" fill="#e8eaed" font-size="11">Defi</text>
+<text x="440" y="60" fill="#7b8394" font-size="10" text-anchor="end">11,218 (76.1%)</text>
+<rect x="310" y="80" width="12" height="12" rx="2" fill="#8b5cf6"/>
+<text x="328" y="90" fill="#e8eaed" font-size="11">Nfts</text>
+<text x="440" y="90" fill="#7b8394" font-size="10" text-anchor="end">857 (5.8%)</text>
+<rect x="310" y="110" width="12" height="12" rx="2" fill="#6b7280"/>
+<text x="328" y="120" fill="#e8eaed" font-size="11">Unknown</text>
+<text x="440" y="120" fill="#7b8394" font-size="10" text-anchor="end">599 (4.1%)</text>
+<rect x="310" y="140" width="12" height="12" rx="2" fill="#06b6d4"/>
+<text x="328" y="150" fill="#e8eaed" font-size="11">Infrastructure</text>
+<text x="440" y="150" fill="#7b8394" font-size="10" text-anchor="end">581 (3.9%)</text>
+<rect x="310" y="170" width="12" height="12" rx="2" fill="#f59e0b"/>
+<text x="328" y="180" fill="#e8eaed" font-size="11">Dao</text>
+<text x="440" y="180" fill="#7b8394" font-size="10" text-anchor="end">429 (2.9%)</text>
+<rect x="310" y="200" width="12" height="12" rx="2" fill="#10b981"/>
+<text x="328" y="210" fill="#e8eaed" font-size="11">Identity</text>
+<text x="440" y="210" fill="#7b8394" font-size="10" text-anchor="end">401 (2.7%)</text>
+<rect x="310" y="230" width="12" height="12" rx="2" fill="#ec4899"/>
+<text x="328" y="240" fill="#e8eaed" font-size="11">Analytics</text>
+<text x="440" y="240" fill="#7b8394" font-size="10" text-anchor="end">327 (2.2%)</text>
+<rect x="310" y="260" width="12" height="12" rx="2" fill="#f97316"/>
+<text x="328" y="270" fill="#e8eaed" font-size="11">Gaming</text>
+<text x="440" y="270" fill="#7b8394" font-size="10" text-anchor="end">247 (1.7%)</text>
+</svg>

@@ -29,10 +29,13 @@ jobs:
           GATEWAY_API_KEY: ${{ secrets.GATEWAY_API_KEY }}
         run: python scheduler.py --once
 
-      - name: Commit updated registry
+      - name: Generate charts and category docs
+        run: python python/generate_docs.py
+
+      - name: Commit updated registry and docs
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/registry.db python/data/
-          git diff --cached --quiet || git commit -m "data: update subgraph registry [skip ci]"
+          git add data/registry.db python/data/ docs/
+          git diff --cached --quiet || git commit -m "data: update subgraph registry and docs [skip ci]"
           git push
