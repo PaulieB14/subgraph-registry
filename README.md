@@ -106,7 +106,7 @@ Each subgraph gets a composite reliability score (0-1) based on four on-chain si
 | **Query Fees** | 30% | GRT fees earned from actual usage |
 | **Query Volume** | 30% | 30-day query count |
 | **Curation Signal** | 20% | GRT tokens curated by the community |
-| **Indexer Stake** | 20% | GRT staked by indexers |
+| **Indexer Allocation** | 20% | GRT allocated to this subgraph by indexers |
 
 All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
 
