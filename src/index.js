@@ -328,7 +328,7 @@ const TOOLS = [
         network: { type: "string", description: "Filter by chain: mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc." },
         protocol_type: { type: "string", description: "Filter by protocol type: dex, lending, bridge, staking, options, perpetuals, etc." },
         entity: { type: "string", description: "Filter by canonical entity: liquidity_pool, trade, token, position, vault, loan, etc." },
-        min_reliability: { type: "number", description: "Minimum reliability score (0-1). Higher = more signal/stake/fees." },
+        min_reliability: { type: "number", description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation." },
         limit: { type: "integer", description: "Max results to return (default: 20)", default: 20 },
       },
     },

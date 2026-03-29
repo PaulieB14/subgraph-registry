@@ -379,7 +379,7 @@ def _wei_to_float(wei_str: str) -> float:
 def _reliability_score(sg: dict, query_volume: int = 0) -> float:
     # Curation signal: log10(GRT) / 5 — 100K GRT = 1.0
     signal = math.log10(_wei_to_float(sg.get("signalled_tokens", "0")) + 1) / 5
-    # Indexer stake: log10(GRT) / 7 — 10M GRT = 1.0
+    # Indexer allocation: log10(GRT allocated to this subgraph) / 7 — 10M GRT = 1.0
     stake = math.log10(_wei_to_float(sg.get("staked_tokens", "0")) + 1) / 7
     # Query fees: log10(GRT) / 5 — 100K GRT fees = 1.0
     fees = math.log10(_wei_to_float(sg.get("query_fees", "0")) + 1) / 5
@@ -393,7 +393,7 @@ def _reliability_score(sg: dict, query_volume: int = 0) -> float:
 
     penalty = 0.5 if sg.get("denied_at", 0) > 0 else 0.0
 
-    # Weighted: fees 30%, volume 30% (both prove real usage), signal 20%, stake 20%
+    # Weighted: fees 30%, volume 30% (both prove real usage), signal 20%, allocation 20%
     raw = (signal * 0.20 + stake * 0.20 + fees * 0.30 + qv * 0.30) - penalty
     return round(max(0.0, min(1.0, raw)), 4)
 
