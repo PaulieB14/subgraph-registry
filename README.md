@@ -38,7 +38,7 @@ Agents querying The Graph need to discover and select the right subgraph before 
 </p>
 
 <p align="center">
-  <img src="docs/charts/reliability.svg" alt="Reliability Distribution" width="480"/>
+  <img src="docs/charts/reliability-dist.svg" alt="Reliability Distribution" width="480"/>
 </p>
 
 > Charts auto-generated from `registry.db` on each sync. See [`python/generate_docs.py`](python/generate_docs.py).

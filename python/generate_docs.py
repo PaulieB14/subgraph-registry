@@ -112,9 +112,9 @@ def svg_donut(data, colors, title, width=480, height=320):
     total = sum(r["cnt"] for r in data)
     cx, cy, r_outer, r_inner = 160, 160, 120, 70
     svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" '
         f'font-family="system-ui,-apple-system,sans-serif">',
-        '<rect width="100%" height="100%" fill="#0d1017" rx="12"/>',
+        f'<rect width="{width}" height="{height}" fill="#0d1017" rx="12"/>',
         f'<text x="{width/2}" y="24" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">{title}</text>',
     ]
 
@@ -173,9 +173,9 @@ def svg_bar_chart(data, colors, title, label_key, width=600, height=340):
 
     h = top_margin + len(data) * (bar_h + gap) + 20
     svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {h}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{h}" viewBox="0 0 {width} {h}" '
         f'font-family="system-ui,-apple-system,sans-serif">',
-        f'<rect width="100%" height="100%" fill="#0d1017" rx="12"/>',
+        f'<rect width="{width}" height="{h}" fill="#0d1017" rx="12"/>',
         f'<text x="{width/2}" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">{title}</text>',
     ]
 
@@ -208,9 +208,9 @@ def svg_reliability_gauge(reliability, total, width=480, height=160):
     low = tiers.get("low", 0)
 
     svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" '
         f'font-family="system-ui,-apple-system,sans-serif">',
-        f'<rect width="100%" height="100%" fill="#0d1017" rx="12"/>',
+        f'<rect width="{width}" height="{height}" fill="#0d1017" rx="12"/>',
         f'<text x="{width/2}" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Reliability Score Distribution</text>',
     ]
 
@@ -380,7 +380,7 @@ def main():
     (CHARTS / "protocol-types.svg").write_text(svg)
 
     svg = svg_reliability_gauge(stats["reliability"], total)
-    (CHARTS / "reliability.svg").write_text(svg)
+    (CHARTS / "reliability-dist.svg").write_text(svg)
 
     print(f"  Written: {CHARTS}/domains.svg, networks.svg, protocol-types.svg, reliability.svg")
 
