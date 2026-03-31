@@ -2,7 +2,7 @@
 domain: defi
 count: 11218
 percentage: 76.1
-updated: 2026-03-29
+updated: 2026-03-31
 ---
 
 # Defi Subgraphs

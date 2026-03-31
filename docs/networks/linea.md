@@ -2,7 +2,7 @@
 network: linea
 count: 324
 percentage: 2.2
-updated: 2026-03-29
+updated: 2026-03-31
 ---
 
 # Linea Subgraphs

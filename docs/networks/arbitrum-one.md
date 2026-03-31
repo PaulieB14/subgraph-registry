@@ -2,7 +2,7 @@
 network: arbitrum-one
 count: 1376
 percentage: 9.3
-updated: 2026-03-29
+updated: 2026-03-31
 ---
 
 # Arbitrum Subgraphs

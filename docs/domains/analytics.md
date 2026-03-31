@@ -2,7 +2,7 @@
 domain: analytics
 count: 327
 percentage: 2.2
-updated: 2026-03-29
+updated: 2026-03-31
 ---
 
 # Analytics Subgraphs
