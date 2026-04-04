@@ -2,7 +2,7 @@
 domain: infrastructure
 count: 581
 percentage: 3.9
-updated: 2026-04-01
+updated: 2026-04-04
 ---
 
 # Infrastructure Subgraphs
