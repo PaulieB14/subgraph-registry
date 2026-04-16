@@ -2,7 +2,7 @@
 network: mainnet
 count: 2377
 percentage: 16.1
-updated: 2026-04-13
+updated: 2026-04-16
 ---
 
 # Ethereum Subgraphs
