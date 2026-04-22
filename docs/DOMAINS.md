@@ -1,6 +1,6 @@
 ---
 type: domain-index
-updated: 2026-04-19
+updated: 2026-04-22
 total_subgraphs: 14733
 ---
 
