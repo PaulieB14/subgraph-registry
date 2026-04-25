@@ -2,7 +2,7 @@
 network: gnosis
 count: 277
 percentage: 1.9
-updated: 2026-04-22
+updated: 2026-04-25
 ---
 
 # Gnosis Subgraphs

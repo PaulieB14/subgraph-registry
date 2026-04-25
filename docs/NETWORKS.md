@@ -1,6 +1,6 @@
 ---
 type: network-index
-updated: 2026-04-22
+updated: 2026-04-25
 total_subgraphs: 14733
 ---
 
