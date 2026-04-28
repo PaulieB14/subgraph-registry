@@ -2,7 +2,7 @@
 network: scroll
 count: 277
 percentage: 1.9
-updated: 2026-04-25
+updated: 2026-04-28
 ---
 
 # Scroll Subgraphs
