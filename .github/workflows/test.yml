@@ -1,0 +1,59 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: python/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r python/requirements.txt
+          pip install pytest
+
+      - name: Run classifier tests
+        working-directory: python
+        run: pytest -q test_classifier.py
+
+      - name: Smoke-import server modules
+        working-directory: python
+        run: |
+          python -c "import classifier, crawler, registry, generate_docs"
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Syntax-check MCP server
+        run: node --check src/index.js
+
+      - name: Verify package.json and server.json versions match
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          if [ "$PKG_VERSION" != "$SRV_VERSION" ]; then
+            echo "Version mismatch: package.json=$PKG_VERSION server.json=$SRV_VERSION" >&2
+            exit 1
+          fi
+          echo "Versions match: $PKG_VERSION"

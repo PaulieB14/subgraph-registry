@@ -118,6 +118,8 @@ All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the sub
 
 The registry is available as an MCP server with **dual transport** — stdio for local clients and SSE/HTTP for remote agents.
 
+> The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx subgraph-registry-mcp` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
+
 **4 tools:**
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
 - **recommend_subgraph** — natural language goal to best subgraphs
@@ -225,9 +227,11 @@ registry.py --- builds SQLite + indices
     ├── generate_docs.py SVG charts + category .md files
     └── scheduler.py --- weekly incremental sync
 
-MCP Server (src/index.js)
+MCP Server (src/index.js, published to npm)
     ├── stdio   ←── Claude Desktop / Claude Code
     └── SSE     ←── OpenClaw / remote agents (:3848)
+
+python/mcp_server.py — local-dev MCP server hitting the same SQLite DB
 ```
 
 ## Quick Start (Local Build)

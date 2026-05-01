@@ -1,4 +1,10 @@
-"""Quick test of the classifier with sample subgraph data."""
+"""Classifier regression test.
+
+Runs as a CLI smoke test (`python test_classifier.py`) and as a pytest
+suite (`pytest test_classifier.py`). The pytest suite asserts on the
+fields CI must protect: domain, protocol_type, and canonical-entity
+mapping for a representative set of subgraphs.
+"""
 
 from classifier import classify_all, classify_one
 
@@ -105,6 +111,47 @@ type Epoch @entity { id: ID! startBlock: Int! endBlock: Int! totalRewards: BigIn
 """,
     },
 ]
+
+
+EXPECTED = {
+    "test-uniswap-v3":     {"domain": "defi",           "protocol_type": "dex"},
+    "test-aave-v3":        {"domain": "defi",           "protocol_type": "lending"},
+    "test-ens":            {"domain": "identity",       "protocol_type": "name-service"},
+    "test-premia":         {"domain": "defi",           "protocol_type": "options"},
+    "test-graph-network":  {"domain": "infrastructure", "protocol_type": "staking"},
+}
+
+
+def _classified_by_id():
+    return {c.id: c for c in classify_all(TEST_SUBGRAPHS)}
+
+
+def test_domain_and_protocol_type():
+    by_id = _classified_by_id()
+    for sid, expected in EXPECTED.items():
+        c = by_id[sid]
+        assert c.domain == expected["domain"], (
+            f"{sid}: domain {c.domain} != {expected['domain']}"
+        )
+        assert c.protocol_type == expected["protocol_type"], (
+            f"{sid}: protocol_type {c.protocol_type} != {expected['protocol_type']}"
+        )
+
+
+def test_reliability_score_range():
+    for c in _classified_by_id().values():
+        assert 0.0 <= c.reliability_score <= 1.0, (
+            f"{c.id}: reliability_score {c.reliability_score} out of [0,1]"
+        )
+
+
+def test_canonical_entities_present_for_dex_and_lending():
+    by_id = _classified_by_id()
+    uniswap_canon = {ce["canonical_type"] for ce in by_id["test-uniswap-v3"].canonical_entities}
+    assert {"liquidity_pool", "token", "trade"}.issubset(uniswap_canon), uniswap_canon
+
+    aave_canon = {ce["canonical_type"] for ce in by_id["test-aave-v3"].canonical_entities}
+    assert "token" in aave_canon, aave_canon
 
 
 def main():

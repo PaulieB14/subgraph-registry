@@ -42,8 +42,18 @@ registry = None
 def load_registry():
     global registry
     if not REGISTRY_FILE.exists():
-        raise RuntimeError("Registry not found. Run `python registry.py` first.")
-    registry = json.loads(REGISTRY_FILE.read_text())
+        raise RuntimeError(
+            f"Registry not found at {REGISTRY_FILE}. "
+            f"Run `python registry.py` from the python/ directory to build it "
+            f"(requires GATEWAY_API_KEY in .env)."
+        )
+    try:
+        registry = json.loads(REGISTRY_FILE.read_text())
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"Registry file at {REGISTRY_FILE} is corrupt or truncated ({e}). "
+            f"Re-run `python registry.py` to rebuild it."
+        ) from e
     print(f"Loaded registry: {len(registry['subgraphs'])} subgraphs")
 
 
