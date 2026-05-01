@@ -1,43 +1,43 @@
 ---
 domain: nfts
-count: 857
-percentage: 5.8
+count: 858
+percentage: 5.7
 updated: 2026-05-01
 ---
 
 # NFTs Subgraphs
 
-**857** subgraphs (5.8% of registry)
+**858** subgraphs (5.7% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| nftmarket-base | base | nft-marketplace | 0.76 | 705,613 |
-| NFTMarket-Optimism | optimism | nft-marketplace | 0.72 | 582,326 |
-| Marketplace | mainnet | nft-marketplace | 0.72 | 418,799 |
-| Nft Market | bsc | name-service | 0.70 | 121,135 |
-| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.70 | 1,062,390 |
-| punks-v2 | mainnet | nft-marketplace | 0.68 | 1,110,549 |
-| ORMarketplace | bsc | nft-marketplace | 0.67 | 57,131 |
-| Crypto Phunks Auction House | mainnet | nft-marketplace | 0.67 | 111,418 |
-| cryptopunks_eth | mainnet | nft-marketplace | 0.66 | 13,981 |
-| bmp-punk-bsc-subgraph | bsc | nft-marketplace | 0.65 | 103,534 |
-| Art Blocks | mainnet | nft-marketplace | 0.64 | 170,902 |
-| slice-base | base | nft-marketplace | 0.63 | 78,753 |
-| bid-smart-production | base | nft-marketplace | 0.63 | 188,119 |
-| oxcash-pro-nft | matic | general | 0.63 | 339,288 |
-| nftmarket-bsc | bsc | nft-marketplace | 0.63 | 97,156 |
-| Marketplace Production | matic | nft-marketplace | 0.63 | 59,022 |
-| Spire | arbitrum-one | general | 0.63 | 170,260 |
-| phunks | mainnet | nft-marketplace | 0.61 | 223,198 |
-| ciphers | matic | general | 0.60 | 13,071 |
-| known-origin | mainnet | nft-marketplace | 0.60 | 4 |
-| marketplaceV3_all | fantom | nft-marketplace | 0.59 | 4 |
-| PUNKS V1 | mainnet | nft-marketplace | 0.59 | 135,984 |
-| cryptoart auctionhouse | base | nft-marketplace | 0.58 | 192,988 |
-| Project Galaxy NFT Polygon | matic | general | 0.57 | 3 |
-| qr-auction-tracker | base | nft-marketplace | 0.57 | 1,239 |
+| Art Blocks | mainnet | nft-marketplace | 0.76 | 1,016,657 |
+| nftmarket-base | base | nft-marketplace | 0.73 | 88,333 |
+| Marketplace | mainnet | nft-marketplace | 0.73 | 312,482 |
+| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.71 | 969,905 |
+| Nft Market | bsc | name-service | 0.71 | 93,286 |
+| punks-v2 | mainnet | nft-marketplace | 0.70 | 1,075,924 |
+| NFTMarket-Optimism | optimism | nft-marketplace | 0.69 | 54,031 |
+| ORMarketplace | bsc | nft-marketplace | 0.68 | 146,840 |
+| cryptopunks_eth | mainnet | nft-marketplace | 0.67 | 25,875 |
+| bmp-punk-bsc-subgraph | bsc | nft-marketplace | 0.67 | 103,403 |
+| Marketplace Production | matic | nft-marketplace | 0.66 | 272,470 |
+| slice-base | base | nft-marketplace | 0.65 | 92,009 |
+| Crypto Phunks Auction House | mainnet | nft-marketplace | 0.65 | 54,097 |
+| oxcash-pro-nft | matic | general | 0.65 | 356,748 |
+| phunks | mainnet | nft-marketplace | 0.64 | 420,142 |
+| nftmarket-bsc | bsc | nft-marketplace | 0.62 | 57,229 |
+| Art Blocks Base | base | nft-marketplace | 0.61 | 206,720 |
+| cryptoart auctionhouse | base | nft-marketplace | 0.60 | 178,142 |
+| Art Blocks Arbitrum | arbitrum-one | nft-marketplace | 0.59 | 206,600 |
+| marketplaceV3_all | fantom | nft-marketplace | 0.59 | 2 |
+| PUNKS V1 | mainnet | nft-marketplace | 0.59 | 125,243 |
+| BT404 Subgraph | mainnet | nft-marketplace | 0.57 | 1,637 |
+| known-origin | mainnet | nft-marketplace | 0.57 | — |
+| Project Galaxy NFT Polygon | matic | general | 0.57 | 2 |
+| ump | base | nft-marketplace | 0.57 | 34,528 |
 
 ## Query This Domain
 

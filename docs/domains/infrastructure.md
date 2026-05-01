@@ -1,43 +1,43 @@
 ---
 domain: infrastructure
-count: 581
+count: 584
 percentage: 3.9
 updated: 2026-05-01
 ---
 
 # Infrastructure Subgraphs
 
-**581** subgraphs (3.9% of registry)
+**584** subgraphs (3.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| Graph Network Arbitrum | arbitrum-one | staking | 0.97 | 146,428,378 |
-| Graph TAP Arbitrum One | arbitrum-one | general | 0.97 | 54,880,742 |
-| Graph Network Arbitrum - Horizon Temp | arbitrum-one | staking | 0.89 | 5,224,026 |
-| streamr | matic | staking | 0.89 | 12,007,888 |
-| Polygon Optimistic Oracle V2 | matic | options | 0.79 | 2,797,954 |
-| Graph Billing Arbitrum | arbitrum-one | general | 0.79 | 916,980 |
-| Ethereum Blocks | mainnet | general | 0.77 | 612,856 |
-| CCTP Ethereum | mainnet | dex | 0.76 | 252,289 |
-| Graph Network Ethereum | mainnet | staking | 0.75 | 644,058 |
-| CCTP Arb One | arbitrum-one | dex | 0.75 | 253,634 |
-| Base Blocks | base | general | 0.74 | 390,331 |
-| Polygon Blocks | matic | general | 0.70 | 231,442 |
-| BSC Blocks | bsc | general | 0.70 | 125,514 |
-| Fileverse DDocs Registry | gnosis | general | 0.70 | 443,451 |
-| busd-t-transfers | bsc | general | 0.69 | 265,488 |
-| Graph EBO Arbitrum | arbitrum-one | bridge | 0.68 | 170,086 |
-| Graph TAP Arbitrum Sepolia | arbitrum-sepolia | general | 0.68 | 357,630 |
-| NewGraph | gnosis | general | 0.68 | 890,988 |
-| HOPR Channels | gnosis | bridge | 0.68 | 81,630 |
-| Polygon Optimistic Oracle | matic | options | 0.68 | 1,514,042 |
-| Optimism Blocks | optimism | general | 0.68 | 83,266 |
-| Marlin Oyster Arbitrum | arbitrum-one | general | 0.67 | 193,882 |
-| Arbitrum Optimistic Oracle V3 | arbitrum-one | options | 0.67 | 1,246,624 |
-| HOPR Nodes Dufour | gnosis | bridge | 0.66 | 76,651 |
-| Avalanche Blocks | avalanche | general | 0.65 | 68,729 |
+| Graph Network Arbitrum | arbitrum-one | staking | 0.99 | 67,195,831 |
+| Graph TAP Arbitrum One | arbitrum-one | general | 0.95 | 14,932,317 |
+| streamr | matic | staking | 0.90 | 6,999,743 |
+| Graph Network Arbitrum - Horizon Temp | arbitrum-one | staking | 0.88 | 9,900,696 |
+| Graph Network Ethereum | mainnet | staking | 0.80 | 2,838,440 |
+| Graph Billing Arbitrum | arbitrum-one | general | 0.79 | 1,046,731 |
+| Polygon Optimistic Oracle V2 | matic | options | 0.77 | 569,279 |
+| Ethereum Blocks | mainnet | general | 0.76 | 459,968 |
+| CCTP Ethereum | mainnet | dex | 0.75 | 146,664 |
+| Base Blocks | base | general | 0.75 | 378,980 |
+| Graph Network Arbitrum Sepolia | arbitrum-sepolia | staking | 0.74 | 1,885,994 |
+| CCTP Arb One | arbitrum-one | dex | 0.74 | 147,006 |
+| Polygon Optimistic Oracle | matic | options | 0.73 | 1,979,705 |
+| Polygon Blocks | matic | general | 0.70 | 172,922 |
+| busd-t-transfers | bsc | general | 0.70 | 283,955 |
+| BSC Blocks | bsc | general | 0.70 | 120,730 |
+| Graph Analytics Arbitrum | arbitrum-one | staking | 0.70 | 237,702 |
+| agent0-bsc-mainnet | bsc | name-service | 0.70 | 739,904 |
+| Fileverse DDocs Registry | gnosis | general | 0.70 | 406,464 |
+| Graph EBO Arbitrum | arbitrum-one | bridge | 0.70 | 161,582 |
+| Mainnet Optimistic Oracle V3 | mainnet | options | 0.69 | 1,188,278 |
+| agent0-base-mainnet | base | name-service | 0.69 | 933,380 |
+| HOPR Channels | gnosis | bridge | 0.69 | 68,318 |
+| Optimism Blocks | optimism | general | 0.69 | 81,965 |
+| NewGraph | gnosis | general | 0.68 | 815,581 |
 
 ## Query This Domain
 

@@ -1,43 +1,43 @@
 ---
 domain: analytics
-count: 327
+count: 324
 percentage: 2.2
 updated: 2026-05-01
 ---
 
 # Analytics Subgraphs
 
-**327** subgraphs (2.2% of registry)
+**324** subgraphs (2.2% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| maticblocks | matic | dex | 0.83 | 268,627 |
-| protocol-metrics-arbitrum | arbitrum-one | nft-marketplace | 0.81 | 750,734 |
-| Arbitrum One Blocks | arbitrum-one | dex | 0.81 | 1,337,004 |
-| protocol-metrics-base | base | nft-marketplace | 0.80 | 750,890 |
-| Ethereum Blocks | mainnet | dex | 0.79 | 843,792 |
-| olympus-protocol-metrics | mainnet | nft-marketplace | 0.79 | 759,951 |
-| Blocks Base | base | general | 0.73 | 50,547 |
-| Arbitrum Blocks | arbitrum-one | dex | 0.71 | 278,732 |
-| Blocks | fantom | dex | 0.69 | 110,593 |
-| Lottery | bsc | dex | 0.69 | 121,804 |
-| BNB Chain Block | bsc | general | 0.68 | 52,958 |
-| ApoloBsc | bsc | general | 0.66 | 4,775,038 |
-| Fantom Blocks | fantom | general | 0.66 | 69,164 |
-| Pulsar-Blocks | moonbeam | dex | 0.63 | 19,093 |
-| avax-chain-block | avalanche | dex | 0.57 | 427 |
-| Arbitrum One Blocks | arbitrum-one | dex | 0.55 | 8,378 |
-| mother-contract-sepolia | sepolia | general | 0.55 | 518,528 |
-| iExec DataProtector - Arbitrum Mainnet | arbitrum-one | nft-marketplace | 0.54 | 16,577 |
-| jpyc-avalanche-analytics | avalanche | general | 0.53 | 188,660 |
-| arbone-chain-block | arbitrum-one | general | 0.52 | 2 |
-| Polygon Blocks | matic | dex | 0.52 | 1,294 |
+| maticblocks | matic | dex | 0.82 | 186,138 |
+| Arbitrum One Blocks | arbitrum-one | dex | 0.82 | 1,260,829 |
+| ApoloBsc | bsc | general | 0.80 | 8,673,603 |
+| Ethereum Blocks | mainnet | dex | 0.79 | 712,105 |
+| protocol-metrics-arbitrum | arbitrum-one | nft-marketplace | 0.79 | 621,400 |
+| protocol-metrics-base | base | nft-marketplace | 0.78 | 620,878 |
+| Arbitrum Blocks | arbitrum-one | dex | 0.71 | 213,344 |
+| Blocks Base | base | general | 0.71 | 13,824 |
+| olympus-protocol-metrics | mainnet | nft-marketplace | 0.69 | 624,769 |
+| Blocks | fantom | dex | 0.69 | 103,823 |
+| Lottery | bsc | dex | 0.68 | 71,249 |
+| BNB Chain Block | bsc | general | 0.68 | 48,495 |
+| Pulsar-Blocks | moonbeam | dex | 0.68 | 256,506 |
+| Fantom Blocks | fantom | general | 0.67 | 68,003 |
+| iExec DataProtector - Arbitrum Mainnet | arbitrum-one | nft-marketplace | 0.55 | 10,450 |
+| arbone-chain-block | arbitrum-one | general | 0.53 | 5 |
+| Polygon Blocks | matic | dex | 0.52 | 1,706 |
 | blocks | bsc | general | 0.52 | — |
-| Gnosis Blocks | gnosis | general | 0.51 | 82,300 |
-| Celo Blocks | celo | dex | 0.50 | 286 |
-| SonicBlocks | sonic | general | 0.48 | 117,806 |
+| Gnosis Blocks | gnosis | general | 0.51 | 81,465 |
+| SonicBlocks | sonic | general | 0.51 | 110,465 |
+| Celo Blocks | celo | dex | 0.49 | 369 |
+| avax-chain-block | avalanche | dex | 0.48 | 1 |
+| blocks ethereum mainnet | mainnet | general | 0.48 | 21 |
+| mother-contract-sepolia | sepolia | general | 0.47 | 70,988 |
+| hmt-stats-polygon | matic | general | 0.46 | 27,789 |
 
 ## Query This Domain
 

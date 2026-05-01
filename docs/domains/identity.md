@@ -1,49 +1,49 @@
 ---
 domain: identity
-count: 401
+count: 398
 percentage: 2.7
 updated: 2026-05-01
 ---
 
 # Identity Subgraphs
 
-**401** subgraphs (2.7% of registry)
+**398** subgraphs (2.7% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ENS | mainnet | name-service | 0.97 | 38,802,774 |
-| verax-v2-linea | linea | general | 0.79 | 3,299,630 |
-| ENS reclaim deposit subgraph | mainnet | name-service | 0.64 | 3,179 |
-| tokens-polygon | matic | name-service | 0.63 | 2,711 |
-| cypher-tokens | mainnet | options | 0.62 | 296,331 |
-| ens-subgraph | mainnet | name-service | 0.61 | 62,315 |
-| openmind-machine-identity-base | base | general | 0.61 | 233,658 |
-| linke | bsc | general | 0.59 | 108,665 |
-| Unnamed | bsc | general | 0.57 | 35,378 |
-| torn-registry | mainnet | bridge | 0.56 | 11,443 |
-| ens-linea-mainnet | linea | name-service | 0.53 | 37,269 |
+| ENS | mainnet | name-service | 0.97 | 35,108,456 |
+| verax-v2-linea | linea | general | 0.79 | 2,807,970 |
+| ens-subgraph | mainnet | name-service | 0.64 | 56,721 |
+| ENS reclaim deposit subgraph | mainnet | name-service | 0.64 | 1,961 |
+| llens-aggs-base | base | name-service | 0.63 | 6,120 |
+| cypher-tokens | mainnet | options | 0.63 | 132,976 |
+| tokens-polygon | matic | name-service | 0.63 | 2,557 |
+| seer-futarchy-outcome-tokens | gnosis | name-service | 0.60 | 567,576 |
+| Unnamed | bsc | general | 0.57 | 24,824 |
+| torn-registry | mainnet | bridge | 0.56 | 14,767 |
+| ens-linea-mainnet | linea | name-service | 0.54 | 31,483 |
+| Enzyme Asset Universe Polygon | matic | general | 0.49 | 4,598 |
+| linke | bsc | general | 0.48 | 135 |
+| hns-id | optimism | name-service | 0.47 | 47,747 |
+| ensSepolia | sepolia | name-service | 0.46 | 159,343 |
+| openmind-machine-identity-base | base | general | 0.45 | 12 |
+| llens-aggs-arbitrum | arbitrum-one | name-service | 0.44 | 3 |
+| llens-aggs-sonic | sonic | name-service | 0.44 | — |
+| Opensig | matic | name-service | 0.43 | 47 |
+| OW Gnosis | gnosis | dex | 0.42 | 8,606 |
+| zns-mainnet | mainnet | name-service | 0.42 | — |
 | unifiedid-child
 
 
 
 
 
- | sepolia | name-service | 0.50 | 578,697 |
-| Enzyme Asset Universe Polygon | matic | general | 0.48 | 4,536 |
-| llens-aggs-sonic | sonic | name-service | 0.47 | 3 |
-| Opensig | matic | name-service | 0.46 | 701 |
-| hns-id | optimism | name-service | 0.45 | 68,147 |
-| seer-futarchy-outcome-tokens | gnosis | name-service | 0.43 | 223,241 |
-| llens-aggs-arbitrum | arbitrum-one | name-service | 0.42 | — |
-| OW Gnosis | gnosis | bridge | 0.42 | 14,417 |
-| zns-mainnet | mainnet | name-service | 0.41 | — |
-| zns-legacy | mainnet | name-service | 0.40 | 2,042 |
-| xname-arbitrum | arbitrum-one | name-service | 0.40 | 577 |
-| llens-aggs-base | base | name-service | 0.39 | — |
-| seer-outcome-tokens | gnosis | name-service | 0.37 | 112,211 |
-| FNS - Fraxtal | fraxtal | name-service | 0.36 | 6,371 |
+ | sepolia | name-service | 0.41 | 2 |
+| zns-legacy | mainnet | name-service | 0.39 | 1,357 |
+| seer-outcome-tokens | gnosis | name-service | 0.38 | 242,572 |
+| xname-base | base | name-service | 0.37 | 147 |
 
 ## Query This Domain
 

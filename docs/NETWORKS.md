@@ -1,22 +1,22 @@
 ---
 type: network-index
 updated: 2026-05-01
-total_subgraphs: 14733
+total_subgraphs: 14941
 ---
 
 # Subgraph Networks
 
 | Network | Count | % | File |
 |---------|-------|---|------|
-| Ethereum | 2,377 | 16.1% | [View](networks/mainnet.md) |
-| Base | 1,728 | 11.7% | [View](networks/base.md) |
-| BSC | 1,582 | 10.7% | [View](networks/bsc.md) |
-| Arbitrum | 1,376 | 9.3% | [View](networks/arbitrum-one.md) |
-| Polygon | 1,266 | 8.6% | [View](networks/matic.md) |
-| Optimism | 568 | 3.9% | [View](networks/optimism.md) |
-| Sepolia | 534 | 3.6% | [View](networks/sepolia.md) |
-| Avalanche | 440 | 3.0% | [View](networks/avalanche.md) |
-| Zksync Era | 378 | 2.6% | [View](networks/zksync-era.md) |
-| Linea | 324 | 2.2% | [View](networks/linea.md) |
-| Gnosis | 277 | 1.9% | [View](networks/gnosis.md) |
-| Scroll | 277 | 1.9% | [View](networks/scroll.md) |
+| Ethereum | 2,407 | 16.1% | [View](networks/mainnet.md) |
+| Base | 1,770 | 11.8% | [View](networks/base.md) |
+| BSC | 1,616 | 10.8% | [View](networks/bsc.md) |
+| Arbitrum | 1,400 | 9.4% | [View](networks/arbitrum-one.md) |
+| Polygon | 1,277 | 8.5% | [View](networks/matic.md) |
+| Optimism | 570 | 3.8% | [View](networks/optimism.md) |
+| Sepolia | 546 | 3.7% | [View](networks/sepolia.md) |
+| Avalanche | 443 | 3.0% | [View](networks/avalanche.md) |
+| Zksync Era | 375 | 2.5% | [View](networks/zksync-era.md) |
+| Linea | 321 | 2.1% | [View](networks/linea.md) |
+| Gnosis | 280 | 1.9% | [View](networks/gnosis.md) |
+| Base Sepolia | 274 | 1.8% | [View](networks/base-sepolia.md) |
