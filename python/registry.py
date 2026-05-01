@@ -107,14 +107,25 @@ def build_indices(classified: list[Classification]) -> dict:
     return {"by_domain": by_domain, "by_network": by_network, "by_entity": by_entity}
 
 
-def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
-    """Write registry to SQLite for fast agent lookups."""
-    db_path.unlink(missing_ok=True)
+def write_sqlite(
+    classified: list[Classification],
+    db_path: Path = SQLITE_FILE,
+    incremental: bool = False,
+):
+    """Write registry to SQLite for fast agent lookups.
+
+    By default this rewrites the DB from scratch. When `incremental=True`,
+    the existing DB is preserved and the classified rows are upserted —
+    needed because incremental syncs only fetch the deltas, not the full
+    corpus.
+    """
+    if not incremental:
+        db_path.unlink(missing_ok=True)
     conn = sqlite3.connect(str(db_path))
     c = conn.cursor()
 
     c.execute("""
-        CREATE TABLE subgraphs (
+        CREATE TABLE IF NOT EXISTS subgraphs (
             id TEXT PRIMARY KEY,
             display_name TEXT,
             description TEXT,
@@ -143,15 +154,15 @@ def write_sqlite(classified: list[Classification], db_path: Path = SQLITE_FILE):
         )
     """)
 
-    c.execute("CREATE INDEX idx_domain ON subgraphs(domain)")
-    c.execute("CREATE INDEX idx_network ON subgraphs(network)")
-    c.execute("CREATE INDEX idx_protocol_type ON subgraphs(protocol_type)")
-    c.execute("CREATE INDEX idx_reliability ON subgraphs(reliability_score DESC)")
-    c.execute("CREATE INDEX idx_fingerprint ON subgraphs(schema_fingerprint)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_domain ON subgraphs(domain)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_network ON subgraphs(network)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_protocol_type ON subgraphs(protocol_type)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_reliability ON subgraphs(reliability_score DESC)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_fingerprint ON subgraphs(schema_fingerprint)")
 
     for sg in classified:
         c.execute("""
-            INSERT INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
@@ -259,7 +270,7 @@ async def build_registry(
     print(f"\n  Registry: {REGISTRY_FILE} ({size_mb:.1f} MB)")
 
     if write_db:
-        write_sqlite(classified)
+        write_sqlite(classified, incremental=incremental)
 
     # Update sync state
     save_sync_state({
