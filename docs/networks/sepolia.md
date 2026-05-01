@@ -2,7 +2,7 @@
 network: sepolia
 count: 534
 percentage: 3.6
-updated: 2026-04-28
+updated: 2026-05-01
 ---
 
 # Sepolia Subgraphs
