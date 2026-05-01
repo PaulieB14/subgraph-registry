@@ -15,15 +15,6 @@
       "transport": {
         "type": "stdio"
       }
-    },
-    {
-      "registryType": "npm",
-      "identifier": "subgraph-registry-mcp",
-      "version": "0.4.1",
-      "transport": {
-        "type": "sse",
-        "args": ["--http-only"]
-      }
     }
   ]
 }
