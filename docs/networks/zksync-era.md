@@ -2,7 +2,7 @@
 network: zksync-era
 count: 375
 percentage: 2.5
-updated: 2026-05-04
+updated: 2026-05-07
 ---
 
 # Zksync Era Subgraphs
@@ -32,12 +32,12 @@ updated: 2026-05-04
 | Connext ZkSync Era | defi | bridge | 0.41 | 1 |
 | syncswap-graph | defi | dex | 0.39 | — |
 | stats-uat | defi | perpetuals | 0.32 | — |
-| Venus Governance zkSync | dao | dex | 0.31 | 19,195 |
 | Connext ZkSync Era StableSwap | defi | dex | 0.31 | 1 |
 | Zerolend Zksync Era | defi | lending | 0.31 | 5,698 |
 | Connext ZkSync Era Staging | defi | bridge | 0.30 | — |
 | Zyfai-Zksync-Vester-3-months | defi | general | 0.30 | 42,190 |
 | zyfi-zksync-new-staked-zfi-4 | defi | staking | 0.28 | 20,784 |
+| Zyfai-Zksync-Vester-6-Months | defi | general | 0.27 | 41,656 |
 
 ## Query This Network
 

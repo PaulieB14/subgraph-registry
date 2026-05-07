@@ -1,13 +1,13 @@
 ---
 network: base
-count: 1771
+count: 1772
 percentage: 11.8
-updated: 2026-05-04
+updated: 2026-05-07
 ---
 
 # Base Subgraphs
 
-**1,771** subgraphs (11.8% of registry)
+**1,772** subgraphs (11.8% of registry)
 
 ## Top Subgraphs by Reliability
 

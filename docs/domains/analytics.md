@@ -2,7 +2,7 @@
 domain: analytics
 count: 324
 percentage: 2.2
-updated: 2026-05-04
+updated: 2026-05-07
 ---
 
 # Analytics Subgraphs
@@ -21,7 +21,6 @@ updated: 2026-05-04
 | protocol-metrics-base | base | nft-marketplace | 0.78 | 620,878 |
 | Arbitrum Blocks | arbitrum-one | dex | 0.71 | 213,344 |
 | Blocks Base | base | general | 0.71 | 13,824 |
-| olympus-protocol-metrics | mainnet | nft-marketplace | 0.69 | 624,769 |
 | Blocks | fantom | dex | 0.69 | 103,823 |
 | Lottery | bsc | dex | 0.68 | 71,249 |
 | BNB Chain Block | bsc | general | 0.68 | 48,495 |
@@ -38,6 +37,7 @@ updated: 2026-05-04
 | blocks ethereum mainnet | mainnet | general | 0.48 | 21 |
 | mother-contract-sepolia | sepolia | general | 0.47 | 70,988 |
 | hmt-stats-polygon | matic | general | 0.46 | 27,789 |
+| blocks-xlayer-mainnet | xlayer-mainnet | general | 0.45 | 441,793 |
 
 ## Query This Domain
 

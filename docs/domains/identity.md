@@ -1,13 +1,13 @@
 ---
 domain: identity
-count: 398
+count: 399
 percentage: 2.7
-updated: 2026-05-04
+updated: 2026-05-07
 ---
 
 # Identity Subgraphs
 
-**398** subgraphs (2.7% of registry)
+**399** subgraphs (2.7% of registry)
 
 ## Top Subgraphs by Reliability
 
