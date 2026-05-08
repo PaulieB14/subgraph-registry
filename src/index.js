@@ -24,8 +24,9 @@ import Database from "better-sqlite3";
 import express from "express";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { get as httpsGet } from "https";
+import { createHash } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,7 +35,52 @@ const DB_PATH = join(DATA_DIR, "registry.db");
 const GITHUB_DB_URL =
   "https://github.com/PaulieB14/subgraph-registry/raw/main/python/data/registry.db";
 
+// SHA-256 of the registry.db shipped with this npm version. Any download or
+// pre-bundled copy that doesn't match this hash is rejected — protects users
+// against a compromised GitHub repo or man-in-the-middle on the download.
+//
+// HOW TO UPDATE WHEN REBUILDING THE REGISTRY:
+//   1. Run the crawler to rebuild python/data/registry.db
+//   2. shasum -a 256 python/data/registry.db
+//   3. Paste the new hash here and bump package.json version
+//   4. Update SKILL.md "Verifying the registry" section
+const EXPECTED_DB_SHA256 =
+  "f81b79c53cc13c3428472024187fc7fd502f7418f5da20f0a6e01807dd4011c6";
+// Skip-verification escape hatch (set to "1" only if you're rebuilding the DB
+// locally and know what you're doing — never set in agent-runtime defaults).
+const SKIP_VERIFY = process.env.SUBGRAPH_REGISTRY_SKIP_VERIFY === "1";
+
 // ── Download DB from GitHub if missing ─────────────────────
+
+function sha256OfFile(path) {
+  const h = createHash("sha256");
+  h.update(readFileSync(path));
+  return h.digest("hex");
+}
+
+function verifyDbOrThrow(path) {
+  if (SKIP_VERIFY) {
+    console.error(
+      "SUBGRAPH_REGISTRY_SKIP_VERIFY=1 — skipping registry.db hash check."
+    );
+    return;
+  }
+  const actual = sha256OfFile(path);
+  if (actual !== EXPECTED_DB_SHA256) {
+    // Refuse to load a registry that doesn't match the known-good hash.
+    // Delete the file so the next run gets a fresh download attempt instead
+    // of caching a poisoned copy.
+    try { unlinkSync(path); } catch (_) {}
+    throw new Error(
+      `registry.db SHA-256 mismatch.\n` +
+        `  expected: ${EXPECTED_DB_SHA256}\n` +
+        `  actual:   ${actual}\n` +
+        `The downloaded registry does not match the version pinned to this ` +
+        `npm package. Refusing to load. If you intentionally rebuilt the DB ` +
+        `locally, set SUBGRAPH_REGISTRY_SKIP_VERIFY=1 to bypass.`
+    );
+  }
+}
 
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
@@ -62,11 +108,16 @@ function downloadFile(url, dest) {
 }
 
 async function ensureDb() {
-  if (existsSync(DB_PATH)) return;
+  if (existsSync(DB_PATH)) {
+    verifyDbOrThrow(DB_PATH);
+    return;
+  }
   mkdirSync(DATA_DIR, { recursive: true });
   console.error("Registry not found locally. Downloading from GitHub...");
   await downloadFile(GITHUB_DB_URL, DB_PATH);
-  console.error("Downloaded registry.db");
+  console.error("Downloaded registry.db — verifying SHA-256...");
+  verifyDbOrThrow(DB_PATH);
+  console.error("Registry verified OK.");
 }
 
 // ── Database ───────────────────────────────────────────────
