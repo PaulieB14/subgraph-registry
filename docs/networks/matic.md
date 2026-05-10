@@ -1,13 +1,13 @@
 ---
 network: matic
-count: 1279
-percentage: 8.5
-updated: 2026-05-07
+count: 1281
+percentage: 8.6
+updated: 2026-05-10
 ---
 
 # Polygon Subgraphs
 
-**1,279** subgraphs (8.5% of registry)
+**1,281** subgraphs (8.6% of registry)
 
 ## Top Subgraphs by Reliability
 
