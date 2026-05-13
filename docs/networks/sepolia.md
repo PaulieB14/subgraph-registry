@@ -2,7 +2,7 @@
 network: sepolia
 count: 546
 percentage: 3.6
-updated: 2026-05-10
+updated: 2026-05-13
 ---
 
 # Sepolia Subgraphs
@@ -41,9 +41,9 @@ updated: 2026-05-10
 | TrustLinq-test | defi | general | 0.41 | 1,573 |
 | centra | defi | governance | 0.39 | 761 |
 | uniswap-v3-sepolia | defi | dex | 0.38 | 114,305 |
-| satsumeShopTest | defi | bridge | 0.37 | 144,131 |
 | Balancer CoW AMM Sepolia | defi | dex | 0.35 | 45,479 |
 | tellor-autopay-sepolia | defi | general | 0.33 | 104,694 |
+| veascan-outbox-sepolia | defi | bridge | 0.32 | 6 |
 
 ## Query This Network
 

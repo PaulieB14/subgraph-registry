@@ -1,13 +1,13 @@
 ---
 network: bsc
-count: 1621
+count: 1624
 percentage: 10.8
-updated: 2026-05-10
+updated: 2026-05-13
 ---
 
 # BSC Subgraphs
 
-**1,621** subgraphs (10.8% of registry)
+**1,624** subgraphs (10.8% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -28,7 +28,6 @@ updated: 2026-05-10
 | Venus Core Pool Subgraph | defi | lending | 0.79 | 648,092 |
 | protocol-v3-bnb | defi | lending | 0.79 | 1,876,953 |
 | metrics | defi | staking | 0.79 | 2,798,648 |
-| squadswap-thns-v2-bsc | defi | dex | 0.79 | 16,388,278 |
 | apx-perp-bnb | defi | perpetuals | 0.79 | 1,234,223 |
 | uniswap-v4-bsc | defi | dex | 0.78 | 2,474,336 |
 | Request Payments BSC | defi | dex | 0.78 | 969,126 |
@@ -38,6 +37,7 @@ updated: 2026-05-10
 | Thena BSC V1 | defi | dex | 0.77 | 610,379 |
 | CreatorBid BNB | defi | name-service | 0.77 | 456,069 |
 | TSDTDEFI | defi | staking | 0.76 | 1,062,163 |
+| Pancakeswap V3 BNB | defi | dex | 0.76 | 294,025 |
 
 ## Query This Network
 

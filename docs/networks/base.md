@@ -1,13 +1,13 @@
 ---
 network: base
-count: 1774
-percentage: 11.8
-updated: 2026-05-10
+count: 1778
+percentage: 11.9
+updated: 2026-05-13
 ---
 
 # Base Subgraphs
 
-**1,774** subgraphs (11.8% of registry)
+**1,778** subgraphs (11.9% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -30,7 +30,6 @@ updated: 2026-05-10
 | Thirdfy Base | defi | dex | 0.81 | 4,396,651 |
 | uniswap-v4-base-2 | defi | dex | 0.80 | 359,529 |
 | odos-loyalty-base | defi | general | 0.79 | 696,297 |
-| squadswap-thns-v2-base | defi | dex | 0.79 | 15,499,578 |
 | Uniswap V3 Base | defi | dex | 0.78 | 1,434,832 |
 | Request Payments Base | defi | dex | 0.78 | 1,955,389 |
 | Connext Base | defi | bridge | 0.78 | 132,186 |
@@ -38,6 +37,7 @@ updated: 2026-05-10
 | protocol-metrics-base | analytics | nft-marketplace | 0.78 | 620,878 |
 | maverick-base | defi | dex | 0.76 | 381,889 |
 | data-nexus-uniswap-v4-base | defi | dex | 0.75 | 13,370 |
+| base-jiffyscan | defi | staking | 0.75 | 117,207 |
 
 ## Query This Network
 
