@@ -18,8 +18,48 @@ Agents querying The Graph need to discover and select the right subgraph before 
 2. **Fetches** the GraphQL schema for every deployment
 3. **Classifies** each subgraph by domain, protocol type, canonical entities, and schema family
 4. **Scores** reliability using on-chain signals (query fees, volume, curation, stake)
-5. **Publishes** as SQLite database + REST API + MCP server
-6. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
+5. **Returns x402 + legacy query URLs** — agents can pay $0.01 USDC on Base per query (no API key) or use a Studio key
+6. **Publishes** as SQLite database + REST API + MCP server
+7. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
+
+---
+
+## Querying with x402 (no API key)
+
+Every result includes `query_url_x402` alongside the legacy `query_url`. The Graph's public x402 gateway (live since 2026-05-08) accepts **$0.01 USDC on Base** per query with zero signup.
+
+```js
+// An x402-native agent — discovery to data in two calls
+const { recommendations } = await mcp.call("recommend_subgraph", {
+  goal: "find DEX trades on Arbitrum",
+});
+const top = recommendations[0];
+
+// POST your GraphQL query. The first call returns HTTP 402 with a
+// base64 `payment-required` header; the x402 client signs the
+// EIP-3009 USDC transfer on Base and retries automatically.
+const data = await x402Fetch(top.query_url_x402, {
+  method: "POST",
+  body: JSON.stringify({ query: "{ swaps(first: 5) { id amountUSD } }" }),
+});
+```
+
+Pricing manifest returned per subgraph:
+
+```json
+{
+  "amount_usd": 0.01,
+  "asset": "USDC",
+  "asset_contract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "chain": "base",
+  "network": "eip155:8453",
+  "pay_to": "0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB",
+  "scheme": "exact",
+  "asset_transfer_method": "eip3009"
+}
+```
+
+Client libraries: [`@graphprotocol/client-x402`](https://www.npmjs.com/package/@graphprotocol/client-x402), `x402-fetch`, or any generic x402 wrapper.
 
 ---
 

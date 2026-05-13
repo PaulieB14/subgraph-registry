@@ -50,6 +50,32 @@ const EXPECTED_DB_SHA256 =
 // locally and know what you're doing — never set in agent-runtime defaults).
 const SKIP_VERIFY = process.env.SUBGRAPH_REGISTRY_SKIP_VERIFY === "1";
 
+// ── x402 gateway constants ─────────────────────────────────
+// The Graph's public x402 gateway (live since 2026-05-08) lets agents pay
+// per-query in USDC on Base without any API key. POST GraphQL to query_url_x402
+// and the gateway returns HTTP 402 with a payment manifest; an x402 client
+// (e.g. @graphprotocol/client-x402, x402-fetch) signs the EIP-3009 USDC
+// transfer and retries automatically.
+const X402_GATEWAY_BASE = "https://gateway.thegraph.com/api/x402";
+const X402_PRICING = {
+  amount_usd: 0.01,
+  asset: "USDC",
+  asset_contract: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+  chain: "base",
+  network: "eip155:8453",
+  pay_to: "0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB", // Graph x402 gateway
+  scheme: "exact",
+  asset_transfer_method: "eip3009",
+};
+
+function buildQueryEndpoints(subgraphId) {
+  return {
+    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${subgraphId}`,
+    query_url_x402: `${X402_GATEWAY_BASE}/subgraphs/id/${subgraphId}`,
+    pricing: X402_PRICING,
+  };
+}
+
 // ── Download DB from GitHub if missing ─────────────────────
 
 function sha256OfFile(path) {
@@ -210,7 +236,7 @@ function searchSubgraphs({
       entity_count: r.entity_count,
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
-      query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
+      ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
   }
@@ -218,7 +244,7 @@ function searchSubgraphs({
   return {
     total: results.length,
     subgraphs: results,
-    query_instructions: "To query a subgraph: POST a GraphQL query to the query_url (replace [api-key] with your Graph API key from https://thegraph.com/studio/apikeys/). First fetch the schema with get_subgraph_detail to see available entities and fields.",
+    query_instructions: "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Call get_subgraph_detail first for the schema.",
   };
 }
 
@@ -304,7 +330,7 @@ function recommendSubgraph({ goal, chain = "" }) {
       reliability_score: r.reliability_score,
       ipfs_hash: r.ipfs_hash,
       canonical_entities: JSON.parse(r.canonical_entities),
-      query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${r.id}`,
+      ...buildQueryEndpoints(r.id),
     });
     if (recommendations.length >= 5) break;
   }
@@ -333,12 +359,24 @@ function getSubgraphDetail({ subgraph_id }) {
   if (!result.description && result.auto_description) {
     result.description = result.auto_description;
   }
-  result.query_url = `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${result.id}`;
+  const endpoints = buildQueryEndpoints(result.id);
+  result.query_url = endpoints.query_url;
+  result.query_url_x402 = endpoints.query_url_x402;
+  result.pricing = endpoints.pricing;
   result.query_instructions = {
-    step_1: "Get an API key from https://thegraph.com/studio/apikeys/",
-    step_2: `Replace [api-key] in the query_url: https://gateway.thegraph.com/api/YOUR_KEY/subgraphs/id/${result.id}`,
-    step_3: "POST a GraphQL query to that URL. Example: { pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) { id token0 { symbol } token1 { symbol } totalValueLockedUSD } }",
-    note: "Use the all_entities field above to see what entities and fields are available to query.",
+    recommended: "x402",
+    x402: {
+      url: endpoints.query_url_x402,
+      payment: endpoints.pricing,
+      flow: "POST GraphQL to url. Gateway returns HTTP 402 with a base64 payment-required header containing the payment manifest. Sign $0.01 USDC on Base with an x402 client and retry. No API key, no signup.",
+      client_libraries: ["@graphprotocol/client-x402", "x402-fetch"],
+      example_query: "{ pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) { id token0 { symbol } token1 { symbol } totalValueLockedUSD } }",
+    },
+    api_key_legacy: {
+      url: endpoints.query_url,
+      flow: "Get an API key from https://thegraph.com/studio/apikeys/, replace [api-key] in the url, then POST GraphQL.",
+    },
+    schema_hint: "Use the all_entities field above to see what entities and fields are available to query.",
   };
   return result;
 }
@@ -370,7 +408,7 @@ const TOOLS = [
   {
     name: "search_subgraphs",
     description:
-      "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score with query URLs. To query data: POST GraphQL to https://gateway.thegraph.com/api/[api-key]/subgraphs/id/[subgraph-id] (get API key from https://thegraph.com/studio/apikeys/).",
+      "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required).",
     inputSchema: {
       type: "object",
       properties: {
@@ -387,7 +425,7 @@ const TOOLS = [
   {
     name: "recommend_subgraph",
     description:
-      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores and query URLs. Automatically infers domain and protocol type from the goal. Each result includes a query_url — replace [api-key] with your Graph API key to query live data.",
+      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Each result includes query_url_x402 (preferred — POST GraphQL, pay $0.01 USDC on Base per query, no API key) and a legacy query_url for Studio-key flows.",
     inputSchema: {
       type: "object",
       properties: {
@@ -400,7 +438,7 @@ const TOOLS = [
   {
     name: "get_subgraph_detail",
     description:
-      "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, all entity names with field counts, reliability score, signal data, query URL, and step-by-step query instructions.",
+      "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, all entity names with field counts, reliability score, signal data, both query URLs (x402 and legacy), the x402 pricing manifest ($0.01 USDC on Base), and step-by-step instructions for both query paths.",
     inputSchema: {
       type: "object",
       properties: {
@@ -429,7 +467,7 @@ const HANDLERS = {
 
 function createServer() {
   const server = new Server(
-    { name: "subgraph-registry", version: "0.3.0" },
+    { name: "subgraph-registry", version: "0.6.0" },
     { capabilities: { tools: {} } }
   );
 

@@ -1,25 +1,33 @@
 ---
 name: subgraph-registry-mcp
-description: Discover and filter 15,500+ The Graph subgraphs by domain, network, protocol type, or natural language goal with reliability scores and query URLs.
+description: Discover and filter 15,500+ The Graph subgraphs by domain, network, protocol type, or natural language goal. Each result includes an x402 query URL — $0.01 USDC on Base per call, no API key required.
 metadata:
   {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
 ---
 
 # Subgraph Registry
 
-Agent-friendly discovery of 15,500+ classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language goal — get reliability-scored results with query URLs.
+Agent-friendly discovery of 15,500+ classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language goal — get reliability-scored results with **x402-ready query URLs**. Agents can go from question → answer without ever touching a Studio API key.
 
 ## Tools
 
 - **search_subgraphs** — Filter by domain (defi, nfts, dao, gaming), network (ethereum, arbitrum, base), protocol type (dex, lending, bridge), entity type, or keyword
 - **recommend_subgraph** — Natural language goal like "find DEX trades on Arbitrum" returns the best matching subgraphs
-- **get_subgraph_detail** — Full classification, entities, reliability score, and query instructions for a specific subgraph
+- **get_subgraph_detail** — Full classification, entities, reliability score, x402 + legacy query URLs, and step-by-step query instructions for both paths
 - **list_registry_stats** — Registry overview with available domains, networks, and protocol types
+
+## Query paths
+
+Every result now ships with two URLs and a `pricing` manifest:
+
+- **`query_url_x402`** *(recommended)* — `https://gateway.thegraph.com/api/x402/subgraphs/id/{id}`. POST your GraphQL query; the gateway returns HTTP 402 with a payment manifest. Use an x402 client (`@graphprotocol/client-x402`, `x402-fetch`, or any generic wrapper) to sign **$0.01 USDC on Base** via EIP-3009 and retry. No signup, no Studio key, no GRT.
+- **`query_url`** *(legacy)* — `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{id}`. Get an API key from [thegraph.com/studio/apikeys](https://thegraph.com/studio/apikeys/) and replace the placeholder.
 
 ## Requirements
 
 - **Runtime:** Node.js >= 18 (runs via `npx`)
 - **Environment variables:** None required. The registry is pre-built and bundled — no API key needed for read-only use.
+- **For x402 queries:** USDC on Base in the agent's signing wallet (one query ≈ $0.01).
 
 ## Install
 
@@ -29,7 +37,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.5.0
+npx subgraph-registry-mcp@0.6.0
 ```
 
 ## Network & Data Behavior
@@ -41,7 +49,7 @@ npx subgraph-registry-mcp@0.5.0
 
 ## Verifying the registry
 
-The npm package version `0.5.0` ships with this expected hash:
+The npm package version `0.6.0` ships with this expected hash:
 
 ```
 SHA-256(registry.db) = f81b79c53cc13c3428472024187fc7fd502f7418f5da20f0a6e01807dd4011c6

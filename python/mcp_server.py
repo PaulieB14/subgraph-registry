@@ -55,6 +55,33 @@ def row_to_dict(row):
     return {k: row[k] for k in row.keys()}
 
 
+# ── x402 gateway constants ───────────────────────────────────
+# The Graph's public x402 gateway (live since 2026-05-08) lets agents pay
+# per-query in USDC on Base without any API key. POST GraphQL to
+# query_url_x402; the gateway returns HTTP 402 with a payment manifest.
+# An x402 client (e.g. @graphprotocol/client-x402, x402-fetch) signs the
+# EIP-3009 USDC transfer and retries automatically.
+X402_GATEWAY_BASE = "https://gateway.thegraph.com/api/x402"
+X402_PRICING = {
+    "amount_usd": 0.01,
+    "asset": "USDC",
+    "asset_contract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",  # USDC on Base
+    "chain": "base",
+    "network": "eip155:8453",
+    "pay_to": "0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB",  # Graph x402 gateway
+    "scheme": "exact",
+    "asset_transfer_method": "eip3009",
+}
+
+
+def build_query_endpoints(subgraph_id):
+    return {
+        "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{subgraph_id}",
+        "query_url_x402": f"{X402_GATEWAY_BASE}/subgraphs/id/{subgraph_id}",
+        "pricing": X402_PRICING,
+    }
+
+
 # ── Tool Implementations ─────────────────────────────────────
 
 def search_subgraphs(
@@ -137,7 +164,7 @@ def search_subgraphs(
             "entity_count": r["entity_count"],
             "canonical_entities": json.loads(r["canonical_entities"]),
             "powered_by_substreams": bool(r["powered_by_substreams"]),
-            "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
+            **build_query_endpoints(r["id"]),
         })
         if len(results) >= limit:
             break
@@ -145,7 +172,7 @@ def search_subgraphs(
     return json.dumps({
         "total": len(results),
         "subgraphs": results,
-        "query_instructions": "To query a subgraph: POST a GraphQL query to the query_url (replace [api-key] with your Graph API key from https://thegraph.com/studio/apikeys/). First fetch the schema with get_subgraph_detail to see available entities and fields.",
+        "query_instructions": "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Call get_subgraph_detail first for the schema.",
     }, indent=2)
 
 
@@ -234,7 +261,7 @@ def recommend_subgraph(goal: str, chain: str = "") -> str:
             "reliability_score": r["reliability_score"],
             "ipfs_hash": r["ipfs_hash"],
             "canonical_entities": json.loads(r["canonical_entities"]),
-            "query_url": f"https://gateway.thegraph.com/api/[api-key]/subgraphs/id/{r['id']}",
+            **build_query_endpoints(r["id"]),
         })
         if len(recommendations) >= 5:
             break
@@ -264,6 +291,24 @@ def get_subgraph_detail(subgraph_id: str) -> str:
     d = row_to_dict(row)
     d["canonical_entities"] = json.loads(d["canonical_entities"])
     d["categories"] = json.loads(d["categories"])
+    endpoints = build_query_endpoints(d["id"])
+    d["query_url"] = endpoints["query_url"]
+    d["query_url_x402"] = endpoints["query_url_x402"]
+    d["pricing"] = endpoints["pricing"]
+    d["query_instructions"] = {
+        "recommended": "x402",
+        "x402": {
+            "url": endpoints["query_url_x402"],
+            "payment": endpoints["pricing"],
+            "flow": "POST GraphQL to url. Gateway returns HTTP 402 with a base64 payment-required header containing the payment manifest. Sign $0.01 USDC on Base with an x402 client and retry. No API key, no signup.",
+            "client_libraries": ["@graphprotocol/client-x402", "x402-fetch"],
+            "example_query": "{ pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) { id token0 { symbol } token1 { symbol } totalValueLockedUSD } }",
+        },
+        "api_key_legacy": {
+            "url": endpoints["query_url"],
+            "flow": "Get an API key from https://thegraph.com/studio/apikeys/, replace [api-key] in the url, then POST GraphQL.",
+        },
+    }
     return json.dumps(d, indent=2)
 
 
