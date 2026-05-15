@@ -1,0 +1,88 @@
+# Daily refresh of the x402-payments-to-The-Graph Dune dashboard.
+#
+# Dashboard: https://dune.com/paulieb/x402-payments-to-the-graph-e7ab
+# Source data: USDC transfers on Base to The Graph's x402 gateway payTo
+# (0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB).
+#
+# Each query is re-executed once a day so the dashboard reflects new
+# payments without anyone touching it. Free tier on Dune doesn't
+# auto-schedule queries; this workflow plays that role.
+#
+# Required repo secret: DUNE_API_KEY (set under Settings → Secrets and
+# variables → Actions). Same key the dune CLI uses locally; create one
+# at https://dune.com → APIs and Connectors → API Keys.
+#
+# Credit budget: 14 queries × 1 run/day × ~1 credit = ~14/day, ~420/month.
+# Free tier ceiling is 2500/month so this is ~17% of quota.
+
+name: refresh-x402-dune
+
+on:
+  schedule:
+    # 13:00 UTC daily = 9am ET / 6am PT. Pre-coffee for any morning checks.
+    - cron: '0 13 * * *'
+  # Manual button under Actions tab; useful for ad-hoc refresh.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install Dune CLI
+        run: |
+          curl -sSfL https://dune.com/cli/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Sanity-check auth
+        env:
+          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+        run: dune whoami
+
+      - name: Re-execute all 14 dashboard queries (sequential)
+        env:
+          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+        run: |
+          set -e
+          # Query IDs from the live dashboard (captured 2026-05-15).
+          # If a query is recreated, update its ID here.
+          QUERY_IDS=(
+            7507068   # Lifetime totals
+            7507075   # Trends — 24h/7d/30d
+            7507076   # Daily volume + payments
+            7507077   # Cumulative USDC
+            7507078   # Top 25 payers
+            7507079   # Payer concentration
+            7507080   # New payers per day
+            7507081   # Recent 50 payments
+            7507082   # Activity — hour × day-of-week
+            7507083   # Hours since last payment
+            7507130   # Smart wallet vs EOA
+            7507131   # Payment-size distribution
+            7507132   # Inter-arrival rhythm
+            7507133   # Active-days share
+          )
+          failures=0
+          for qid in "${QUERY_IDS[@]}"; do
+            echo "::group::Q$qid"
+            # Sequential + wait avoids the rate-limiting we hit when these
+            # ran in parallel during the initial build.
+            if out=$(dune query run "$qid" -o json 2>&1); then
+              state=$(echo "$out" | jq -r '.state // "no-state"')
+              rows=$(echo "$out" | jq -r 'if (.result.rows? // null) != null then (.result.rows | length) else "?" end')
+              echo "Q$qid → $state ($rows rows)"
+            else
+              echo "Q$qid → run failed:"
+              echo "$out" | head -5
+              failures=$((failures+1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$failures" -gt 0 ]; then
+            echo "::warning::$failures query/queries failed to refresh (dashboard still serves last good cache)"
+            exit 1
+          fi
+          echo "✓ all 14 queries re-executed"
