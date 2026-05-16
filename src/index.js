@@ -166,10 +166,17 @@ function searchSubgraphs({
   protocol_type = "",
   entity = "",
   min_reliability = 0,
+  include_unserved = false,
   limit = 20,
 } = {}) {
   const conditions = [];
   const params = [];
+
+  // Default: hide deployments with 0 active indexer allocations — these
+  // return "subgraph not found: no allocations" even though the ID is valid.
+  if (!include_unserved) {
+    conditions.push("active_allocation_count > 0");
+  }
 
   if (domain) {
     conditions.push("domain = ?");
@@ -209,7 +216,7 @@ function searchSubgraphs({
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
-           powered_by_substreams
+           powered_by_substreams, active_allocation_count
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
@@ -236,6 +243,7 @@ function searchSubgraphs({
       entity_count: r.entity_count,
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
+      active_allocation_count: r.active_allocation_count || 0,
       ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
@@ -279,7 +287,7 @@ function recommendSubgraph({ goal, chain = "" }) {
     .filter(([, kws]) => kws.some((k) => goalLower.includes(k)))
     .map(([t]) => t);
 
-  const conditions = [];
+  const conditions = ["active_allocation_count > 0"];
   const params = [];
 
   if (chain) {
@@ -304,10 +312,10 @@ function recommendSubgraph({ goal, chain = "" }) {
     }
   }
 
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const where = `WHERE ${conditions.join(" AND ")}`;
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
-           reliability_score, ipfs_hash, canonical_entities
+           reliability_score, ipfs_hash, canonical_entities, active_allocation_count
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
@@ -330,6 +338,7 @@ function recommendSubgraph({ goal, chain = "" }) {
       reliability_score: r.reliability_score,
       ipfs_hash: r.ipfs_hash,
       canonical_entities: JSON.parse(r.canonical_entities),
+      active_allocation_count: r.active_allocation_count || 0,
       ...buildQueryEndpoints(r.id),
     });
     if (recommendations.length >= 5) break;

@@ -104,6 +104,22 @@ query FetchSchemas($ids: [String!]!) {
 }
 """
 
+# Active allocations per deployment. activeForIndexer is non-null only when the
+# allocation is currently open — the cleanest filter for "served by ≥1 indexer".
+ALLOCATIONS_QUERY = """
+query ActiveAllocations($first: Int!, $lastId: String!) {
+  allocations(
+    first: $first
+    orderBy: id
+    orderDirection: asc
+    where: { id_gt: $lastId, activeForIndexer_not: null }
+  ) {
+    id
+    subgraphDeployment { ipfsHash }
+  }
+}
+"""
+
 NETWORK_STATS_QUERY = """
 {
   graphNetwork(id: "1") {
@@ -196,6 +212,35 @@ async def fetch_schemas(client: httpx.AsyncClient, ipfs_hashes: list[str]) -> di
     return schemas
 
 
+async def crawl_active_allocations(client: httpx.AsyncClient) -> dict[str, int]:
+    """Count currently-active indexer allocations per deployment ipfsHash.
+
+    An allocation is "active" when activeForIndexer is non-null. Returns
+    `{ipfs_hash: count}`. Subgraph IDs absent from the result have 0 active
+    allocations — i.e., no indexer is currently serving them.
+    """
+    counts: dict[str, int] = {}
+    last_id = ""
+    page = 0
+    while True:
+        data = await query_subgraph(
+            client, ALLOCATIONS_QUERY, {"first": 1000, "lastId": last_id}
+        )
+        allocs = data.get("allocations", [])
+        if not allocs:
+            break
+        for a in allocs:
+            dep = a.get("subgraphDeployment") or {}
+            h = dep.get("ipfsHash")
+            if h:
+                counts[h] = counts.get(h, 0) + 1
+        last_id = allocs[-1]["id"]
+        page += 1
+        if len(allocs) < 1000 or page > 50:
+            break
+    return counts
+
+
 def flatten_subgraph(sg: dict, schemas: dict[str, str]) -> dict:
     """Flatten a raw subgraph response into a clean record."""
     meta = sg.get("metadata") or {}
@@ -230,6 +275,8 @@ def flatten_subgraph(sg: dict, schemas: dict[str, str]) -> dict:
         "denied_at": deployment.get("deniedAt", 0),
         # Schema (can be None)
         "schema": schemas.get(ipfs_hash) if ipfs_hash else None,
+        # Filled in by full_crawl after crawl_active_allocations runs
+        "active_allocation_count": 0,
     }
 
 
@@ -381,6 +428,12 @@ async def full_crawl(
             schemas = await fetch_schemas(client, unique_hashes)
             print(f"  Total schemas: {len(schemas)}")
 
+        # Fetch active indexer allocations per deployment
+        print("\n=== Fetching Active Allocations ===")
+        allocation_counts = await crawl_active_allocations(client)
+        served = sum(1 for h in unique_hashes if allocation_counts.get(h, 0) > 0)
+        print(f"  Deployments served by ≥1 indexer: {served} / {len(unique_hashes)}")
+
         # Fetch 30d query volumes from QoS subgraph
         print("\n=== Fetching Query Volumes (QoS) ===")
         query_volumes = await fetch_qos_volumes(client, unique_hashes)
@@ -393,11 +446,13 @@ async def full_crawl(
     # Flatten
     subgraphs = [flatten_subgraph(sg, schemas) for sg in raw_subgraphs]
 
-    # Attach query volumes
+    # Attach query volumes + active allocation counts
     for sg in subgraphs:
         ipfs = sg.get("ipfs_hash")
         if ipfs and ipfs in query_volumes:
             sg["query_volume_30d"] = query_volumes[ipfs]
+        if ipfs:
+            sg["active_allocation_count"] = allocation_counts.get(ipfs, 0)
 
     elapsed = time.time() - start
     with_schema = sum(1 for s in subgraphs if s["schema"])

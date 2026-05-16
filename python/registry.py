@@ -150,19 +150,26 @@ def write_sqlite(
             updated_at INTEGER,
             categories TEXT,
             canonical_entities TEXT,
-            all_entities TEXT
+            all_entities TEXT,
+            active_allocation_count INTEGER DEFAULT 0
         )
     """)
+    # Backfill column on pre-existing DBs (incremental sync path).
+    try:
+        c.execute("ALTER TABLE subgraphs ADD COLUMN active_allocation_count INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     c.execute("CREATE INDEX IF NOT EXISTS idx_domain ON subgraphs(domain)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_network ON subgraphs(network)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_protocol_type ON subgraphs(protocol_type)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_reliability ON subgraphs(reliability_score DESC)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_fingerprint ON subgraphs(schema_fingerprint)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_allocation ON subgraphs(active_allocation_count)")
 
     for sg in classified:
         c.execute("""
-            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
@@ -173,6 +180,7 @@ def write_sqlite(
             json.dumps(sg.self_reported_categories),
             json.dumps([ce["canonical_type"] for ce in sg.canonical_entities]),
             json.dumps(sg.all_entities),
+            sg.active_allocation_count,
         ))
 
     conn.commit()

@@ -271,6 +271,10 @@ class Classification:
     # Family (set after grouping)
     schema_family: dict | None = None
 
+    # Currently-active indexer allocations for this deployment.
+    # 0 means no one is serving it — paid queries return "no allocations".
+    active_allocation_count: int = 0
+
 
 def _score_domain(sg: dict, entities: list[SchemaEntity]) -> tuple[str, int, dict]:
     scores: dict[str, int] = {}
@@ -600,6 +604,7 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
         query_volume_30d=query_volume,
         created_at=sg.get("created_at", 0),
         updated_at=sg.get("updated_at", 0),
+        active_allocation_count=sg.get("active_allocation_count", 0),
     )
 
 
