@@ -1,43 +1,43 @@
 ---
 domain: defi
-count: 11481
-percentage: 76.5
-updated: 2026-05-13
+count: 11479
+percentage: 76.6
+updated: 2026-05-16
 ---
 
 # Defi Subgraphs
 
-**11,481** subgraphs (76.5% of registry)
+**11,479** subgraphs (76.6% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| uniswap-v4-base-3 | base | dex | 0.99 | 558,722,526 |
-| Uniswap-V3 | mainnet | dex | 0.97 | 25,426,825 |
-| Aerodrome Base Full | base | dex | 0.97 | 41,087,647 |
-| QuickSwap V3 | matic | dex | 0.97 | 38,685,219 |
-| UniV3-Base | base | dex | 0.97 | 33,994,239 |
-| Uniswap V2 | mainnet | dex | 0.96 | 45,750,906 |
-| uniswap-v4-bnb | bsc | dex | 0.96 | 51,400,352 |
-| Uni V3 Staker Base | base | staking | 0.96 | 31,307,853 |
-| Arbitrum Minimal | arbitrum-one | dex | 0.94 | 13,816,588 |
-| Uniswap V3 Polygon | matic | dex | 0.93 | 9,260,576 |
-| Uni V3 Staker Mainnet | mainnet | staking | 0.93 | 17,280,318 |
-| Indexer-Mainnet | matic | dex | 0.92 | 15,134,518 |
-| Uniswap V3 Mainnet | mainnet | dex | 0.92 | 26,188,706 |
-| uniswap-v4-ethereum | mainnet | dex | 0.92 | 14,617,977 |
-| Quickswap06 | matic | dex | 0.91 | 12,819,020 |
-| Uniswap V3 Arbitrum | arbitrum-one | dex | 0.91 | 12,788,818 |
-| conditional-tokens-gc | gnosis | name-service | 0.91 | 4,355,655 |
-| camelot-amm-v3 | arbitrum-one | dex | 0.91 | 2,186,267 |
-| uniswap-v4-base | base | dex | 0.89 | 7,164,113 |
-| Uniswap V3 Base | base | dex | 0.89 | 11,348,935 |
-| Optimism Post Regenesis | optimism | dex | 0.89 | 3,490,130 |
-| Pancakeswap V3 BSC | bsc | dex | 0.88 | 6,398,721 |
-| Uni V3 Vesting Staker Polygon | matic | staking | 0.88 | 5,100,754 |
-| protocol-v3 | mainnet | lending | 0.88 | 8,067,004 |
-| Uni V3 Staker Polygon | matic | staking | 0.88 | 5,230,489 |
+| uniswap-v4-base-3 | base | dex | 0.99 | 578,914,596 |
+| uniswap-v4-bnb | bsc | dex | 0.98 | 58,628,448 |
+| Uniswap-V3 | mainnet | dex | 0.97 | 23,398,589 |
+| Aerodrome Base Full | base | dex | 0.97 | 36,938,903 |
+| Uniswap V2 | mainnet | dex | 0.97 | 45,527,346 |
+| QuickSwap V3 | matic | dex | 0.97 | 30,094,221 |
+| UniV3-Base | base | dex | 0.96 | 34,323,758 |
+| Uni V3 Staker Base | base | staking | 0.96 | 31,667,196 |
+| Arbitrum Minimal | arbitrum-one | dex | 0.95 | 24,012,134 |
+| Uni V3 Staker Mainnet | mainnet | staking | 0.93 | 17,527,392 |
+| Indexer-Mainnet | matic | dex | 0.93 | 16,768,713 |
+| uniswap-v4-ethereum | mainnet | dex | 0.92 | 17,378,067 |
+| uniswap-v3-base | base | dex | 0.92 | 41,928,090 |
+| Uniswap V3 Polygon | matic | dex | 0.92 | 4,470,138 |
+| Uniswap V3 Mainnet | mainnet | dex | 0.92 | 21,717,362 |
+| camelot-amm-v3 | arbitrum-one | dex | 0.92 | 2,558,575 |
+| uniswap-v2-base | base | dex | 0.91 | 75,693,840 |
+| Uniswap V3 Arbitrum | arbitrum-one | dex | 0.91 | 12,554,898 |
+| conditional-tokens-gc | gnosis | name-service | 0.91 | 3,867,039 |
+| Quickswap06 | matic | dex | 0.91 | 9,332,934 |
+| uniswap-v3-arbitrum | arbitrum-one | dex | 0.89 | 26,655,321 |
+| Uniswap V3 Base | base | dex | 0.89 | 11,508,364 |
+| uniswap-v4-base | base | dex | 0.89 | 8,956,905 |
+| protocol-v3 | mainnet | lending | 0.89 | 9,562,275 |
+| Uni V3 Vesting Staker Polygon | matic | staking | 0.89 | 5,259,201 |
 
 ## Query This Domain
 

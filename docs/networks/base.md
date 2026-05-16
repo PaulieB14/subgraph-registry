@@ -2,7 +2,7 @@
 network: base
 count: 1778
 percentage: 11.9
-updated: 2026-05-13
+updated: 2026-05-16
 ---
 
 # Base Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-05-13
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v4-base-3 | defi | dex | 0.99 | 558,722,526 |
-| Aerodrome Base Full | defi | dex | 0.97 | 41,087,647 |
-| UniV3-Base | defi | dex | 0.97 | 33,994,239 |
-| Uni V3 Staker Base | defi | staking | 0.96 | 31,307,853 |
-| uniswap-v4-base | defi | dex | 0.89 | 7,164,113 |
-| Uniswap V3 Base | defi | dex | 0.89 | 11,348,935 |
-| Aave V3 Base | defi | lending | 0.87 | 14,612,709 |
-| hookrank-base | defi | dex | 0.87 | 5,862,835 |
-| base-uniswap-v2 | defi | dex | 0.87 | 5,517,960 |
-| CreatorBid | defi | name-service | 0.87 | 931,187 |
-| Superfluid V1 Base | defi | general | 0.86 | 3,704,998 |
-| Uniswap V3 Base | defi | dex | 0.85 | 889,069 |
-| exchange v3 base | defi | dex | 0.82 | 2,314,779 |
-| Compoundor Base | defi | lending | 0.81 | 3,585,933 |
-| Thirdfy Base | defi | dex | 0.81 | 4,396,651 |
-| uniswap-v4-base-2 | defi | dex | 0.80 | 359,529 |
-| odos-loyalty-base | defi | general | 0.79 | 696,297 |
-| Uniswap V3 Base | defi | dex | 0.78 | 1,434,832 |
-| Request Payments Base | defi | dex | 0.78 | 1,955,389 |
-| Connext Base | defi | bridge | 0.78 | 132,186 |
-| ideacoins | defi | dex | 0.78 | 465,518 |
-| protocol-metrics-base | analytics | nft-marketplace | 0.78 | 620,878 |
-| maverick-base | defi | dex | 0.76 | 381,889 |
-| data-nexus-uniswap-v4-base | defi | dex | 0.75 | 13,370 |
-| base-jiffyscan | defi | staking | 0.75 | 117,207 |
+| uniswap-v4-base-3 | defi | dex | 0.99 | 578,914,596 |
+| Aerodrome Base Full | defi | dex | 0.97 | 36,938,903 |
+| UniV3-Base | defi | dex | 0.96 | 34,323,758 |
+| Uni V3 Staker Base | defi | staking | 0.96 | 31,667,196 |
+| uniswap-v3-base | defi | dex | 0.92 | 41,928,090 |
+| uniswap-v2-base | defi | dex | 0.91 | 75,693,840 |
+| Uniswap V3 Base | defi | dex | 0.89 | 11,508,364 |
+| uniswap-v4-base | defi | dex | 0.89 | 8,956,905 |
+| Aave V3 Base | defi | lending | 0.88 | 13,733,114 |
+| CreatorBid | defi | name-service | 0.87 | 877,660 |
+| Superfluid V1 Base | defi | general | 0.86 | 3,227,751 |
+| hookrank-base | defi | dex | 0.85 | 3,743,342 |
+| base-uniswap-v2 | defi | dex | 0.85 | 3,457,866 |
+| Thirdfy Base | defi | dex | 0.83 | 8,370,556 |
+| exchange v3 base | defi | dex | 0.82 | 2,246,052 |
+| Compoundor Base | defi | lending | 0.82 | 3,598,045 |
+| Uniswap V3 Base | defi | dex | 0.81 | 470,735 |
+| Request Payments Base | defi | dex | 0.80 | 2,810,092 |
+| uniswap-v4-base-2 | defi | dex | 0.79 | 190,090 |
+| odos-loyalty-base | defi | general | 0.79 | 733,202 |
+| protocol-metrics-base | analytics | nft-marketplace | 0.79 | 1,023,485 |
+| Uniswap V3 Base | defi | dex | 0.78 | 1,141,232 |
+| ideacoins | defi | dex | 0.78 | 340,262 |
+| quickswap-v4-base | defi | dex | 0.76 | 2,163,193 |
+| maverick-base | defi | dex | 0.76 | 403,213 |
 
 ## Query This Network
 

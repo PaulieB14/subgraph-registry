@@ -2,7 +2,7 @@
 network: base-sepolia
 count: 276
 percentage: 1.8
-updated: 2026-05-13
+updated: 2026-05-16
 ---
 
 # Base Sepolia Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-05-13
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Thirdtrade Testnet | defi | dex | 0.75 | 2,362,112 |
-| base-sep-jiffy-scan | defi | staking | 0.67 | 80,260 |
-| unlock-protocol-base-sepolia | defi | general | 0.62 | 234,426 |
-| base-sepolia-v2-thirdfy | defi | yield-aggregator | 0.61 | 543,702 |
-| nftfn-bitcoin | defi | perpetuals | 0.52 | 147 |
-| base-lets-grow | defi | general | 0.50 | 2,597 |
-| Spheron Protocol | infrastructure | bridge | 0.44 | 11 |
-| nfl-uat | defi | general | 0.43 | 137,567 |
-| fdf-ftp | defi | general | 0.42 | 137,669 |
+| Thirdtrade Testnet | defi | dex | 0.76 | 2,343,468 |
+| base-sep-jiffy-scan | defi | staking | 0.67 | 63,736 |
+| unlock-protocol-base-sepolia | defi | general | 0.63 | 324,467 |
+| base-sepolia-v2-thirdfy | defi | yield-aggregator | 0.61 | 519,218 |
+| nftfn-bitcoin | defi | perpetuals | 0.52 | 149 |
+| base-lets-grow | defi | general | 0.50 | 2,433 |
+| nfl-uat | defi | general | 0.44 | 141,385 |
+| fdf-ftp | defi | general | 0.43 | 140,024 |
+| Spheron Protocol | infrastructure | bridge | 0.42 | 3 |
 | basepump-testnet | defi | dex | 0.42 | — |
 | sepolia-base | defi | bridge | 0.41 | 2 |
-| predict | defi | general | 0.41 | 1,367 |
-| fdf-alpha | defi | general | 0.40 | 137,788 |
-| nfl-ftp | defi | general | 0.40 | 137,342 |
-| raffl3-testnet | defi | general | 0.39 | 100,085 |
-| FootyFI-Testnet | gaming | general | 0.39 | 4 |
-| ProductMint-Base-Sepolia | defi | general | 0.38 | 140 |
-| DeFi-Choice-Testnet | defi | general | 0.36 | 427 |
+| fdf-alpha | defi | general | 0.41 | 143,461 |
+| nfl-ftp | defi | general | 0.41 | 140,041 |
+| predict | defi | general | 0.41 | 927 |
+| raffl3-testnet | defi | general | 0.40 | 108,330 |
+| ProductMint-Base-Sepolia | defi | general | 0.39 | 224 |
+| CreatorBid Sepolia | defi | dex | 0.38 | 9 |
+| FootyFI-Testnet | gaming | general | 0.38 | 2 |
+| DeFi-Choice-Testnet | defi | general | 0.36 | 507 |
 | chanse-test | defi | general | 0.35 | — |
-| CreatorBid Sepolia | defi | dex | 0.35 | — |
-| protocol-stage | defi | staking | 0.32 | 113,274 |
-| lemonjet | gaming | general | 0.32 | 178 |
-| protocol-dev | defi | staking | 0.32 | 1,376,823 |
-| stickrnet | defi | dex | 0.31 | 2 |
-| agent0-base-testnet | infrastructure | name-service | 0.30 | 91,149 |
+| District Aquinas Staging | dao | governance | 0.34 | 103,302 |
+| lemonjet | gaming | general | 0.33 | 199 |
+| agent0-base-testnet | infrastructure | name-service | 0.30 | 104,428 |
+| snapshot-base-sepolia | dao | governance | 0.29 | 5 |
+| stickrnet | defi | dex | 0.29 | — |
 
 ## Query This Network
 
