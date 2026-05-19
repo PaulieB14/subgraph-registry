@@ -42,6 +42,19 @@ jobs:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
         run: dune whoami
 
+      - name: Refresh known-agent directory (query 7507131)
+        env:
+          DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+        run: |
+          set -e
+          # Rebuild the wallet → agent-identity table from public registries
+          # (graphadvocate.com/bazaar/active + 8004scan.io). The script writes
+          # SQL to /tmp/known_agents_directory.sql; we then PATCH it into the
+          # 'Identified agent payers' query so the dashboard table fills in
+          # named matches automatically as new agents register.
+          python3 scripts/refresh_known_agents.py
+          dune query update 7507131 --sql "$(cat /tmp/known_agents_directory.sql)"
+
       - name: Re-execute all 14 dashboard queries (sequential)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
