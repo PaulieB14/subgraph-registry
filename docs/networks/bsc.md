@@ -2,7 +2,7 @@
 network: bsc
 count: 1624
 percentage: 10.8
-updated: 2026-05-16
+updated: 2026-05-19
 ---
 
 # BSC Subgraphs

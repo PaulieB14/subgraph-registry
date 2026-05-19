@@ -2,7 +2,7 @@
 network: matic
 count: 1283
 percentage: 8.6
-updated: 2026-05-16
+updated: 2026-05-19
 ---
 
 # Polygon Subgraphs

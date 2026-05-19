@@ -2,7 +2,7 @@
 network: avalanche
 count: 443
 percentage: 3.0
-updated: 2026-05-16
+updated: 2026-05-19
 ---
 
 # Avalanche Subgraphs
@@ -33,7 +33,7 @@ updated: 2026-05-16
 | GMX Avalanche | defi | perpetuals | 0.68 | 58,132 |
 | benqi-01 | defi | lending | 0.68 | 92,186 |
 | Curve Finance Avalanche | defi | dex | 0.68 | 53,520 |
-| avant-avalanche | defi | general | 0.67 | 134,213 |
+| avant-avalanche | defi | general | 0.67 | 128,691 |
 | Avalanche Blocks | infrastructure | general | 0.66 | 75,499 |
 | benqi-ecosystem-iso-market | defi | lending | 0.66 | 162,611 |
 | memetropolis-avax-mainnet | defi | dex | 0.66 | 388,465 |
