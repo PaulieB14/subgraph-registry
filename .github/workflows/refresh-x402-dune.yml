@@ -61,7 +61,7 @@ jobs:
             7507082   # Activity — hour × day-of-week
             7507083   # Hours since last payment
             7507130   # Smart wallet vs EOA
-            7507131   # Payment-size distribution
+            7507131   # Payer agent-vs-human classification (replaced payment-size 2026-05-19)
             7507132   # Inter-arrival rhythm
             7507133   # Active-days share
           )
