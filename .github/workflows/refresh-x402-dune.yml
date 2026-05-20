@@ -32,6 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Checkout repo
+        # Needed so the known-agent refresh step can run scripts/refresh_known_agents.py.
+        uses: actions/checkout@v4
+
       - name: Install Dune CLI
         run: |
           curl -sSfL https://dune.com/cli/install.sh | sh
