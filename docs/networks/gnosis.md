@@ -1,13 +1,13 @@
 ---
 network: gnosis
-count: 281
+count: 282
 percentage: 1.9
-updated: 2026-05-19
+updated: 2026-05-22
 ---
 
 # Gnosis Subgraphs
 
-**281** subgraphs (1.9% of registry)
+**282** subgraphs (1.9% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -26,7 +26,6 @@ updated: 2026-05-19
 | RMM v3 wrapper - gnosis | defi | general | 0.70 | 47,141 |
 | protocol-v3-gnosis | defi | lending | 0.70 | 234,955 |
 | Fileverse DDocs Registry | infrastructure | general | 0.70 | 415,382 |
-| poh-origin-gnosis | defi | options | 0.70 | 822,190 |
 | NewGraph | infrastructure | general | 0.69 | 830,388 |
 | HOPR Channels | infrastructure | bridge | 0.69 | 69,542 |
 | gardens-gnosis | dao | governance | 0.68 | 6,591 |
@@ -38,6 +37,7 @@ updated: 2026-05-19
 | HOPR Nodes Dufour | infrastructure | bridge | 0.67 | 71,448 |
 | kleros-display-gnosis | defi | general | 0.66 | 258,427 |
 | olas-predict | defi | general | 0.66 | 460,698 |
+| adaptive-stream-gnosis | defi | general | 0.66 | 208,155 |
 
 ## Query This Network
 

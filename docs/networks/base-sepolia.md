@@ -2,7 +2,7 @@
 network: base-sepolia
 count: 276
 percentage: 1.8
-updated: 2026-05-19
+updated: 2026-05-22
 ---
 
 # Base Sepolia Subgraphs
@@ -34,10 +34,10 @@ updated: 2026-05-19
 | DeFi-Choice-Testnet | defi | general | 0.36 | 507 |
 | chanse-test | defi | general | 0.35 | — |
 | District Aquinas Staging | dao | governance | 0.34 | 103,302 |
-| lemonjet | gaming | general | 0.33 | 199 |
 | agent0-base-testnet | infrastructure | name-service | 0.30 | 104,428 |
 | snapshot-base-sepolia | dao | governance | 0.29 | 5 |
 | stickrnet | defi | dex | 0.29 | — |
+| soul-referral-program-base-sepolia-testn | defi | general | 0.26 | — |
 
 ## Query This Network
 
