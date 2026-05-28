@@ -2,7 +2,7 @@
 domain: gaming
 count: 242
 percentage: 1.6
-updated: 2026-05-25
+updated: 2026-05-28
 ---
 
 # Gaming Subgraphs

@@ -2,7 +2,7 @@
 network: optimism
 count: 571
 percentage: 3.8
-updated: 2026-05-25
+updated: 2026-05-28
 ---
 
 # Optimism Subgraphs
@@ -31,13 +31,13 @@ updated: 2026-05-25
 | giveconomy-op-main-fallback | defi | dex | 0.70 | 1,521,003 |
 | Optimism-jiffy-scan | defi | staking | 0.70 | 44,490 |
 | Velodrome Optimism Full | defi | dex | 0.70 | 38,371 |
-| Superfluid V1 Optimism | defi | general | 0.70 | 265,794 |
 | Super Accounts | social | general | 0.69 | 73,396 |
 | Optimism Blocks | infrastructure | general | 0.69 | 86,340 |
 | Thales Markets | defi | options | 0.69 | 453,498 |
 | steer-protocol-optimism | defi | yield-aggregator | 0.67 | 202,306 |
 | v3-optimism | defi | dex | 0.67 | 136,891 |
 | Aave V3 Optimism | defi | lending | 0.67 | 21,381 |
+| Optimism Optimistic Oracle V3 | infrastructure | options | 0.66 | 741,457 |
 
 ## Query This Network
 

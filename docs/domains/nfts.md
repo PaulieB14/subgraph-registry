@@ -2,7 +2,7 @@
 domain: nfts
 count: 862
 percentage: 5.7
-updated: 2026-05-25
+updated: 2026-05-28
 ---
 
 # NFTs Subgraphs
@@ -30,7 +30,6 @@ updated: 2026-05-25
 | phunks | mainnet | nft-marketplace | 0.64 | 286,959 |
 | nftmarket-bsc | bsc | nft-marketplace | 0.63 | 64,906 |
 | Art Blocks Base | base | nft-marketplace | 0.62 | 210,542 |
-| bid-smart-production | base | nft-marketplace | 0.61 | 155,545 |
 | cryptoart auctionhouse | base | nft-marketplace | 0.60 | 199,099 |
 | PUNKS V1 | mainnet | nft-marketplace | 0.60 | 196,282 |
 | Art Blocks Arbitrum | arbitrum-one | nft-marketplace | 0.59 | 210,369 |
@@ -38,6 +37,7 @@ updated: 2026-05-25
 | BT404 Subgraph | mainnet | nft-marketplace | 0.58 | 1,752 |
 | marketplaceV3_all | fantom | nft-marketplace | 0.57 | — |
 | ump | base | nft-marketplace | 0.57 | 34,929 |
+| Project Galaxy NFT Polygon | matic | general | 0.57 | 2 |
 
 ## Query This Domain
 

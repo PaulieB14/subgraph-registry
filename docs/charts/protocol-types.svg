@@ -3,35 +3,35 @@
 <text x="300.0" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Subgraphs by Protocol Type</text>
 <text x="102" y="55.0" text-anchor="end" fill="#7b8394" font-size="11">General</text>
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
-<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">5,621</text>
+<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">5,623</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Dex</text>
-<rect x="110" y="68" width="352.6" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="468.6312044120263" y="83.0" fill="#e8eaed" font-size="11">4,309</text>
+<rect x="110" y="68" width="352.9" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="468.9148141561444" y="83.0" fill="#e8eaed" font-size="11">4,314</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Lending</text>
-<rect x="110" y="96" width="118.4" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
-<text x="234.41665184130937" y="111.0" fill="#e8eaed" font-size="11">1,447</text>
+<rect x="110" y="96" width="118.5" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="234.5381468966744" y="111.0" fill="#e8eaed" font-size="11">1,449</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Staking</text>
-<rect x="110" y="124" width="72.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="188.42483543853407" y="139.0" fill="#e8eaed" font-size="11">885</text>
+<rect x="110" y="124" width="72.7" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="188.72630268539925" y="139.0" fill="#e8eaed" font-size="11">889</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Bridge</text>
-<rect x="110" y="152" width="66.1" height="22" rx="4" fill="#10b981" opacity="0.85"/>
-<text x="182.12346557552036" y="167.0" fill="#e8eaed" font-size="11">808</text>
+<rect x="110" y="152" width="66.3" height="22" rx="4" fill="#10b981" opacity="0.85"/>
+<text x="182.26356037702294" y="167.0" fill="#e8eaed" font-size="11">810</text>
 <text x="102" y="195.0" text-anchor="end" fill="#7b8394" font-size="11">Nft Marketpla...</text>
 <rect x="110" y="180" width="36.2" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
-<text x="152.17149973314355" y="195.0" fill="#e8eaed" font-size="11">442</text>
+<text x="152.15863418104215" y="195.0" fill="#e8eaed" font-size="11">442</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Governance</text>
 <rect x="110" y="208" width="34.3" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="150.28927237146416" y="223.0" fill="#e8eaed" font-size="11">419</text>
+<text x="150.27707629379336" y="223.0" fill="#e8eaed" font-size="11">419</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Yield Aggrega...</text>
-<rect x="110" y="236" width="34.0" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
-<text x="149.96192848247642" y="251.0" fill="#e8eaed" font-size="11">415</text>
+<rect x="110" y="236" width="33.9" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
+<text x="149.94984883514138" y="251.0" fill="#e8eaed" font-size="11">415</text>
 <text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Perpetuals</text>
-<rect x="110" y="264" width="21.9" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
-<text x="137.93204056217755" y="279.0" fill="#e8eaed" font-size="11">268</text>
+<rect x="110" y="264" width="22.1" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
+<text x="138.08785345900765" y="279.0" fill="#e8eaed" font-size="11">270</text>
 <text x="102" y="307.0" text-anchor="end" fill="#7b8394" font-size="11">Name Service</text>
 <rect x="110" y="292" width="18.7" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
-<text x="134.6586016723003" y="307.0" fill="#e8eaed" font-size="11">228</text>
+<text x="134.65196514316202" y="307.0" fill="#e8eaed" font-size="11">228</text>
 <text x="102" y="335.0" text-anchor="end" fill="#7b8394" font-size="11">Options</text>
 <rect x="110" y="320" width="15.3" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
-<text x="131.30332681017612" y="335.0" fill="#e8eaed" font-size="11">187</text>
+<text x="131.29788369197937" y="335.0" fill="#e8eaed" font-size="11">187</text>
 </svg>

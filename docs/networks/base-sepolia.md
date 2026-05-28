@@ -1,13 +1,13 @@
 ---
 network: base-sepolia
-count: 277
+count: 278
 percentage: 1.8
-updated: 2026-05-25
+updated: 2026-05-28
 ---
 
 # Base Sepolia Subgraphs
 
-**277** subgraphs (1.8% of registry)
+**278** subgraphs (1.8% of registry)
 
 ## Top Subgraphs by Reliability
 
