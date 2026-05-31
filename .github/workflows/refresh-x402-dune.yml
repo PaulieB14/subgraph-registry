@@ -12,6 +12,12 @@
 # variables → Actions). Same key the dune CLI uses locally; create one
 # at https://dune.com → APIs and Connectors → API Keys.
 #
+# Optional repo secret: GATEWAY_API_KEY — The Graph gateway API key used
+# by refresh_known_agents.py to query the agent0-base-mainnet subgraph
+# for operator-relationship matches (catches agents whose payer wallet
+# isn't the registered owner). If missing, only 8004scan + operator seed
+# + bazaar are used, which still covers owner-paid agents.
+#
 # Credit budget: 14 queries × 1 run/day × ~1 credit = ~14/day, ~420/month.
 # Free tier ceiling is 2500/month so this is ~17% of quota.
 
@@ -49,13 +55,15 @@ jobs:
       - name: Refresh known-agent directory (query 7507131)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+          # Optional — enables agent0 subgraph fallback so operator-paid
+          # agents (where payer wallet ≠ registered owner) are also matched.
+          GRAPH_API_KEY: ${{ secrets.GATEWAY_API_KEY }}
         run: |
           set -e
-          # Rebuild the wallet → agent-identity table from public registries
-          # (graphadvocate.com/bazaar/active + 8004scan.io). The script writes
-          # SQL to /tmp/known_agents_directory.sql; we then PATCH it into the
-          # 'Identified agent payers' query so the dashboard table fills in
-          # named matches automatically as new agents register.
+          # Discover every wallet that paid the gateway on Base, look each
+          # up in 8004scan + agent0 subgraph, and rebuild the directory.
+          # SQL lands at /tmp/known_agents_directory.sql; we PATCH it into
+          # query 7507131 so the dashboard table fills in named matches.
           python3 scripts/refresh_known_agents.py
           dune query update 7507131 --sql "$(cat /tmp/known_agents_directory.sql)"
 
