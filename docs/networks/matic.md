@@ -1,13 +1,13 @@
 ---
 network: matic
-count: 1287
-percentage: 8.6
-updated: 2026-05-28
+count: 1288
+percentage: 8.5
+updated: 2026-05-31
 ---
 
 # Polygon Subgraphs
 
-**1,287** subgraphs (8.6% of registry)
+**1,288** subgraphs (8.5% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -34,10 +34,10 @@ updated: 2026-05-28
 | loan-prod-marketplace | defi | nft-marketplace | 0.78 | 492,518 |
 | DODOEX V2 POLYGON Upgraded | defi | dex | 0.78 | 498,950 |
 | Polygon Optimistic Oracle V2 | infrastructure | options | 0.77 | 673,944 |
-| Superfluid V1 Polygon | defi | general | 0.76 | 829,582 |
 | Aave V2 Matic | defi | lending | 0.76 | 169,048 |
 | holiverse-analytics | defi | dex | 0.75 | 2,620,842 |
 | Aave V3 Polygon | defi | lending | 0.75 | 400,663 |
+| unlock-protocol-polygon | defi | general | 0.74 | 395,245 |
 
 ## Query This Network
 

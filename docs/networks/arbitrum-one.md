@@ -1,13 +1,13 @@
 ---
 network: arbitrum-one
-count: 1414
+count: 1418
 percentage: 9.4
-updated: 2026-05-28
+updated: 2026-05-31
 ---
 
 # Arbitrum Subgraphs
 
-**1,414** subgraphs (9.4% of registry)
+**1,418** subgraphs (9.4% of registry)
 
 ## Top Subgraphs by Reliability
 

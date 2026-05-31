@@ -2,7 +2,7 @@
 network: gnosis
 count: 282
 percentage: 1.9
-updated: 2026-05-28
+updated: 2026-05-31
 ---
 
 # Gnosis Subgraphs
@@ -29,7 +29,6 @@ updated: 2026-05-28
 | NewGraph | infrastructure | general | 0.69 | 830,388 |
 | HOPR Channels | infrastructure | bridge | 0.69 | 69,542 |
 | gardens-gnosis | dao | governance | 0.68 | 6,591 |
-| Superfluid V1 Gnosis | defi | general | 0.68 | 249,258 |
 | realityeth-gnosis | dao | general | 0.67 | 133,443 |
 | RMM v2 Gnosis | defi | lending | 0.67 | 25,599 |
 | agreement-gnosis | dao | governance | 0.67 | 6,771 |
@@ -38,6 +37,7 @@ updated: 2026-05-28
 | kleros-display-gnosis | defi | general | 0.66 | 258,427 |
 | olas-predict | defi | general | 0.66 | 460,698 |
 | adaptive-stream-gnosis | defi | general | 0.66 | 208,155 |
+| Bridge Realtokens gnosis | defi | bridge | 0.66 | 87,954 |
 
 ## Query This Network
 

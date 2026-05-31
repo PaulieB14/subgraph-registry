@@ -1,13 +1,13 @@
 ---
 network: base
-count: 1783
+count: 1786
 percentage: 11.9
-updated: 2026-05-28
+updated: 2026-05-31
 ---
 
 # Base Subgraphs
 
-**1,783** subgraphs (11.9% of registry)
+**1,786** subgraphs (11.9% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -23,7 +23,6 @@ updated: 2026-05-28
 | uniswap-v4-base | defi | dex | 0.89 | 8,956,905 |
 | Aave V3 Base | defi | lending | 0.88 | 13,733,114 |
 | CreatorBid | defi | name-service | 0.87 | 877,660 |
-| Superfluid V1 Base | defi | general | 0.86 | 3,227,751 |
 | hookrank-base | defi | dex | 0.85 | 3,743,342 |
 | base-uniswap-v2 | defi | dex | 0.85 | 3,457,866 |
 | Thirdfy Base | defi | dex | 0.83 | 8,370,556 |
@@ -38,6 +37,7 @@ updated: 2026-05-28
 | ideacoins | defi | dex | 0.78 | 340,262 |
 | quickswap-v4-base | defi | dex | 0.76 | 2,163,193 |
 | maverick-base | defi | dex | 0.76 | 403,213 |
+| Compound V3 Base | defi | lending | 0.75 | 5,031,634 |
 
 ## Query This Network
 
