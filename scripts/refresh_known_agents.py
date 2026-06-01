@@ -52,14 +52,22 @@ def _scan8004(agent_id: str | None) -> str:
     return f"https://8004scan.io/agent/{agent_id}" if agent_id else "https://8004scan.io"
 
 
+# Graph Advocate's ERC-8004 identity on Base — agent #41034 on contract
+# 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432 (chain 8453).
+# The same agent is also registered on Arbitrum as #734.
+GA_8004_BASE_AGENT_ID = "8453:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:41034"
+
 OPERATOR_SEED = [
     # (wallet, name, source, link)
-    ("0xe121e3a8611e1f44f7cc52892ee1117fddc8f734", "Paul (graphadvocate.eth operator)", "operator",
-     _basescan("0xe121e3a8611e1f44f7cc52892ee1117fddc8f734")),
-    ("0x575267eed09c338fae5716a486a7b58a5749a292", "Graph Advocate outbound wallet", "operator",
-     _basescan("0x575267eed09c338fae5716a486a7b58a5749a292")),
-    ("0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86", "Graph Advocate x402 inbound", "operator",
-     _basescan("0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86")),
+    # graphadvocate.eth — identity wallet, holds GRT on Arbitrum, signs A2A
+    ("0x575267eed09c338fae5716a486a7b58a5749a292", "graphadvocate.eth", "operator",
+     _scan8004(GA_8004_BASE_AGENT_ID)),
+    # Graph Advocate x402 outbound — pays small bazaar endpoints
+    ("0xe121e3a8611e1f44f7cc52892ee1117fddc8f734", "graphadvocate.eth (outbound)", "operator",
+     _scan8004(GA_8004_BASE_AGENT_ID)),
+    # Graph Advocate x402 inbound — receives /route payments
+    ("0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86", "graphadvocate.eth (inbound)", "operator",
+     _scan8004(GA_8004_BASE_AGENT_ID)),
 ]
 
 

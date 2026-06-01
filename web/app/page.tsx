@@ -86,15 +86,27 @@ export default async function Page() {
   const totalUSDC = num(lt.total_usdc ?? lt.usdc ?? lt.volume_usdc ?? 0);
   const totalPayments = num(lt.payments ?? lt.total_payments ?? lt.tx_count ?? 0);
 
-  // Trend deltas — try to read 7d-vs-prev-7d from query 7507075 if present
+  // Trends — query exposes raw 24h/7d/30d counts. Derive WoW delta as
+  // 7d-vs-(30d-7d)/3 (prior-3-week average) for stability on early data.
   const tr = (trends[0] ?? {}) as Record<string, unknown>;
-  const weekDeltaUSDC = num(tr.usdc_7d_delta_pct ?? tr.delta_usdc_7d ?? 0);
-  const weekDeltaPayments = num(tr.payments_7d_delta_pct ?? tr.delta_payments_7d ?? 0);
   const paymentsToday = num(tr.payments_24h ?? tr.txs_24h ?? 0);
+  const usdc24h = num(tr.usdc_24h);
+  const payments7d = num(tr.payments_7d);
+  const usdc7d = num(tr.usdc_7d);
+  const payments30d = num(tr.payments_30d);
+  const usdc30d = num(tr.usdc_30d);
+  const priorWeeklyAvg_payments = Math.max(0, (payments30d - payments7d) / 3);
+  const priorWeeklyAvg_usdc = Math.max(0, (usdc30d - usdc7d) / 3);
+  const weekDeltaPayments = priorWeeklyAvg_payments > 0
+    ? ((payments7d - priorWeeklyAvg_payments) / priorWeeklyAvg_payments) * 100
+    : 0;
+  const weekDeltaUSDC = priorWeeklyAvg_usdc > 0
+    ? ((usdc7d - priorWeeklyAvg_usdc) / priorWeeklyAvg_usdc) * 100
+    : 0;
 
-  // Newest payment timestamp from the activity feed
+  // Newest payment timestamp from the activity feed (column is `time` in Dune)
   const lastPaymentAt = (recentPayments[0] as Record<string, unknown> | undefined)
-    ? s(recentPayments[0] as Record<string, unknown>, "block_time", "timestamp", "ts")
+    ? s(recentPayments[0] as Record<string, unknown>, "time", "block_time", "timestamp", "ts")
     : "";
 
   // Count this-week new agents from the directory (first-seen ≥ 7d ago)
@@ -153,26 +165,26 @@ export default async function Page() {
       return { week: wk, new_agents: newA, returning_agents: Math.max(0, total - newA) };
     });
 
-  // Heatmap
+  // Heatmap (Dune columns: hour_utc, dow, payments)
   const heatPoints: HeatPoint[] = (heatmap as Record<string, unknown>[]).map((r) => ({
-    hour: n(r, "hour", "hour_of_day"),
-    day_of_week: n(r, "day_of_week", "dow"),
+    hour: n(r, "hour_utc", "hour", "hour_of_day"),
+    day_of_week: n(r, "dow", "day_of_week"),
     count: n(r, "payments", "count", "n"),
   }));
 
-  // Concentration (try to normalize: top 1% / 10% / 50% / rest)
+  // Concentration (Dune columns: bucket, payer_count, total_payments_in_bucket)
   const concRows: ConcentrationRow[] = (concentration as Record<string, unknown>[]).map((r) => ({
     bucket: s(r, "bucket", "cohort", "label"),
-    payers: n(r, "payers", "n_payers"),
-    payments: n(r, "payments", "total_payments"),
+    payers: n(r, "payer_count", "payers", "n_payers"),
+    payments: n(r, "total_payments_in_bucket", "payments", "total_payments"),
     share: n(r, "share_pct", "pct", "share"),
   }));
 
-  // Recent payments — normalize columns
+  // Recent payments (Dune columns: time, payer, usdc_amount, tx_hash)
   const paymentRows: PaymentRow[] = (recentPayments as Record<string, unknown>[]).map((r) => ({
     wallet: s(r, "payer", "from", "wallet").toLowerCase(),
-    amount_usdc: n(r, "amount_usdc", "usdc", "amount"),
-    block_time: s(r, "block_time", "timestamp", "ts"),
+    amount_usdc: n(r, "usdc_amount", "amount_usdc", "usdc", "amount"),
+    block_time: s(r, "time", "block_time", "timestamp", "ts"),
     tx_hash: s(r, "tx_hash", "hash"),
   }));
 
