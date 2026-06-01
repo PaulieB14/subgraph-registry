@@ -70,10 +70,10 @@ jobs:
       - name: Re-execute all 14 dashboard queries (sequential)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+        # Don't use `set -e` — we want to tally failures, not crash on the
+        # first one. The Dune CLI sometimes returns plain-text errors that
+        # jq can't parse; we handle that explicitly below.
         run: |
-          set -e
-          # Query IDs from the live dashboard (captured 2026-05-15).
-          # If a query is recreated, update its ID here.
           QUERY_IDS=(
             7507068   # Lifetime totals
             7507075   # Trends — 24h/7d/30d
@@ -96,18 +96,31 @@ jobs:
             # Sequential + wait avoids the rate-limiting we hit when these
             # ran in parallel during the initial build.
             if out=$(dune query run "$qid" -o json 2>&1); then
-              state=$(echo "$out" | jq -r '.state // "no-state"')
-              rows=$(echo "$out" | jq -r 'if (.result.rows? // null) != null then (.result.rows | length) else "?" end')
-              echo "Q$qid → $state ($rows rows)"
+              # Tolerate non-JSON output: route jq's parse error to /dev/null
+              # and fall back to literal strings so the script continues.
+              state=$(echo "$out" | jq -r '.state // "no-state"' 2>/dev/null || echo "no-state")
+              rows=$(echo "$out" | jq -r 'if (.result.rows? // null) != null then (.result.rows | length) else "?" end' 2>/dev/null || echo "?")
+              if [ "$state" = "no-state" ]; then
+                # CLI returned non-JSON — treat as a soft failure but keep going
+                echo "Q$qid → non-JSON response (first 3 lines):"
+                echo "$out" | head -3
+                failures=$((failures+1))
+              else
+                echo "Q$qid → $state ($rows rows)"
+              fi
             else
-              echo "Q$qid → run failed:"
+              echo "Q$qid → CLI exit non-zero:"
               echo "$out" | head -5
               failures=$((failures+1))
             fi
             echo "::endgroup::"
           done
+          total=${#QUERY_IDS[@]}
+          successes=$((total - failures))
+          echo "✓ $successes / $total queries re-executed"
           if [ "$failures" -gt 0 ]; then
-            echo "::warning::$failures query/queries failed to refresh (dashboard still serves last good cache)"
-            exit 1
+            # Soft warning — keep the run green. Dashboard reads cached results,
+            # so a transient Dune outage doesn't break the UI; we just lose a
+            # daily refresh and pick it up tomorrow.
+            echo "::warning::$failures query/queries failed to refresh — dashboard still serves last good cache"
           fi
-          echo "✓ all 14 queries re-executed"
