@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Panel } from "./Panel";
+import { ClientOnly } from "./ClientOnly";
 
 export interface NRPoint {
   week: string;
@@ -19,7 +20,8 @@ export function NewVsReturning({ data }: { data: NRPoint[] }) {
   }
   return (
     <Panel title="New vs returning agents" caption="weekly">
-      <div className="h-56">
+      <div style={{ width: "100%", height: 224 }}>
+        <ClientOnly fallback={<div className="h-full w-full animate-pulse rounded-md bg-panelHover/30" />}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 6, right: 4, left: -10, bottom: 0 }}>
             <CartesianGrid stroke="#2A2451" strokeDasharray="2 4" vertical={false} />
@@ -48,6 +50,7 @@ export function NewVsReturning({ data }: { data: NRPoint[] }) {
             <Bar dataKey="returning_agents" name="returning" stackId="a" fill="#6F4CFF" />
           </BarChart>
         </ResponsiveContainer>
+        </ClientOnly>
       </div>
     </Panel>
   );

@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   ComposedChart,
+  Bar,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -13,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { Panel } from "./Panel";
+import { ClientOnly } from "./ClientOnly";
 
 export interface DailyPoint {
   day: string;
@@ -34,7 +34,8 @@ export function DailyChart({ data }: { data: DailyPoint[] }) {
   const series = ma7(data);
   return (
     <Panel title="Daily payments" caption="bars + 7-day MA">
-      <div className="h-56">
+      <div style={{ width: "100%", height: 224 }}>
+        <ClientOnly fallback={<div className="h-full w-full animate-pulse rounded-md bg-panelHover/30" />}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={series} margin={{ top: 6, right: 4, left: -10, bottom: 0 }}>
             <CartesianGrid stroke="#2A2451" strokeDasharray="2 4" vertical={false} />
@@ -64,6 +65,7 @@ export function DailyChart({ data }: { data: DailyPoint[] }) {
             <Line type="monotone" dataKey="ma7" stroke="#FFB547" strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
+        </ClientOnly>
       </div>
     </Panel>
   );

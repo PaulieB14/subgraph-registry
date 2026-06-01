@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Panel } from "./Panel";
+import { ClientOnly } from "./ClientOnly";
 
 export interface CumulativePoint {
   day: string;
@@ -12,7 +13,8 @@ export interface CumulativePoint {
 export function CumulativeChart({ data }: { data: CumulativePoint[] }) {
   return (
     <Panel title="Cumulative USDC paid" caption={`${data.length} days`}>
-      <div className="h-56">
+      <div style={{ width: "100%", height: 224 }}>
+        <ClientOnly fallback={<div className="h-full w-full animate-pulse rounded-md bg-panelHover/30" />}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 6, right: 4, left: -10, bottom: 0 }}>
             <defs>
@@ -55,6 +57,7 @@ export function CumulativeChart({ data }: { data: CumulativePoint[] }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        </ClientOnly>
       </div>
     </Panel>
   );

@@ -1,37 +1,13 @@
-import dynamic from "next/dynamic";
 import { ActivityHeatmap, type HeatPoint } from "@/components/ActivityHeatmap";
 import { AgentLeaderboard, type AgentRow } from "@/components/AgentLeaderboard";
 import { Concentration, type ConcentrationRow } from "@/components/Concentration";
-import { type CumulativePoint } from "@/components/CumulativeChart";
-import { type DailyPoint } from "@/components/DailyChart";
+import { CumulativeChart, type CumulativePoint } from "@/components/CumulativeChart";
+import { DailyChart, type DailyPoint } from "@/components/DailyChart";
 import { Hero, type HeroStats } from "@/components/Hero";
-import { type NRPoint } from "@/components/NewVsReturning";
+import { NewVsReturning, type NRPoint } from "@/components/NewVsReturning";
 import { Panel } from "@/components/Panel";
 import { RecentActivity, type PaymentRow } from "@/components/RecentActivity";
 import { fetchQueryRows, num, QUERIES } from "@/lib/dune";
-
-// Recharts' ResponsiveContainer breaks under SSR (ResizeObserver measures 0).
-// Dynamically import with ssr:false so charts only render in the browser.
-const CumulativeChart = dynamic(
-  () => import("@/components/CumulativeChart").then((m) => m.CumulativeChart),
-  { ssr: false, loading: () => <ChartSkeleton title="Cumulative USDC paid" /> },
-);
-const DailyChart = dynamic(
-  () => import("@/components/DailyChart").then((m) => m.DailyChart),
-  { ssr: false, loading: () => <ChartSkeleton title="Daily payments" /> },
-);
-const NewVsReturning = dynamic(
-  () => import("@/components/NewVsReturning").then((m) => m.NewVsReturning),
-  { ssr: false, loading: () => <ChartSkeleton title="New vs returning agents" /> },
-);
-
-function ChartSkeleton({ title }: { title: string }) {
-  return (
-    <Panel title={title}>
-      <div className="h-56 animate-pulse rounded-md bg-panelHover/40" />
-    </Panel>
-  );
-}
 
 // Refresh once per day — Dune queries themselves only re-execute daily via
 // the refresh-x402-dune workflow, so polling faster wastes Dune credits.
