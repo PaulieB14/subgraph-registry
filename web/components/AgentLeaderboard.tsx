@@ -41,50 +41,50 @@ export function AgentLeaderboard({ rows }: { rows: AgentRow[] }) {
 
   return (
     <Panel title="Identified agents" caption={`${rows.length} known`}>
-      <ul className="space-y-2">
+      <ul className="space-y-1">
         {sorted.map((r) => {
           const { name, link } = extractName(r.agent);
           const url = link ?? r.agent_link;
           return (
-            <li
-              key={r.wallet}
-              className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-2 transition hover:border-border hover:bg-panelHover"
-            >
-              <AgentAvatar wallet={r.wallet} />
-              <div className="min-w-0 flex-1">
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`Open ${name} on 8004scan / explorer`}
-                  className="group/link inline-flex items-baseline gap-1.5 truncate text-sm font-medium text-ink decoration-accent/50 underline-offset-4 hover:text-accent hover:underline"
-                >
-                  <span className="truncate">{name}</span>
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 12 12"
-                    className="h-2.5 w-2.5 shrink-0 opacity-40 transition group-hover/link:opacity-100"
-                  >
-                    <path
-                      d="M3 9.5 9 3.5M4 3h5v5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </a>
-                <div className="flex items-center gap-2 text-[11px] text-dim">
-                  <span className="font-mono">{shortAddr(r.wallet)}</span>
-                  <span>·</span>
-                  <span>{platformLabel(r.registry, url)}</span>
+            <li key={r.wallet}>
+              {/* Whole row is one clickable anchor — bigger hit-area than text-only */}
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Open ${name} on 8004scan`}
+                className="group flex items-center gap-3 rounded-xl border border-transparent px-2 py-2 transition hover:border-border hover:bg-panelHover"
+              >
+                <AgentAvatar wallet={r.wallet} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-1.5 truncate text-sm font-medium text-ink group-hover:text-accent">
+                    <span className="truncate">{name}</span>
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 12 12"
+                      className="h-2.5 w-2.5 shrink-0 opacity-40 transition group-hover:opacity-100"
+                    >
+                      <path
+                        d="M3 9.5 9 3.5M4 3h5v5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-dim">
+                    <span className="font-mono">{shortAddr(r.wallet)}</span>
+                    <span>·</span>
+                    <span>{platformLabel(r.registry, url)}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="font-mono text-sm text-ink">{fmtInt(r.payments)}</div>
-                <div className="text-[11px] text-dim">{timeAgo(r.last_seen)}</div>
-              </div>
+                <div className="text-right">
+                  <div className="font-mono text-sm text-ink">{fmtInt(r.payments)}</div>
+                  <div className="text-[11px] text-dim">{timeAgo(r.last_seen)}</div>
+                </div>
+              </a>
             </li>
           );
         })}
