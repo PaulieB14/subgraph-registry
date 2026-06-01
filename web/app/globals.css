@@ -2,19 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "InterTight";
-  src: url("https://rsms.me/inter/font-files/InterTight[wght].var.woff2") format("woff2");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
 html,
 body {
   background: #0c0a20;
   color: #e8e4ff;
-  font-family: InterTight, Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter-tight), Inter, ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "cv11", "ss01", "ss03";
   -webkit-font-smoothing: antialiased;
 }

@@ -222,12 +222,12 @@ export default async function Page() {
 
       <footer className="mt-10 flex items-center justify-between text-xs text-dim">
         <span>
-          Data via{" "}
+          Onchain queries via{" "}
           <a className="text-muted hover:text-accent" href="https://dune.com/paulieb/x402-payments-to-the-graph-e7ab" target="_blank" rel="noopener noreferrer">
             Dune
           </a>
           {" · "}
-          Agent identity via{" "}
+          agent identity via{" "}
           <a className="text-muted hover:text-accent" href="https://8004scan.io" target="_blank" rel="noopener noreferrer">
             8004scan
           </a>{" "}

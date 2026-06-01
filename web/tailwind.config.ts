@@ -20,8 +20,8 @@ export default {
         danger: "#FF6B8A",
       },
       fontFamily: {
-        sans: ["InterTight", "Inter", "ui-sans-serif", "system-ui"],
-        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["var(--font-inter-tight)", "Inter", "ui-sans-serif", "system-ui"],
+        mono: ["var(--font-jetbrains)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       animation: {
         pulse_dot: "pulse_dot 1.8s ease-in-out infinite",
