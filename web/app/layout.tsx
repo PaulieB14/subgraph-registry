@@ -2,20 +2,20 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "The Graph x402 Watch",
+  title: "x402 Watch",
   description:
-    "Live tracker of x402 micropayments to The Graph's gateway on Base — agent counts, growth, and per-agent leaderboards.",
+    "Live tracker of x402 micropayments to The Graph on Base — agent counts, growth, and per-agent leaderboards.",
   metadataBase: new URL("https://graphadvocate.com"),
   openGraph: {
-    title: "The Graph x402 Watch",
+    title: "x402 Watch",
     description:
-      "Live x402 micropayments to The Graph on Base, with ERC-8004 agent attribution.",
+      "Live x402 micropayments on Base, with ERC-8004 agent attribution.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Graph x402 Watch",
-    description: "Live x402 micropayments to The Graph on Base.",
+    title: "x402 Watch",
+    description: "Live x402 micropayments on Base.",
   },
 };
 

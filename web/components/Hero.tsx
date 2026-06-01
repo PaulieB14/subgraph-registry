@@ -21,11 +21,10 @@ export function Hero({ stats }: { stats: HeroStats }) {
       <header className="mb-6 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-            The Graph <span className="text-accent">x402 Watch</span>
+            <span className="text-accent">x402</span> Watch
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Live tracker of micropayments to The Graph's x402 gateway on Base,
-            with ERC-8004 agent attribution.
+            Live agent payments to The Graph on Base, with ERC-8004 identity attribution.
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs text-dim">

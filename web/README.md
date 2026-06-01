@@ -1,6 +1,9 @@
-# The Graph x402 Watch
+# x402 Watch
 
-Live tracker of x402 micropayments to The Graph's gateway on Base, with ERC-8004 agent attribution.
+Live tracker of x402 micropayments on Base, with ERC-8004 agent attribution.
+
+**Current scope:** payments to The Graph's gateway (`0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB`).
+Easy to broaden later — every panel reads from Dune queries that can be cloned per receiver.
 
 **Stack:** Next.js 15 (App Router) · Tailwind · Recharts · Vercel · Dune API
 **Refresh:** every 60s server-side via ISR (no client polling)
