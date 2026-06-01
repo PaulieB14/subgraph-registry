@@ -5,14 +5,14 @@
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
 <text x="576.0" y="55.0" fill="#e8eaed" font-size="11">5,633</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Dex</text>
-<rect x="110" y="68" width="352.8" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="468.77827090360375" y="83.0" fill="#e8eaed" font-size="11">4,320</text>
+<rect x="110" y="68" width="352.9" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="468.94159417717026" y="83.0" fill="#e8eaed" font-size="11">4,322</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Lending</text>
 <rect x="110" y="96" width="118.3" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
 <text x="234.3277116989171" y="111.0" fill="#e8eaed" font-size="11">1,449</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Staking</text>
-<rect x="110" y="124" width="72.6" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="188.5971951003018" y="139.0" fill="#e8eaed" font-size="11">889</text>
+<rect x="110" y="124" width="72.7" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="188.67885673708503" y="139.0" fill="#e8eaed" font-size="11">890</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Bridge</text>
 <rect x="110" y="152" width="66.2" height="22" rx="4" fill="#10b981" opacity="0.85"/>
 <text x="182.22758743120895" y="167.0" fill="#e8eaed" font-size="11">811</text>

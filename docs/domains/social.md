@@ -2,7 +2,7 @@
 domain: social
 count: 82
 percentage: 0.5
-updated: 2026-05-31
+updated: 2026-06-01
 ---
 
 # Social Subgraphs

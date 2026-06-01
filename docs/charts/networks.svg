@@ -5,11 +5,11 @@
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
 <text x="576.0" y="55.0" fill="#e8eaed" font-size="11">2,429</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Base</text>
-<rect x="110" y="68" width="338.2" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="454.2297241663236" y="83.0" fill="#e8eaed" font-size="11">1,786</text>
+<rect x="110" y="68" width="338.4" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="454.4191025113215" y="83.0" fill="#e8eaed" font-size="11">1,787</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Bsc</text>
-<rect x="110" y="96" width="308.9" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
-<text x="424.87608069164264" y="111.0" fill="#e8eaed" font-size="11">1,631</text>
+<rect x="110" y="96" width="309.1" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="425.06545903664056" y="111.0" fill="#e8eaed" font-size="11">1,632</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Arbitrum One</text>
 <rect x="110" y="124" width="268.5" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
 <text x="384.5384932070811" y="139.0" fill="#e8eaed" font-size="11">1,418</text>
@@ -20,8 +20,8 @@
 <rect x="110" y="180" width="108.1" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
 <text x="224.1350349938246" y="195.0" fill="#e8eaed" font-size="11">571</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Sepolia</text>
-<rect x="110" y="208" width="104.9" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="220.91560312885963" y="223.0" fill="#e8eaed" font-size="11">554</text>
+<rect x="110" y="208" width="105.1" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="221.10498147385755" y="223.0" fill="#e8eaed" font-size="11">555</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Avalanche</text>
 <rect x="110" y="236" width="84.1" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
 <text x="200.08398517908603" y="251.0" fill="#e8eaed" font-size="11">444</text>
