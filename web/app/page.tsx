@@ -237,7 +237,7 @@ export default async function Page() {
           </a>{" "}
           agent0 subgraph
         </span>
-        <span>refreshed every {REVALIDATE_SECONDS}s</span>
+        <span>refreshes once daily</span>
       </footer>
     </>
   );
