@@ -1,16 +1,41 @@
+import dynamic from "next/dynamic";
 import { ActivityHeatmap, type HeatPoint } from "@/components/ActivityHeatmap";
 import { AgentLeaderboard, type AgentRow } from "@/components/AgentLeaderboard";
 import { Concentration, type ConcentrationRow } from "@/components/Concentration";
-import { CumulativeChart, type CumulativePoint } from "@/components/CumulativeChart";
-import { DailyChart, type DailyPoint } from "@/components/DailyChart";
+import { type CumulativePoint } from "@/components/CumulativeChart";
+import { type DailyPoint } from "@/components/DailyChart";
 import { Hero, type HeroStats } from "@/components/Hero";
-import { NewVsReturning, type NRPoint } from "@/components/NewVsReturning";
+import { type NRPoint } from "@/components/NewVsReturning";
 import { Panel } from "@/components/Panel";
 import { RecentActivity, type PaymentRow } from "@/components/RecentActivity";
-import { fetchQueryRows, num, QUERIES, REVALIDATE_SECONDS } from "@/lib/dune";
+import { fetchQueryRows, num, QUERIES } from "@/lib/dune";
 
-// Must be a literal — Next.js statically analyzes it
-export const revalidate = 60;
+// Recharts' ResponsiveContainer breaks under SSR (ResizeObserver measures 0).
+// Dynamically import with ssr:false so charts only render in the browser.
+const CumulativeChart = dynamic(
+  () => import("@/components/CumulativeChart").then((m) => m.CumulativeChart),
+  { ssr: false, loading: () => <ChartSkeleton title="Cumulative USDC paid" /> },
+);
+const DailyChart = dynamic(
+  () => import("@/components/DailyChart").then((m) => m.DailyChart),
+  { ssr: false, loading: () => <ChartSkeleton title="Daily payments" /> },
+);
+const NewVsReturning = dynamic(
+  () => import("@/components/NewVsReturning").then((m) => m.NewVsReturning),
+  { ssr: false, loading: () => <ChartSkeleton title="New vs returning agents" /> },
+);
+
+function ChartSkeleton({ title }: { title: string }) {
+  return (
+    <Panel title={title}>
+      <div className="h-56 animate-pulse rounded-md bg-panelHover/40" />
+    </Panel>
+  );
+}
+
+// Refresh once per day — Dune queries themselves only re-execute daily via
+// the refresh-x402-dune workflow, so polling faster wastes Dune credits.
+export const revalidate = 86400;
 
 // ── Helpers to coerce Dune row shapes (column names vary; be defensive) ──────
 
@@ -173,11 +198,16 @@ export default async function Page() {
   }));
 
   // Concentration (Dune columns: bucket, payer_count, total_payments_in_bucket)
-  const concRows: ConcentrationRow[] = (concentration as Record<string, unknown>[]).map((r) => ({
+  // Share % isn't in the query — derive it from total payments across buckets.
+  const concRowsRaw = (concentration as Record<string, unknown>[]).map((r) => ({
     bucket: s(r, "bucket", "cohort", "label"),
     payers: n(r, "payer_count", "payers", "n_payers"),
     payments: n(r, "total_payments_in_bucket", "payments", "total_payments"),
-    share: n(r, "share_pct", "pct", "share"),
+  }));
+  const concSum = concRowsRaw.reduce((s, r) => s + r.payments, 0);
+  const concRows: ConcentrationRow[] = concRowsRaw.map((r) => ({
+    ...r,
+    share: concSum > 0 ? (r.payments / concSum) * 100 : 0,
   }));
 
   // Recent payments (Dune columns: time, payer, usdc_amount, tx_hash)

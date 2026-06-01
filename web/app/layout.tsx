@@ -24,6 +24,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen">
         <div className="mx-auto max-w-[1280px] px-6 py-8">{children}</div>
+        <footer className="mx-auto max-w-[1280px] px-6 pb-6 text-center text-[11px] text-dim">
+          Auto-refreshes once daily · run by{" "}
+          <a className="text-muted hover:text-accent" href="https://graphadvocate.com" target="_blank" rel="noopener noreferrer">
+            graphadvocate.eth
+          </a>
+        </footer>
       </body>
     </html>
   );
