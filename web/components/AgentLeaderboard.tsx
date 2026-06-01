@@ -1,6 +1,7 @@
 import { AgentAvatar } from "./AgentAvatar";
 import { Panel } from "./Panel";
 import { fmtInt, shortAddr, timeAgo } from "@/lib/format";
+import { fixScan8004Url } from "@/lib/scan8004";
 
 export interface AgentRow {
   agent: string;
@@ -37,14 +38,17 @@ export function AgentLeaderboard({ rows }: { rows: AgentRow[] }) {
     );
   }
 
-  const sorted = [...rows].sort((a, b) => (b.payments ?? 0) - (a.payments ?? 0)).slice(0, 12);
+  const sorted = [...rows].sort((a, b) => (b.payments ?? 0) - (a.payments ?? 0));
 
   return (
     <Panel title="Identified agents" caption={`${rows.length} known`}>
-      <ul className="space-y-1">
+      <ul className="max-h-[520px] space-y-1 overflow-y-auto pr-1">
         {sorted.map((r) => {
           const { name, link } = extractName(r.agent);
-          const url = link ?? r.agent_link;
+          const rawUrl = link ?? r.agent_link;
+          // Fix the composite-id URL Dune currently emits to 8004scan's
+          // real /agents/<chain>/<token> path.
+          const url = fixScan8004Url(rawUrl);
           return (
             <li key={r.wallet}>
               {/* Whole row is one clickable anchor — bigger hit-area than text-only */}

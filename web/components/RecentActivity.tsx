@@ -1,6 +1,7 @@
 import { AgentAvatar } from "./AgentAvatar";
 import { Panel } from "./Panel";
 import { fmtUSD, shortAddr, timeAgo } from "@/lib/format";
+import { fixScan8004Url } from "@/lib/scan8004";
 
 export interface PaymentRow {
   wallet: string;
@@ -24,11 +25,10 @@ export function RecentActivity({
       </Panel>
     );
   }
-  const slice = rows.slice(0, 20);
   return (
-    <Panel title="Recent activity" caption={`${slice.length} latest`}>
-      <ul className="space-y-1.5">
-        {slice.map((r, idx) => {
+    <Panel title="Recent activity" caption={`${rows.length} latest`}>
+      <ul className="max-h-[520px] space-y-1 overflow-y-auto pr-1">
+        {rows.map((r, idx) => {
           const id = identityByWallet.get(r.wallet?.toLowerCase?.() ?? "");
           const fresh = Date.now() - Date.parse(r.block_time) < 60_000;
           return (
@@ -45,7 +45,7 @@ export function RecentActivity({
               <div className="min-w-0 flex-1 truncate">
                 {id ? (
                   <a
-                    href={id.link}
+                    href={fixScan8004Url(id.link)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-ink hover:text-accent"

@@ -47,9 +47,39 @@ def _basescan(wallet: str) -> str:
     return f"https://basescan.org/address/{wallet}"
 
 
+# 8004scan URL pattern is /agents/<chain-slug>/<token_id>, NOT the composite
+# agent_id. Map known chain IDs to the slug their app uses (sniffed from the
+# 8004scan home page link list).
+_CHAIN_SLUG = {
+    1: "ethereum",
+    8453: "base",
+    42161: "arbitrum",
+    10: "optimism",
+    56: "bsc",
+    137: "polygon",
+    42220: "celo",
+    130: "unichain",
+    1923: "swellchain",
+    2741: "abstract",
+    5042002: "ronin",
+    84532: "base-sepolia",
+    11155111: "sepolia",
+}
+
+
 def _scan8004(agent_id: str | None) -> str:
-    """8004scan agent detail URL. agent_id is the composite chain:contract:tokenId."""
-    return f"https://8004scan.io/agent/{agent_id}" if agent_id else "https://8004scan.io"
+    """8004scan agent detail URL — translates the composite chain:contract:tokenId
+    to /agents/<chain-slug>/<tokenId>. Falls back to the home page if the chain
+    isn't mapped (rare; add to _CHAIN_SLUG when a new chain shows up)."""
+    if not agent_id:
+        return "https://8004scan.io"
+    parts = agent_id.split(":")
+    if len(parts) == 3 and parts[0].isdigit() and parts[2].isdigit():
+        chain_id, _contract, token_id = parts
+        slug = _CHAIN_SLUG.get(int(chain_id))
+        if slug:
+            return f"https://8004scan.io/agents/{slug}/{token_id}"
+    return "https://8004scan.io"
 
 
 # Graph Advocate's ERC-8004 identity on Base — agent #41034 on contract
