@@ -59,14 +59,17 @@ GA_8004_BASE_AGENT_ID = "8453:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:41034"
 
 OPERATOR_SEED = [
     # (wallet, name, source, link)
+    # All three GA-controlled wallets present as the same agent identity
+    # — same name, same 8004scan link — to match the single-name format
+    # the other identified agents use (Michaelgent, Clarabotagent, etc.).
     # graphadvocate.eth — identity wallet, holds GRT on Arbitrum, signs A2A
-    ("0x575267eed09c338fae5716a486a7b58a5749a292", "graphadvocate.eth", "operator",
+    ("0x575267eed09c338fae5716a486a7b58a5749a292", "graphadvocate", "operator",
      _scan8004(GA_8004_BASE_AGENT_ID)),
-    # Graph Advocate x402 outbound — pays small bazaar endpoints
-    ("0xe121e3a8611e1f44f7cc52892ee1117fddc8f734", "graphadvocate.eth (outbound)", "operator",
+    # GA x402 outbound — pays bazaar endpoints
+    ("0xe121e3a8611e1f44f7cc52892ee1117fddc8f734", "graphadvocate", "operator",
      _scan8004(GA_8004_BASE_AGENT_ID)),
-    # Graph Advocate x402 inbound — receives /route payments
-    ("0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86", "graphadvocate.eth (inbound)", "operator",
+    # GA x402 inbound — receives /route payments
+    ("0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86", "graphadvocate", "operator",
      _scan8004(GA_8004_BASE_AGENT_ID)),
 ]
 
