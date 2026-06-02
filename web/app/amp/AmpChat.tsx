@@ -62,12 +62,7 @@ export function AmpChat({ suggestions }: { suggestions: string[] }) {
         {history.map((m, i) => (
           <MessageBubble key={i} msg={m} />
         ))}
-        {busy && (
-          <div className="flex items-center gap-2 text-sm text-dim">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
-            thinking…
-          </div>
-        )}
+        {busy && <ThinkingIndicator />}
         <div ref={bottomRef} />
       </div>
 
@@ -110,6 +105,31 @@ export function AmpChat({ suggestions }: { suggestions: string[] }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ThinkingIndicator() {
+  // The full round-trip is typically 8-14s. Show staged messages so the wait
+  // feels like progress rather than dead air. These thresholds match the
+  // observed wall-clock split (LLM-write ~5s, SQL ~5s, LLM-summarize ~2s).
+  const phases = [
+    { at: 0, label: "Writing SQL" },
+    { at: 5, label: "Running on Amp" },
+    { at: 9, label: "Summarizing" },
+  ];
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => setSecs(Math.floor((Date.now() - start) / 1000)), 250);
+    return () => clearInterval(id);
+  }, []);
+  const phase = [...phases].reverse().find((p) => secs >= p.at)!;
+  return (
+    <div className="flex items-center gap-2 text-sm text-dim">
+      <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-accent" />
+      <span>{phase.label}…</span>
+      <span className="text-[11px] text-dim/60">{secs}s</span>
     </div>
   );
 }

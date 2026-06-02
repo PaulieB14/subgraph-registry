@@ -5,7 +5,9 @@ import { SYSTEM_PROMPT } from "@/lib/ampSchema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MODEL = process.env.AMP_MODEL || "claude-opus-4-7";
+// Sonnet is fast enough that interactive chat feels responsive; Opus is overkill
+// for SQL translation. Override via AMP_MODEL env if you want to A/B.
+const MODEL = process.env.AMP_MODEL || "claude-sonnet-4-6";
 
 interface AskRequest {
   question: string;
@@ -61,11 +63,14 @@ export async function POST(req: Request) {
     { role: "user", content: question },
   ];
 
-  const trace: { sql?: string; rows?: number; error?: string }[] = [];
+  const trace: { sql?: string; rows?: number; error?: string; ms?: number }[] = [];
+  const turnTimings: { turn: number; llm_ms: number }[] = [];
   let answerText = "";
+  const t0 = Date.now();
 
   for (let i = 0; i < 6; i++) {
     let resp: Anthropic.Message;
+    const tLLM = Date.now();
     try {
       resp = await client.messages.create({
         model: MODEL,
@@ -78,6 +83,7 @@ export async function POST(req: Request) {
       const msg = e instanceof Error ? e.message : String(e);
       return Response.json({ error: `Anthropic error: ${msg}` }, { status: 502 });
     }
+    turnTimings.push({ turn: i + 1, llm_ms: Date.now() - tLLM });
 
     if (resp.stop_reason !== "tool_use") {
       // Final assistant message. Pull text blocks.
@@ -107,11 +113,13 @@ export async function POST(req: Request) {
         continue;
       }
       const sql = String((use.input as { sql?: unknown }).sql || "").trim();
+      const tSQL = Date.now();
       const result = await runSql(sql);
       trace.push({
         sql,
         rows: result.error ? undefined : result.rows.length,
         error: result.error,
+        ms: Date.now() - tSQL,
       });
       toolResults.push({
         type: "tool_result",
@@ -172,5 +180,7 @@ export async function POST(req: Request) {
     trace,
     amp_url: AMP_URL,
     model: MODEL,
+    total_ms: Date.now() - t0,
+    turn_timings: turnTimings,
   });
 }
