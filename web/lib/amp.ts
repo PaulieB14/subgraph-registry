@@ -9,7 +9,7 @@ export interface AmpQueryResult {
   error?: string;
 }
 
-export async function runSql(sql: string, timeoutMs = 25_000): Promise<AmpQueryResult> {
+export async function runSql(sql: string, timeoutMs = 90_000): Promise<AmpQueryResult> {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
