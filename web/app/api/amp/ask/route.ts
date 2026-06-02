@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   const trace: { sql?: string; rows?: number; error?: string }[] = [];
   let answerText = "";
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     let resp: Anthropic.Message;
     try {
       resp = await client.messages.create({
@@ -123,6 +123,48 @@ export async function POST(req: Request) {
       });
     }
     messages.push({ role: "user", content: toolResults });
+  }
+
+  // If we hit the turn cap without a final answer, fall back to a
+  // synthesis pass that's allowed to write text only (no tools), with the
+  // SQL traces summarized as context. Keeps the user from seeing
+  // "(no answer produced)" when the model just ran out of room.
+  if (!answerText) {
+    try {
+      const summary = await client.messages.create({
+        model: MODEL,
+        max_tokens: 600,
+        system:
+          "You're being asked to answer a user's question given a partial " +
+          "transcript of SQL calls and their results. Even if no single " +
+          "call gave the full answer, write the best plain-English answer " +
+          "you can from what's known, and clearly state what's unknown.",
+        messages: [
+          {
+            role: "user",
+            content:
+              `Original question: ${question}\n\n` +
+              `SQL trace so far:\n` +
+              trace
+                .map(
+                  (t, i) =>
+                    `[${i + 1}] ${t.sql}\n  → ${
+                      t.error ? "ERROR: " + t.error : `${t.rows} rows`
+                    }`,
+                )
+                .join("\n") +
+              `\n\nAnswer the question concisely.`,
+          },
+        ],
+      });
+      answerText = summary.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("\n")
+        .trim();
+    } catch {
+      // fall through with empty answer
+    }
   }
 
   return Response.json({

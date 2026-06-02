@@ -53,6 +53,22 @@ What does NOT work in this DataFusion build — avoid:
     step we haven't wired up yet. Don't fabricate a numeric total.
   • substring() / substr() on Binary / FixedSizeBinary columns.
   • CAST(...AS Decimal128) directly against Binary.
+  • Subqueries with "tx_hash IN (SELECT ...)" — they currently panic ampd's
+    planner. Use an INNER JOIN instead. Pattern:
+      SELECT ...
+      FROM logs l
+      INNER JOIN (
+        SELECT DISTINCT tx_hash FROM logs WHERE <inner condition>
+      ) j ON j.tx_hash = l.tx_hash
+    is ALSO risky — prefer a single FROM with the conditions ANDed when
+    possible, or a CTE the inner side materializes first.
+
+Multi-step strategy:
+  • You typically have ≤ 4 tool calls per question. If you've called the
+    tool 3 times and still don't have the answer, STOP and write the best
+    plain-English answer you can from what you've learned so far. Be honest
+    about what's known vs. unknown — don't burn the last call on a hail
+    mary.
 
 Performance rules (very important — ampd does full scans, no indexes):
   • ALWAYS bound every logs/transactions query by block_num OR by timestamp.
