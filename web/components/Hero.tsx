@@ -36,6 +36,13 @@ export function Hero({ stats }: { stats: HeroStats }) {
               <span>{fmtInt(stats.paymentsToday)} today</span>
             </>
           )}
+          <span aria-hidden>·</span>
+          <a
+            href="/amp"
+            className="rounded-full border border-accent/40 px-2 py-0.5 text-[11px] font-medium text-accent transition hover:bg-accent/15"
+          >
+            Ask Amp →
+          </a>
         </div>
       </header>
 

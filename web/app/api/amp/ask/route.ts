@@ -1,0 +1,134 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { AMP_URL, runSql } from "@/lib/amp";
+import { SYSTEM_PROMPT } from "@/lib/ampSchema";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const MODEL = process.env.AMP_MODEL || "claude-opus-4-7";
+
+interface AskRequest {
+  question: string;
+}
+
+interface ToolUse {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export async function POST(req: Request) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return Response.json(
+      { error: "ANTHROPIC_API_KEY missing on the server. Set it in .env.local for `npm run dev`." },
+      { status: 500 },
+    );
+  }
+
+  let body: AskRequest;
+  try {
+    body = (await req.json()) as AskRequest;
+  } catch {
+    return Response.json({ error: "Body must be JSON: { question: string }" }, { status: 400 });
+  }
+  const question = (body.question || "").trim();
+  if (!question) {
+    return Response.json({ error: "question is required" }, { status: 400 });
+  }
+
+  const client = new Anthropic({ apiKey });
+
+  const tools: Anthropic.Tool[] = [
+    {
+      name: "run_sql",
+      description:
+        "Execute a single SQL statement against ampd's :1603/ endpoint. " +
+        "Returns the rows as JSON. Use one statement per call, LIMIT 200.",
+      input_schema: {
+        type: "object",
+        properties: {
+          sql: { type: "string", description: "A single SQL statement, no trailing semicolon." },
+        },
+        required: ["sql"],
+      },
+    },
+  ];
+
+  // Multi-turn tool-use loop. Cap iterations so we never spin.
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: question },
+  ];
+
+  const trace: { sql?: string; rows?: number; error?: string }[] = [];
+  let answerText = "";
+
+  for (let i = 0; i < 4; i++) {
+    let resp: Anthropic.Message;
+    try {
+      resp = await client.messages.create({
+        model: MODEL,
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        tools,
+        messages,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return Response.json({ error: `Anthropic error: ${msg}` }, { status: 502 });
+    }
+
+    if (resp.stop_reason !== "tool_use") {
+      // Final assistant message. Pull text blocks.
+      answerText = resp.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("\n")
+        .trim();
+      break;
+    }
+
+    // The model wants to call a tool. Process every tool_use block in this turn,
+    // append a tool_result for each, and loop.
+    messages.push({ role: "assistant", content: resp.content });
+    const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+    for (const block of resp.content) {
+      if (block.type !== "tool_use") continue;
+      const use = block as ToolUse;
+      if (use.name !== "run_sql") {
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: use.id,
+          is_error: true,
+          content: `Unknown tool: ${use.name}`,
+        });
+        continue;
+      }
+      const sql = String((use.input as { sql?: unknown }).sql || "").trim();
+      const result = await runSql(sql);
+      trace.push({
+        sql,
+        rows: result.error ? undefined : result.rows.length,
+        error: result.error,
+      });
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: use.id,
+        is_error: !!result.error,
+        content: result.error
+          ? `ERROR: ${result.error}`
+          : JSON.stringify(result.rows.slice(0, 200)),
+      });
+    }
+    messages.push({ role: "user", content: toolResults });
+  }
+
+  return Response.json({
+    answer: answerText || "(no answer produced)",
+    trace,
+    amp_url: AMP_URL,
+    model: MODEL,
+  });
+}
