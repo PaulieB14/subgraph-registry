@@ -4,14 +4,18 @@ import { SYSTEM_PROMPT } from "@/lib/ampSchema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Vercel hobby tier caps at 10s; Pro at 60s. Setting maxDuration=60 unlocks
+// Pro's headroom and is a no-op on hobby (silently clamped to 10s).
+export const maxDuration = 60;
 
 // Sonnet is fast enough that interactive chat feels responsive; Opus is overkill
 // for SQL translation. Override via AMP_MODEL env if you want to A/B.
 const MODEL = process.env.AMP_MODEL || "claude-sonnet-4-6";
 
-// Hard wall-clock budget for the whole request. Vercel's hobby limit is 10s;
-// give ourselves a small headroom by stopping at 9s.
-const TOTAL_BUDGET_MS = 9_000;
+// Wall-clock budget for the whole request. Cold parquet scans across ~1k
+// files in R2 need ~5-10s just for footer fetches; allow ~50s for the full
+// model-loop + scan, leaving 10s of platform headroom.
+const TOTAL_BUDGET_MS = 50_000;
 const MAX_TURNS = 6;
 
 interface AskRequest {
@@ -214,7 +218,7 @@ export async function POST(req: Request) {
       const sql = String((use.input as { sql?: unknown }).sql || "").trim();
       const rewritten = rewriteSettlements(sql, parquetGlob);
       // Tight per-call timeout so a single bad query can't eat the whole budget.
-      const perCallTimeout = Math.max(1500, Math.min(8000, budgetLeft() - 500));
+      const perCallTimeout = Math.max(1500, Math.min(40_000, budgetLeft() - 500));
       const result = await runSql(rewritten, { timeoutMs: perCallTimeout });
 
       const step: TraceStep = { sql, ms: result.ms };
