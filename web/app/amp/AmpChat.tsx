@@ -115,7 +115,7 @@ function ThinkingIndicator() {
   // observed wall-clock split (LLM-write ~5s, SQL ~5s, LLM-summarize ~2s).
   const phases = [
     { at: 0, label: "Writing SQL" },
-    { at: 5, label: "Running on Amp" },
+    { at: 5, label: "Running on DuckDB" },
     { at: 9, label: "Summarizing" },
   ];
   const [secs, setSecs] = useState(0);
