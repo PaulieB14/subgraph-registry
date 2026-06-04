@@ -1,0 +1,38 @@
+name: keep-ask-warm
+
+# Pings /api/warmup every 5 min so the Vercel lambda + DuckDB + parquet footer
+# cache stay resident. Without this, the first user query after ~5 min of
+# idle time eats a ~30 sec cold start. GitHub Actions cron has 5 min minimum
+# granularity and occasionally skips runs under platform load — fine for a
+# demo, not for SLA-grade warmth.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-ask-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping warmup endpoint
+        run: |
+          set -e
+          start=$(date +%s)
+          response=$(curl -sS --max-time 60 -w "\n%{http_code}" https://x402-watch.vercel.app/api/warmup || echo "CURL_FAILED")
+          status=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          elapsed=$(( $(date +%s) - start ))
+          echo "elapsed: ${elapsed}s  status: ${status}"
+          echo "body: ${body}"
+          # Don't fail the workflow on 503 (glob not configured) or transient
+          # 5xx — that would page us about routine cold-cache misses. Only
+          # fail if the response was completely unparseable.
+          if [ "$status" = "CURL_FAILED" ]; then exit 1; fi
