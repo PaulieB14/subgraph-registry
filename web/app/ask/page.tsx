@@ -9,7 +9,7 @@ export default function AmpPage() {
     <>
       <header className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-          Ask <span className="text-accent">Amp</span>
+          Ask <span className="text-accent">x402</span>
         </h1>
         <p className="mt-1 text-sm text-muted">
           Natural-language SQL over every x402 settlement event on Base

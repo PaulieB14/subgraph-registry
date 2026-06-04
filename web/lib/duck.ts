@@ -120,9 +120,14 @@ async function getConnection(): Promise<DuckDBConnection> {
     initPromise = (async () => {
       const instance = await getInstance();
       const conn = await instance.connect();
-      // httpfs is needed for s3://, but installing it locally is cheap and
-      // future-proofs Regime B. enable_object_cache speeds up repeated
-      // reads of the same parquet footer.
+      // Vercel's serverless FS is read-only except /tmp. DuckDB needs a writable
+      // home + extension dir to install httpfs at runtime.
+      try {
+        await conn.run("SET home_directory='/tmp'");
+        await conn.run("SET extension_directory='/tmp/duckdb_extensions'");
+      } catch {
+        // ignore — local dev doesn't need /tmp
+      }
       try {
         await conn.run("INSTALL httpfs");
       } catch {
@@ -137,6 +142,28 @@ async function getConnection(): Promise<DuckDBConnection> {
         await conn.run("SET enable_object_cache=true");
       } catch {
         // ignore — older DuckDB versions might not have this knob
+      }
+      // DuckDB's httpfs does NOT honor AWS_* env vars — they're for the AWS
+      // SDK. We have to push the S3 config into DuckDB's own settings. R2
+      // requires path-style URLs (vhost style fails for bucket-scoped tokens).
+      const accessKey = process.env.AWS_ACCESS_KEY_ID;
+      const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
+      const endpoint = process.env.AWS_ENDPOINT_URL;
+      const region = process.env.AWS_REGION || "auto";
+      if (accessKey && secretKey && endpoint) {
+        const host = endpoint.replace(/^https?:\/\//, "");
+        const esc = (s: string) => s.replace(/'/g, "''");
+        try {
+          await conn.run(`SET s3_endpoint='${esc(host)}'`);
+          await conn.run(`SET s3_access_key_id='${esc(accessKey)}'`);
+          await conn.run(`SET s3_secret_access_key='${esc(secretKey)}'`);
+          await conn.run(`SET s3_region='${esc(region)}'`);
+          await conn.run("SET s3_url_style='path'");
+          await conn.run("SET s3_use_ssl=true");
+        } catch (e) {
+          // Loud — without this, every query 500s with an opaque parquet error.
+          console.error("[duck] S3 config failed:", e instanceof Error ? e.message : String(e));
+        }
       }
       return conn;
     })();

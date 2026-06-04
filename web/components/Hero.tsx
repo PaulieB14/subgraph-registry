@@ -38,10 +38,10 @@ export function Hero({ stats }: { stats: HeroStats }) {
           )}
           <span aria-hidden>·</span>
           <a
-            href="/amp"
+            href="/ask"
             className="rounded-full border border-accent/40 px-2 py-0.5 text-[11px] font-medium text-accent transition hover:bg-accent/15"
           >
-            Ask Amp →
+            Ask x402 →
           </a>
         </div>
       </header>
