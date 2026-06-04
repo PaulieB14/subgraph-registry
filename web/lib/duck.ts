@@ -1,8 +1,11 @@
 // DuckDB-over-parquet backend for the /amp chat.
 //
-// AMP_PARQUET_GLOB is REQUIRED — module init throws if unset, so a Vercel deploy
-// without the env var fails loudly at import time rather than silently leaking
-// a developer's local filesystem layout.
+// AMP_PARQUET_GLOB is REQUIRED — the lazy getParquetGlob() throws on first
+// runtime use (not module init) if the env var is unset. Throwing at runtime
+// rather than at import keeps Vercel's static "Collecting page data" pass
+// from blowing up the whole build when the env var hasn't been configured
+// in the Project Settings yet. The route surfaces the missing-config error
+// as a normal trace[].error entry, which AmpChat renders cleanly.
 //
 // Future Regime B (R2/S3): a second env-driven mode where the glob is
 // "s3://bucket/path/[0-9]*.parquet" plus AWS_* / S3_ENDPOINT env vars would
@@ -40,7 +43,13 @@ function resolveParquetGlob(): string {
   return glob;
 }
 
-export const AMP_PARQUET_GLOB = resolveParquetGlob();
+// Lazy cache. Resolves + validates on first runtime call (request time on
+// Vercel, not build time). Subsequent calls reuse the resolved value.
+let _cachedGlob: string | null = null;
+export function getAmpParquetGlob(): string {
+  if (_cachedGlob === null) _cachedGlob = resolveParquetGlob();
+  return _cachedGlob;
+}
 
 const DEFAULT_ROW_LIMIT = 500;
 const DEFAULT_TIMEOUT_MS = 9_000;

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { AMP_PARQUET_GLOB, runSql } from "@/lib/duck";
+import { getAmpParquetGlob, runSql } from "@/lib/duck";
 import { SYSTEM_PROMPT } from "@/lib/ampSchema";
 
 export const runtime = "nodejs";
@@ -120,6 +120,22 @@ export async function POST(req: Request) {
     return Response.json({ error: "question is required" }, { status: 400 });
   }
 
+  // Resolve the parquet glob once up front. Surfaces missing/invalid
+  // AMP_PARQUET_GLOB as a clean 503 instead of a generic 500 from inside the
+  // tool loop, and gives the operator a precise message to fix in Project
+  // Settings.
+  let parquetGlob: string;
+  try {
+    parquetGlob = getAmpParquetGlob();
+  } catch (e) {
+    return Response.json(
+      {
+        error: e instanceof Error ? e.message : "AMP_PARQUET_GLOB is not configured.",
+      },
+      { status: 503 },
+    );
+  }
+
   const client = new Anthropic({ apiKey });
 
   const tools: Anthropic.Tool[] = [
@@ -196,7 +212,7 @@ export async function POST(req: Request) {
         continue;
       }
       const sql = String((use.input as { sql?: unknown }).sql || "").trim();
-      const rewritten = rewriteSettlements(sql, AMP_PARQUET_GLOB);
+      const rewritten = rewriteSettlements(sql, parquetGlob);
       // Tight per-call timeout so a single bad query can't eat the whole budget.
       const perCallTimeout = Math.max(1500, Math.min(8000, budgetLeft() - 500));
       const result = await runSql(rewritten, { timeoutMs: perCallTimeout });
@@ -263,7 +279,7 @@ export async function POST(req: Request) {
     question_chars: question.length,
     trace_steps: trace.length,
     total_ms: Date.now() - t0,
-    parquet_path: AMP_PARQUET_GLOB,
+    parquet_path: parquetGlob,
   });
 
   return Response.json({
