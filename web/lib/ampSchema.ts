@@ -56,54 +56,78 @@ Invariants (read carefully — your SQL and your prose must respect these):
   • Hex addresses are lowercase
 
 Performance rules:
-  • Always include LIMIT 500 at the end of the outermost SELECT (unless the user explicitly asked for more, or it's an aggregate that already returns one row).
-  • Prefer block_number or timestamp predicates so parquet row-group pruning can kick in.
+
+  ◆◆◆ CRITICAL: ALWAYS include a block_number predicate. ◆◆◆
+  The parquet dataset is sharded into ~1000 files keyed by block range. A
+  block_number filter is the ONLY way DuckDB can prune which files to scan.
+  A timestamp-only filter forces a full 993-file footer fetch and times out.
+
+  Base produces blocks at ~2 sec/block → 43_200 blocks/day.
+  Latest block in the dataset: ~46_849_999. Use as the "tip" when computing
+  windows.
+
+  When user gives a time window, compute the block range from it:
+    "last 24 hours" → block_number >= 46_849_999 -    43_200
+    "last 7 days"   → block_number >= 46_849_999 -   302_400
+    "last 30 days"  → block_number >= 46_849_999 - 1_296_000
+    "last 90 days"  → block_number >= 46_849_999 - 3_888_000
+    "all time"      → DEFAULT TO last 30 days; surface the window in the answer.
+
+  Add the timestamp predicate too — it's cheap and ensures exact correctness
+  if block estimates drift. The block predicate does the file pruning; the
+  timestamp predicate does row-level filtering.
+
+  Other rules:
+  • Always include LIMIT 500 (unless aggregate returning one row, or user asked more).
   • Avoid SELECT * — list the columns you actually need.
-  • For sums in USDC dollars: SUM(amount::DECIMAL(38,0)) / 1e6
-  • For "last 30 days": timestamp >= now() - INTERVAL 30 DAY
-  • For "today" / "last 24h": timestamp >= now() - INTERVAL 24 HOUR
+  • For USDC dollars: SUM(amount::DECIMAL(38,0)) / 1e6
   • date_trunc('day', timestamp) for daily buckets, date_part('hour', timestamp) for hour-of-day
+  • DO NOT use CROSS JOIN against a CTE that counts the whole table — that
+    forces a full scan. Use window functions or two separate queries instead.
 
 Worked examples (NL → SQL):
 
 (a) "Top 10 recipients in the last 30 days with USDC total"
+    Note both filters — block_number prunes files, timestamp is the safety net.
   SELECT recipient,
          COUNT(*) AS payment_count,
          SUM(amount::DECIMAL(38,0)) / 1e6 AS usdc_total
   FROM settlements
-  WHERE timestamp >= now() - INTERVAL 30 DAY
+  WHERE block_number >= 46849999 - 1296000   -- last 30 days
+    AND timestamp    >= now() - INTERVAL 30 DAY
   GROUP BY recipient
   ORDER BY payment_count DESC
   LIMIT 10
 
-(b) "Hour-of-day histogram across the full dataset"
+(b) "Hour-of-day histogram (LAST 30 DAYS — never the full 13-month dataset)"
+    "Full dataset" questions like this MUST be narrowed. Use 30 days as the
+    default sample window and tell the user that's what you queried.
   SELECT date_part('hour', timestamp) AS hour_utc,
          COUNT(*) AS settlement_count
   FROM settlements
+  WHERE block_number >= 46849999 - 1296000
   GROUP BY hour_utc
   ORDER BY hour_utc
   LIMIT 500
 
-(c) "Top facilitators by count + share"
-  WITH totals AS (
-    SELECT COUNT(*) AS total FROM settlements
-  )
-  SELECT s.facilitator,
+(c) "Top facilitators by count + share (last 30 days)"
+    Compute totals in the SAME pass via window function — no CROSS JOIN.
+  SELECT facilitator,
          COUNT(*) AS settlement_count,
-         COUNT(*) * 1.0 / MAX(totals.total) AS share
-  FROM settlements s
-  CROSS JOIN totals
-  GROUP BY s.facilitator
+         COUNT(*) * 1.0 / SUM(COUNT(*)) OVER () AS share
+  FROM settlements
+  WHERE block_number >= 46849999 - 1296000
+  GROUP BY facilitator
   ORDER BY settlement_count DESC
   LIMIT 10
 
-(d) "Daily settlement count and median USDC amount per day"
+(d) "Daily settlement count and median USDC amount per day (last 30 days)"
   SELECT date_trunc('day', timestamp) AS day,
          COUNT(*) AS settlement_count,
          median(amount::DECIMAL(38,0)) / 1e6 AS median_usdc
   FROM settlements
-  WHERE timestamp >= TIMESTAMP '2025-05-09'
-    AND timestamp <  TIMESTAMP '2026-06-04'
+  WHERE block_number >= 46849999 - 1296000
+    AND timestamp    >= now() - INTERVAL 30 DAY
   GROUP BY day
   ORDER BY day
   LIMIT 500
