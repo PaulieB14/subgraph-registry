@@ -51,6 +51,29 @@ export function getAmpParquetGlob(): string {
   return _cachedGlob;
 }
 
+// Pre-aggregated daily-stats parquet — one row per day, ~390 rows total.
+// Panoramic dashboard questions ("daily count from May 2025 to June 2026")
+// hit this instead of scanning all 132M settlement rows. Optional: if
+// AMP_DAILY_STATS_PATH is unset, the daily_stats virtual table is
+// effectively unavailable and the model will fall back to settlements.
+function resolveDailyStatsPath(): string | null {
+  const raw = process.env.AMP_DAILY_STATS_PATH;
+  if (!raw || !raw.trim()) return null;
+  const path = raw.trim();
+  if (!ALLOWED_GLOB_PREFIXES.some((p) => path.startsWith(p))) {
+    throw new Error(
+      `AMP_DAILY_STATS_PATH has disallowed prefix. Must start with one of: ${ALLOWED_GLOB_PREFIXES.join(", ")}`,
+    );
+  }
+  return path;
+}
+
+let _cachedDailyStats: string | null | undefined = undefined;
+export function getDailyStatsPath(): string | null {
+  if (_cachedDailyStats === undefined) _cachedDailyStats = resolveDailyStatsPath();
+  return _cachedDailyStats;
+}
+
 const DEFAULT_ROW_LIMIT = 500;
 const DEFAULT_TIMEOUT_MS = 9_000;
 

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getAmpParquetGlob, runSql } from "@/lib/duck";
+import { getAmpParquetGlob, getDailyStatsPath, runSql } from "@/lib/duck";
 import { SYSTEM_PROMPT } from "@/lib/ampSchema";
 
 export const runtime = "nodejs";
@@ -36,17 +36,24 @@ interface TraceStep {
   error?: string;
 }
 
-// The model writes "FROM settlements"; we rewrite it to a read_parquet call
-// pointing at the configured glob. Case-insensitive, also handles "from   settlements".
+// The model writes "FROM settlements" or "FROM daily_stats"; we rewrite each
+// to a read_parquet call pointing at the configured path. Case-insensitive,
+// also handles "from   settlements".
 //
-// A naive regex replace would also munge "FROM settlements" appearing inside
-// SQL comments or string literals. Walk the SQL with a tiny state machine that
+// A naive regex replace would also munge those names appearing inside SQL
+// comments or string literals. Walk the SQL with a tiny state machine that
 // skips line-comments (-- … \n), block-comments (/* … */), and single/double
 // quoted strings (respecting SQL '' / "" escapes). Only substitute occurrences
 // found in code state. Whitespace and case in the original SQL are preserved.
-function rewriteSettlements(sql: string, glob: string): string {
-  const replacement = `FROM read_parquet('${glob.replace(/'/g, "''")}')`;
-  const pattern = /^FROM\s+settlements\b/i;
+function rewriteVirtualTables(
+  sql: string,
+  tables: Array<{ name: string; path: string }>,
+): string {
+  // Build per-table regex + replacement up front so we don't recompile per-char.
+  const replacements = tables.map((t) => ({
+    pattern: new RegExp(`^FROM\\s+${t.name}\\b`, "i"),
+    replacement: `FROM read_parquet('${t.path.replace(/'/g, "''")}')`,
+  }));
   let out = "";
   let i = 0;
   while (i < sql.length) {
@@ -91,12 +98,17 @@ function rewriteSettlements(sql: string, glob: string): string {
     // Code state: only substitute at word boundaries.
     const isBoundary = i === 0 || !/[A-Za-z0-9_]/.test(sql[i - 1]);
     if (isBoundary) {
-      const m = pattern.exec(sql.slice(i));
-      if (m) {
-        out += replacement;
-        i += m[0].length;
-        continue;
+      let matched = false;
+      for (const { pattern, replacement } of replacements) {
+        const m = pattern.exec(sql.slice(i));
+        if (m) {
+          out += replacement;
+          i += m[0].length;
+          matched = true;
+          break;
+        }
       }
+      if (matched) continue;
     }
     out += c;
     i++;
@@ -139,6 +151,14 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   }
+  // Daily-stats path is optional. When absent, the daily_stats virtual table
+  // is simply not rewritten and any query against it will fail at DuckDB
+  // (which the model handles via its retry loop).
+  const dailyStatsPath = getDailyStatsPath();
+  const tableMap: Array<{ name: string; path: string }> = [
+    { name: "settlements", path: parquetGlob },
+  ];
+  if (dailyStatsPath) tableMap.push({ name: "daily_stats", path: dailyStatsPath });
 
   const client = new Anthropic({ apiKey });
 
@@ -146,9 +166,11 @@ export async function POST(req: Request) {
     {
       name: "run_sql",
       description:
-        "Execute a single read-only SQL statement against the settlements parquet dataset " +
-        "via DuckDB. Use one statement per call, write 'FROM settlements', and include " +
-        "LIMIT 500 unless the user explicitly asks for more. Returns rows as JSON.",
+        "Execute a single read-only SQL statement via DuckDB. Two virtual tables are available:\n" +
+        "  • settlements — row-level data, 132M rows. Use for top-N, lookups, narrow windows.\n" +
+        "  • daily_stats — pre-aggregated, 388 rows (one per day). Use for panoramic " +
+        "daily/weekly/monthly views, time-series plots, or any question spanning > 90 days.\n" +
+        "One statement per call. Include LIMIT 500 unless aggregate or user explicitly asks more.",
       input_schema: {
         type: "object",
         properties: {
@@ -216,7 +238,7 @@ export async function POST(req: Request) {
         continue;
       }
       const sql = String((use.input as { sql?: unknown }).sql || "").trim();
-      const rewritten = rewriteSettlements(sql, parquetGlob);
+      const rewritten = rewriteVirtualTables(sql, tableMap);
       // Tight per-call timeout so a single bad query can't eat the whole budget.
       const perCallTimeout = Math.max(1500, Math.min(40_000, budgetLeft() - 500));
       const result = await runSql(rewritten, { timeoutMs: perCallTimeout });
