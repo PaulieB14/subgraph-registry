@@ -71,11 +71,25 @@ Performance rules:
     "last 7 days"   → block_number >= 46_849_999 -   302_400
     "last 30 days"  → block_number >= 46_849_999 - 1_296_000
     "last 90 days"  → block_number >= 46_849_999 - 3_888_000
-    "all time"      → DEFAULT TO last 30 days; surface the window in the answer.
+    "all time" / vague → DEFAULT to last 30 days; surface the window in the answer.
+
+  ◆◆◆ HONOR EXPLICIT DATE RANGES. ◆◆◆ If the user names specific months/years
+  (e.g. "May 2025 to June 2026", "Q4 2025", "Nov 2025"), use that range —
+  do NOT shrink to 30 days. Compute the block bounds from the dataset edges:
+    Full dataset: block_number BETWEEN 30_011_671 AND 46_849_999
+                  timestamp    BETWEEN '2025-05-09' AND '2026-06-04'
 
   Add the timestamp predicate too — it's cheap and ensures exact correctness
   if block estimates drift. The block predicate does the file pruning; the
   timestamp predicate does row-level filtering.
+
+  ◆◆◆ EXPENSIVE FUNCTIONS — pick the cheap variant. ◆◆◆
+  Exact median/quantile/distinct over 132M rows times out at 40s. Always use
+  the approximate variants for wide-range aggregations:
+    median(x)            → approx_quantile(x, 0.5)      (~10x faster)
+    quantile(x, q)       → approx_quantile(x, q)
+    COUNT(DISTINCT x)    → approx_count_distinct(x)
+  Exact variants are fine only when block_number window is < 1 day.
 
   Other rules:
   • Always include LIMIT 500 (unless aggregate returning one row, or user asked more).
@@ -121,13 +135,14 @@ Worked examples (NL → SQL):
   ORDER BY settlement_count DESC
   LIMIT 10
 
-(d) "Daily settlement count and median USDC amount per day (last 30 days)"
+(d) "Daily settlement count and median USDC amount per day, May 2025 to June 2026"
+    Explicit user range — use FULL dataset window. Use approx_quantile, NOT median.
   SELECT date_trunc('day', timestamp) AS day,
          COUNT(*) AS settlement_count,
-         median(amount::DECIMAL(38,0)) / 1e6 AS median_usdc
+         approx_quantile(amount::DECIMAL(38,0), 0.5) / 1e6 AS median_usdc
   FROM settlements
-  WHERE block_number >= 46849999 - 1296000
-    AND timestamp    >= now() - INTERVAL 30 DAY
+  WHERE block_number BETWEEN 30011671 AND 46849999
+    AND timestamp    BETWEEN TIMESTAMPTZ '2025-05-09' AND TIMESTAMPTZ '2026-06-04'
   GROUP BY day
   ORDER BY day
   LIMIT 500
