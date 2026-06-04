@@ -1,13 +1,13 @@
 ---
 domain: identity
-count: 403
+count: 404
 percentage: 2.7
-updated: 2026-06-01
+updated: 2026-06-04
 ---
 
 # Identity Subgraphs
 
-**403** subgraphs (2.7% of registry)
+**404** subgraphs (2.7% of registry)
 
 ## Top Subgraphs by Reliability
 

@@ -1,13 +1,13 @@
 ---
 network: sepolia
-count: 555
+count: 556
 percentage: 3.7
-updated: 2026-06-01
+updated: 2026-06-04
 ---
 
 # Sepolia Subgraphs
 
-**555** subgraphs (3.7% of registry)
+**556** subgraphs (3.7% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -40,10 +40,10 @@ updated: 2026-06-01
 | uniswap-v3-sepolia | defi | dex | 0.39 | 110,663 |
 | Balancer CoW AMM Sepolia | defi | dex | 0.34 | 31,022 |
 | geotest | defi | bridge | 0.33 | — |
+| Nox Protocol Indexer - Ethereum Sepolia | defi | dex | 0.32 | 6 |
 | game2-test | defi | bridge | 0.31 | 160,737 |
 | dex223-v1-sepolia | defi | dex | 0.30 | 60,424 |
 | tellor-autopay-sepolia | defi | general | 0.30 | 20,758 |
-| newStoneDev | defi | staking | 0.29 | 4,910 |
 
 ## Query This Network
 
