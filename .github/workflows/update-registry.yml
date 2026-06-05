@@ -48,14 +48,41 @@ jobs:
       - name: Sync python DB to root (npm publish path)
         run: cp python/data/registry.db data/registry.db
 
+      - name: Re-pin EXPECTED_DB_SHA256 and bump patch version
+        # src/index.js verifyDbOrThrow() is interlocked with data/registry.db.
+        # If the DB rebuilds but the constant doesn't, the next runtime
+        # integrity check fails — this is the 0.6.0 outage. Re-pin and bump
+        # in the same commit as the new DB so the repo never publishes an
+        # inconsistent triple.
+        run: |
+          NEW_HASH=$(shasum -a 256 data/registry.db | awk '{print $1}')
+          echo "new DB sha256: $NEW_HASH"
+          sed -E -i \
+            "s|(const EXPECTED_DB_SHA256[[:space:]]*=[[:space:]]*\")[a-f0-9]{64}(\";?)|\1${NEW_HASH}\2|" \
+            src/index.js
+          grep -q "$NEW_HASH" src/index.js || {
+            echo "::error::Failed to update EXPECTED_DB_SHA256 in src/index.js"
+            exit 1
+          }
+          node -e "
+            const fs=require('fs');
+            const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+            const [maj,min,pat]=p.version.split('.').map(Number);
+            p.version=\`\${maj}.\${min}.\${pat+1}\`;
+            fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+            console.log('bumped to', p.version);
+          "
+
       - name: Generate charts and category docs
         run: python python/generate_docs.py
 
-      - name: Commit updated registry and docs
+      - name: Commit updated registry, hash, version, and docs
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/registry.db python/data/ docs/
-          git diff --cached --quiet || git commit -m "data: update subgraph registry and docs (${{ inputs.mode || 'incremental' }}) [skip ci]"
+          # Stage the four interlocked artifacts together — the repo is
+          # never published in an inconsistent state.
+          git add data/registry.db python/data/ docs/ src/index.js package.json
+          git diff --cached --quiet || git commit -m "data: update subgraph registry, hash, docs (${{ inputs.mode || 'incremental' }}) [skip ci]"
           git pull --rebase origin main || true
           git push
