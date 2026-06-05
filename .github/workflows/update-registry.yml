@@ -73,9 +73,21 @@ jobs:
             const fs=require('fs');
             const p=JSON.parse(fs.readFileSync('package.json','utf8'));
             const [maj,min,pat]=p.version.split('.').map(Number);
-            p.version=\`\${maj}.\${min}.\${pat+1}\`;
+            const next=\`\${maj}.\${min}.\${pat+1}\`;
+            p.version=next;
             fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
-            console.log('bumped to', p.version);
+            // server.json mirrors the npm version in two places (the MCP
+            // server schema requires both top-level and packages[0].version
+            // to match the published npm tarball). The Test workflow's
+            // 'Verify package.json and server.json versions match' step
+            // hard-fails on drift, so bump both fields here in lockstep.
+            const s=JSON.parse(fs.readFileSync('server.json','utf8'));
+            s.version=next;
+            if (Array.isArray(s.packages)) {
+              for (const pkg of s.packages) if (pkg.version) pkg.version=next;
+            }
+            fs.writeFileSync('server.json', JSON.stringify(s,null,2)+'\n');
+            console.log('bumped to', next);
           "
 
       - name: Generate charts and category docs
@@ -88,7 +100,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Stage the four interlocked artifacts together — the repo is
           # never published in an inconsistent state.
-          git add data/registry.db python/data/ docs/ src/index.js package.json
+          git add data/registry.db python/data/ docs/ src/index.js package.json server.json
           if git diff --cached --quiet; then
             echo "no-op (no DB/docs/hash changes); skipping commit + publish"
             echo "committed=false" >> "$GITHUB_OUTPUT"
