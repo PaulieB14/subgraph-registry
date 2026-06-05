@@ -29,6 +29,11 @@ jobs:
           cache: pip
           cache-dependency-path: python/requirements.txt
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         run: pip install -r python/requirements.txt
 
@@ -77,12 +82,43 @@ jobs:
         run: python python/generate_docs.py
 
       - name: Commit updated registry, hash, version, and docs
+        id: commit
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Stage the four interlocked artifacts together — the repo is
           # never published in an inconsistent state.
           git add data/registry.db python/data/ docs/ src/index.js package.json
-          git diff --cached --quiet || git commit -m "data: update subgraph registry, hash, docs (${{ inputs.mode || 'incremental' }}) [skip ci]"
+          if git diff --cached --quiet; then
+            echo "no-op (no DB/docs/hash changes); skipping commit + publish"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "data: update subgraph registry, hash, docs (${{ inputs.mode || 'incremental' }}) [skip ci]"
           git pull --rebase origin main || true
           git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+          echo "new_version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm
+        # Only runs when (a) the commit step actually pushed a new DB/hash/version
+        # and (b) the NPM_TOKEN secret is configured in the repo.
+        # If NPM_TOKEN is unset the step is skipped cleanly — manual publish remains
+        # an option. To enable: add NPM_TOKEN repo secret in Settings → Secrets → Actions.
+        if: steps.commit.outputs.committed == 'true' && env.NPM_TOKEN != ''
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          NEW_VER="${{ steps.commit.outputs.new_version }}"
+          echo "publishing subgraph-registry-mcp@${NEW_VER}"
+          # `--access public` is required for first publish of a scoped package
+          # and harmless for unscoped; safest to always pass.
+          # `|| true` if the version already exists on registry (e.g. workflow
+          # retried after a partial failure) — we don't want to fail the whole
+          # workflow on a duplicate publish attempt.
+          if npm view "subgraph-registry-mcp@${NEW_VER}" version >/dev/null 2>&1; then
+            echo "version ${NEW_VER} already on registry; skipping publish"
+            exit 0
+          fi
+          npm publish --access public
