@@ -1,43 +1,43 @@
 ---
 network: mainnet
-count: 2431
+count: 2432
 percentage: 16.1
 updated: 2026-06-07
 ---
 
 # Ethereum Subgraphs
 
-**2,431** subgraphs (16.1% of registry)
+**2,432** subgraphs (16.1% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Uniswap-V3 | defi | dex | 0.97 | 23,398,589 |
-| ENS | identity | name-service | 0.97 | 28,790,116 |
-| Uniswap V2 | defi | dex | 0.97 | 45,527,346 |
-| Uni V3 Staker Mainnet | defi | staking | 0.93 | 17,527,392 |
-| uniswap-v4-ethereum | defi | dex | 0.92 | 17,378,067 |
-| Uniswap V3 Mainnet | defi | dex | 0.92 | 21,717,362 |
-| snapshot | dao | governance | 0.92 | 7,445,315 |
-| protocol-v3 | defi | lending | 0.89 | 9,562,275 |
-| Uniswap V3 Ethereum | defi | dex | 0.86 | 2,602,222 |
-| Enzyme Core | defi | staking | 0.86 | 3,778,208 |
-| Balancer V2 | defi | dex | 0.84 | 1,881,494 |
-| Exchange | defi | dex | 0.84 | 1,819,524 |
-| Polygon Root Subgraph | defi | staking | 0.84 | 994,699 |
-| etherfi-v2-main | defi | staking | 0.83 | 1,100,274 |
-| Compoundor Mainnet | defi | lending | 0.81 | 3,414,169 |
-| exchange-v3-eth | defi | dex | 0.81 | 1,542,802 |
-| inverse-governance-subgraph | dao | governance | 0.81 | 1,903,434 |
-| Graph Network Ethereum | infrastructure | staking | 0.80 | 2,836,416 |
-| Request Payments Mainnet | defi | dex | 0.80 | 3,086,924 |
-| Lido | defi | staking | 0.80 | 2,757,060 |
-| sofa ethereum opt | defi | lending | 0.79 | 3,027,584 |
-| Ethereum Blocks | analytics | dex | 0.79 | 600,225 |
-| etherfi-phase-phase2 | defi | staking | 0.79 | 495,975 |
-| Curve Finance Ethereum | defi | dex | 0.79 | 391,865 |
-| TellerV2 Mainnet | defi | lending | 0.79 | 1,411,714 |
+| Uniswap-V3 | defi | dex | 0.98 | 24,333,445 |
+| uniswap-v2-ethereum | defi | dex | 0.98 | 82,481,906 |
+| ENS | identity | name-service | 0.97 | 26,106,358 |
+| Uniswap V2 | defi | dex | 0.97 | 45,910,608 |
+| uniswap-v4-ethereum | defi | dex | 0.93 | 20,188,578 |
+| Uni V3 Staker Mainnet | defi | staking | 0.93 | 12,328,308 |
+| snapshot | dao | governance | 0.92 | 7,567,256 |
+| Uniswap V3 Mainnet | defi | dex | 0.89 | 3,970,018 |
+| protocol-v3 | defi | lending | 0.89 | 9,383,583 |
+| Uniswap V3 Ethereum | defi | dex | 0.86 | 2,307,804 |
+| Enzyme Core | defi | staking | 0.86 | 3,085,921 |
+| Lido | defi | staking | 0.85 | 5,179,106 |
+| Balancer V2 | defi | dex | 0.84 | 1,802,055 |
+| Polygon Root Subgraph | defi | staking | 0.84 | 1,001,715 |
+| etherfi-v2-main | defi | staking | 0.84 | 1,062,043 |
+| Exchange | defi | dex | 0.83 | 1,686,991 |
+| Compoundor Mainnet | defi | lending | 0.82 | 3,447,544 |
+| inverse-governance-subgraph | dao | governance | 0.81 | 1,923,826 |
+| Request Payments Mainnet | defi | dex | 0.81 | 3,087,591 |
+| exchange-v3-eth | defi | dex | 0.81 | 1,338,640 |
+| sofa ethereum opt | defi | lending | 0.80 | 2,964,188 |
+| etherfi-phase-phase2 | defi | staking | 0.79 | 621,575 |
+| Ethereum Blocks | analytics | dex | 0.79 | 547,868 |
+| Curve Finance Ethereum | defi | dex | 0.79 | 403,742 |
+| Compound V2 Ethereum | defi | lending | 0.79 | 341,426 |
 
 ## Query This Network
 
