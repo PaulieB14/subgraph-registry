@@ -62,9 +62,22 @@ jobs:
         run: |
           NEW_HASH=$(shasum -a 256 data/registry.db | awk '{print $1}')
           echo "new DB sha256: $NEW_HASH"
-          sed -E -i \
-            "s|(const EXPECTED_DB_SHA256[[:space:]]*=[[:space:]]*\")[a-f0-9]{64}(\";?)|\1${NEW_HASH}\2|" \
-            src/index.js
+          # Node-based replace tolerates a multi-line declaration
+          # (e.g. `const EXPECTED_DB_SHA256 =\n  "abc...";` after a prettier pass).
+          # Previous sed approach was single-line-only and silently no-op'd.
+          NEW_HASH="$NEW_HASH" node -e "
+            const fs = require('fs');
+            const want = process.env.NEW_HASH;
+            const file = 'src/index.js';
+            const src = fs.readFileSync(file, 'utf8');
+            const re = /(const\s+EXPECTED_DB_SHA256\s*=\s*\")[a-f0-9]{64}(\")/;
+            if (!re.test(src)) {
+              console.error('::error::could not locate EXPECTED_DB_SHA256 literal in ' + file);
+              process.exit(1);
+            }
+            fs.writeFileSync(file, src.replace(re, '\$1' + want + '\$2'));
+            console.log('repinned EXPECTED_DB_SHA256 to', want);
+          "
           grep -q "$NEW_HASH" src/index.js || {
             echo "::error::Failed to update EXPECTED_DB_SHA256 in src/index.js"
             exit 1
