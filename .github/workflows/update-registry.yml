@@ -147,3 +147,26 @@ jobs:
             exit 0
           fi
           npm publish --access public
+
+      - name: Publish to ClawHub
+        # CLI v0.17.x reads its token from a local config file. We hold the
+        # full {registry, token} JSON in a single GitHub secret, write it back
+        # to a temp file at runtime, and point CLAWHUB_CONFIG_PATH at it so
+        # the CLI authenticates non-interactively.
+        if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
+        env:
+          CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
+        run: |
+          NEW_VER="${{ steps.commit.outputs.new_version }}"
+          CFG="$RUNNER_TEMP/clawhub-config.json"
+          printf '%s' "$CLAWHUB_CONFIG_JSON" > "$CFG"
+          chmod 600 "$CFG"
+          export CLAWHUB_CONFIG_PATH="$CFG"
+          npx -y clawhub@0.17 whoami
+          # Slug + path mirror Paul's manual flow: publish the repo root as
+          # the `subgraph-registry` skill, version pinned to the bumped npm
+          # version so the two registries stay in lockstep.
+          npx -y clawhub@0.17 skill publish . \
+            --slug subgraph-registry \
+            --version "$NEW_VER" \
+            --no-input
