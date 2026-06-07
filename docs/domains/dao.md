@@ -2,7 +2,7 @@
 domain: dao
 count: 424
 percentage: 2.8
-updated: 2026-06-04
+updated: 2026-06-07
 ---
 
 # DAO Subgraphs

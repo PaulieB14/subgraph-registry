@@ -2,7 +2,7 @@
 domain: nfts
 count: 863
 percentage: 5.7
-updated: 2026-06-04
+updated: 2026-06-07
 ---
 
 # NFTs Subgraphs

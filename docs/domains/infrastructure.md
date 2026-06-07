@@ -1,13 +1,13 @@
 ---
 domain: infrastructure
-count: 590
+count: 591
 percentage: 3.9
-updated: 2026-06-04
+updated: 2026-06-07
 ---
 
 # Infrastructure Subgraphs
 
-**590** subgraphs (3.9% of registry)
+**591** subgraphs (3.9% of registry)
 
 ## Top Subgraphs by Reliability
 

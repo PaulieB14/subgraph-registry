@@ -1,13 +1,13 @@
 ---
 network: avalanche
 count: 445
-percentage: 3.0
-updated: 2026-06-04
+percentage: 2.9
+updated: 2026-06-07
 ---
 
 # Avalanche Subgraphs
 
-**445** subgraphs (3.0% of registry)
+**445** subgraphs (2.9% of registry)
 
 ## Top Subgraphs by Reliability
 
