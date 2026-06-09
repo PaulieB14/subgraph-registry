@@ -2,7 +2,7 @@
 network: gnosis
 count: 283
 percentage: 1.9
-updated: 2026-06-07
+updated: 2026-06-09
 ---
 
 # Gnosis Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-06-07
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| conditional-tokens-gc | defi | name-service | 0.92 | 5,721,212 |
-| Gnosis Blocks | defi | general | 0.84 | 915,314 |
-| Giveth Economy Second XDai | defi | dex | 0.78 | 928,338 |
-| Realtoken gnosis | defi | bridge | 0.76 | 71,895 |
-| YAM gnosis | defi | dex | 0.76 | 415,351 |
-| Request Payments xDAI | defi | dex | 0.76 | 490,106 |
-| Balancer Gnosis Chain V2 | defi | dex | 0.75 | 473,042 |
-| Algebra-v19 | defi | dex | 0.74 | 44,890 |
-| Balancer CoW AMM Gnosis | defi | dex | 0.73 | 408,383 |
-| gbc-bridge-gnosis | defi | bridge | 0.71 | 19,810 |
-| RMM v3 wrapper - gnosis | defi | general | 0.70 | 36,462 |
-| protocol-v3-gnosis | defi | lending | 0.69 | 122,256 |
-| NewGraph | infrastructure | general | 0.69 | 830,772 |
-| Fileverse DDocs Registry | infrastructure | general | 0.69 | 415,676 |
-| HOPR Channels | infrastructure | bridge | 0.69 | 68,770 |
-| gardens-gnosis | dao | governance | 0.69 | 8,582 |
-| realityeth-gnosis | dao | general | 0.67 | 123,752 |
-| HOPR Nodes Dufour | infrastructure | bridge | 0.67 | 70,089 |
-| celeste-gnosis | defi | staking | 0.67 | 3,403 |
-| RMM v2 Gnosis | defi | lending | 0.67 | 19,647 |
-| Levinswap Gnosis | defi | dex | 0.67 | 19,769 |
-| agreement-gnosis | dao | governance | 0.66 | 5,140 |
-| kleros-display-gnosis | defi | general | 0.66 | 162,634 |
-| olas-predict | defi | general | 0.66 | 269,311 |
-| adaptive-stream-gnosis | defi | general | 0.66 | 207,918 |
+| conditional-tokens-gc | defi | name-service | 0.92 | 5,842,297 |
+| Gnosis Blocks | defi | general | 0.84 | 931,689 |
+| Giveth Economy Second XDai | defi | dex | 0.78 | 924,190 |
+| Realtoken gnosis | defi | bridge | 0.76 | 70,730 |
+| YAM gnosis | defi | dex | 0.76 | 417,168 |
+| Request Payments xDAI | defi | dex | 0.76 | 487,303 |
+| Balancer Gnosis Chain V2 | defi | dex | 0.75 | 488,059 |
+| Algebra-v19 | defi | dex | 0.74 | 44,434 |
+| Balancer CoW AMM Gnosis | defi | dex | 0.73 | 404,669 |
+| gbc-bridge-gnosis | defi | bridge | 0.71 | 19,443 |
+| RMM v3 wrapper - gnosis | defi | general | 0.70 | 36,036 |
+| protocol-v3-gnosis | defi | lending | 0.69 | 117,895 |
+| NewGraph | infrastructure | general | 0.69 | 830,485 |
+| Fileverse DDocs Registry | infrastructure | general | 0.69 | 415,188 |
+| HOPR Channels | infrastructure | bridge | 0.69 | 68,720 |
+| gardens-gnosis | dao | governance | 0.69 | 9,226 |
+| realityeth-gnosis | dao | general | 0.68 | 138,123 |
+| HOPR Nodes Dufour | infrastructure | bridge | 0.67 | 70,092 |
+| celeste-gnosis | defi | staking | 0.67 | 3,374 |
+| RMM v2 Gnosis | defi | lending | 0.67 | 19,356 |
+| Levinswap Gnosis | defi | dex | 0.67 | 19,368 |
+| agreement-gnosis | dao | governance | 0.66 | 5,530 |
+| kleros-display-gnosis | defi | general | 0.66 | 154,254 |
+| olas-predict | defi | general | 0.66 | 241,014 |
+| adaptive-stream-gnosis | defi | general | 0.66 | 207,769 |
 
 ## Query This Network
 
