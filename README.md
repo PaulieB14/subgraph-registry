@@ -16,11 +16,13 @@ Agents querying The Graph need to discover and select the right subgraph before 
 
 1. **Crawls** all active subgraphs from the Graph Network meta-subgraph
 2. **Fetches** the GraphQL schema for every deployment
-3. **Classifies** each subgraph by domain, protocol type, canonical entities, and schema family
-4. **Scores** reliability using on-chain signals (query fees, volume, curation, stake)
-5. **Returns x402 + legacy query URLs** — agents can pay $0.01 USDC on Base per query (no API key) or use a Studio key
-6. **Publishes** as SQLite database + REST API + MCP server
-7. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
+3. **Extracts contract addresses** from each manifest's `dataSources` and `templates` — agents can answer "which subgraph indexes contract 0x… on chain X?"
+4. **Generates a per-subgraph starter GraphQL query** from the parsed schema (real top entity, real fields, sensible orderBy) — no more generic boilerplate that doesn't compile against most subgraphs
+5. **Classifies** each subgraph by domain, protocol type, canonical entities, and schema family
+6. **Scores** reliability using on-chain signals (query fees, volume, curation, stake)
+7. **Returns x402 + legacy query URLs** — agents can pay $0.01 USDC on Base per query (no API key) or use a Studio key
+8. **Publishes** as SQLite database + REST API + MCP server + **per-subgraph JSON-LD at `/.well-known/subgraph/{id}.jsonld`** for ecosystem crawlers
+9. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
 
 ---
 
@@ -191,6 +193,28 @@ The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on fir
 
 ---
 
+## Well-Known JSON-LD Manifest
+
+Stable, machine-readable per-subgraph manifest that other crawlers and agent frameworks can index without going through MCP. Served by the Node MCP HTTP transport:
+
+```
+GET /.well-known/subgraph/{id}.jsonld     Full per-subgraph manifest (JSON-LD)
+GET /subgraphs/{id}.jsonld                 Alias (same payload)
+GET /.well-known/subgraph-index.jsonld     Discovery list — top 100 by reliability with @id links
+```
+
+Each manifest includes classification, parsed entities, contract addresses (from the indexed `dataSources`), endpoints (x402 + API-key), a per-subgraph starter query generated from the actual schema, pricing, and metadata. The `@context` + `@type` make the shape auto-discoverable.
+
+```bash
+# Start the HTTP transport
+npx subgraph-registry-mcp --http-only
+
+# Fetch the manifest for Uniswap V3 Mainnet
+curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld
+```
+
+---
+
 ## REST API
 
 ```
@@ -199,7 +223,7 @@ GET /domains                    Domain breakdown
 GET /networks                   Network breakdown
 GET /families                   Schema family groups (fork/clone detection)
 GET /subgraphs                  Filter subgraphs
-GET /subgraphs/{id}             Full detail for one subgraph
+GET /subgraphs/{id}             Full detail for one subgraph (now includes contract_addresses and example_query)
 GET /search?q=uniswap           Free-text search
 GET /recommend?goal=...&chain=  Agent-optimized recommendation
 ```
