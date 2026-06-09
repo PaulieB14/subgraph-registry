@@ -100,6 +100,7 @@ query FetchSchemas($ids: [String!]!) {
     id
     network
     schema { id schema }
+    manifest
   }
 }
 """
@@ -188,9 +189,68 @@ async def crawl_all_subgraphs(client: httpx.AsyncClient, min_updated_at: int = 0
     return all_subgraphs
 
 
-async def fetch_schemas(client: httpx.AsyncClient, ipfs_hashes: list[str]) -> dict[str, str]:
-    """Fetch schema text for deployments, batched to avoid query size limits."""
-    schemas = {}
+def _extract_contract_addresses(manifest_yaml: str) -> list[dict] | None:
+    """Pull dataSources[].source.address from a subgraph manifest YAML string.
+
+    Returns a list of {kind, name, address, network, startBlock} dicts, or
+    None if the YAML can't be parsed or has no addresses. Substreams-powered
+    subgraphs have a different shape (no `dataSources[].source.address`) —
+    they return None too.
+
+    Lets agents answer "which subgraph indexes contract 0x... on chain X?"
+    without going to IPFS or running an introspect call per subgraph.
+    """
+    if not manifest_yaml:
+        return None
+    try:
+        import yaml as _yaml  # PyYAML
+        doc = _yaml.safe_load(manifest_yaml)
+    except Exception:
+        return None
+    if not isinstance(doc, dict):
+        return None
+    out = []
+    for ds in (doc.get("dataSources") or []):
+        src = (ds.get("source") or {}) if isinstance(ds, dict) else {}
+        addr = src.get("address")
+        if not addr:
+            continue
+        # Lowercase for consistent matching downstream
+        out.append({
+            "kind": ds.get("kind"),
+            "name": ds.get("name"),
+            "address": str(addr).lower(),
+            "network": ds.get("network"),
+            "startBlock": src.get("startBlock"),
+        })
+    # Templates (dynamic data sources) — capture their addresses too if present
+    for ds in (doc.get("templates") or []):
+        src = (ds.get("source") or {}) if isinstance(ds, dict) else {}
+        addr = src.get("address")
+        if not addr:
+            continue
+        out.append({
+            "kind": ds.get("kind"),
+            "name": ds.get("name"),
+            "address": str(addr).lower(),
+            "network": ds.get("network"),
+            "startBlock": src.get("startBlock"),
+            "template": True,
+        })
+    return out or None
+
+
+async def fetch_schemas(
+    client: httpx.AsyncClient, ipfs_hashes: list[str]
+) -> tuple[dict[str, str], dict[str, list[dict] | None]]:
+    """Fetch schema text + contract-address list for deployments, batched.
+
+    Returns (schemas, contract_addresses) — both keyed by IPFS hash. The
+    manifest YAML is parsed here so it doesn't have to be re-fetched later;
+    the raw manifest string is dropped after extraction.
+    """
+    schemas: dict[str, str] = {}
+    addresses: dict[str, list[dict] | None] = {}
     total = len(ipfs_hashes)
 
     for i in range(0, total, SCHEMA_BATCH_SIZE):
@@ -198,18 +258,24 @@ async def fetch_schemas(client: httpx.AsyncClient, ipfs_hashes: list[str]) -> di
         try:
             data = await query_subgraph(client, SCHEMAS_QUERY, {"ids": batch})
             for manifest in data.get("subgraphDeploymentManifests", []):
+                mid = manifest.get("id")
+                if not mid:
+                    continue
                 if manifest.get("schema") and manifest["schema"].get("schema"):
-                    schemas[manifest["id"]] = manifest["schema"]["schema"]
+                    schemas[mid] = manifest["schema"]["schema"]
+                addrs = _extract_contract_addresses(manifest.get("manifest") or "")
+                if addrs:
+                    addresses[mid] = addrs
         except Exception as e:
             print(f"  Schema batch error at {i}: {e}")
 
         done = min(i + SCHEMA_BATCH_SIZE, total)
         if done % 100 == 0 or done == total:
-            print(f"  Schemas fetched: {len(schemas)}/{total}")
+            print(f"  Schemas fetched: {len(schemas)}/{total}  Addresses: {len(addresses)}")
 
         await asyncio.sleep(0.1)
 
-    return schemas
+    return schemas, addresses
 
 
 async def crawl_active_allocations(client: httpx.AsyncClient) -> dict[str, int]:
@@ -241,7 +307,11 @@ async def crawl_active_allocations(client: httpx.AsyncClient) -> dict[str, int]:
     return counts
 
 
-def flatten_subgraph(sg: dict, schemas: dict[str, str]) -> dict:
+def flatten_subgraph(
+    sg: dict,
+    schemas: dict[str, str],
+    contract_addresses: dict[str, list[dict] | None] | None = None,
+) -> dict:
     """Flatten a raw subgraph response into a clean record."""
     meta = sg.get("metadata") or {}
     deployment = (sg.get("currentVersion") or {}).get("subgraphDeployment") or {}
@@ -275,6 +345,10 @@ def flatten_subgraph(sg: dict, schemas: dict[str, str]) -> dict:
         "denied_at": deployment.get("deniedAt", 0),
         # Schema (can be None)
         "schema": schemas.get(ipfs_hash) if ipfs_hash else None,
+        # Contract addresses extracted from manifest YAML. None means either
+        # we didn't extract (e.g. substreams-powered, or YAML had no addresses),
+        # not "no contracts" — distinguish with .get vs default {}.
+        "contract_addresses": (contract_addresses or {}).get(ipfs_hash) if ipfs_hash else None,
         # Filled in by full_crawl after crawl_active_allocations runs
         "active_allocation_count": 0,
     }
@@ -421,12 +495,13 @@ async def full_crawl(
                 unique_hashes.append(h)
         print(f"  Unique deployments: {len(unique_hashes)} (from {len(raw_subgraphs)} subgraphs)")
 
-        # Fetch schemas
-        schemas = {}
+        # Fetch schemas + contract addresses (both come from the same manifest endpoint)
+        schemas: dict[str, str] = {}
+        contract_addresses: dict[str, list[dict] | None] = {}
         if fetch_schemas_flag:
-            print("\n=== Fetching Schemas ===")
-            schemas = await fetch_schemas(client, unique_hashes)
-            print(f"  Total schemas: {len(schemas)}")
+            print("\n=== Fetching Schemas + Contract Addresses ===")
+            schemas, contract_addresses = await fetch_schemas(client, unique_hashes)
+            print(f"  Total schemas: {len(schemas)}, with addresses: {len(contract_addresses)}")
 
         # Fetch active indexer allocations per deployment
         print("\n=== Fetching Active Allocations ===")
@@ -444,7 +519,7 @@ async def full_crawl(
                 print(f"    {h[:16]}... = {v:,.0f} queries/30d")
 
     # Flatten
-    subgraphs = [flatten_subgraph(sg, schemas) for sg in raw_subgraphs]
+    subgraphs = [flatten_subgraph(sg, schemas, contract_addresses) for sg in raw_subgraphs]
 
     # Attach query volumes + active allocation counts
     for sg in subgraphs:

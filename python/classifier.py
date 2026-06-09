@@ -275,6 +275,20 @@ class Classification:
     # 0 means no one is serving it — paid queries return "no allocations".
     active_allocation_count: int = 0
 
+    # Contract addresses extracted from manifest YAML — list of
+    # {kind, name, address, network, startBlock} dicts. None means we
+    # didn't extract any (substreams-powered, parse failure, or no addresses
+    # in the manifest). Lets agents answer "which subgraph indexes contract
+    # 0x... on chain X?" without going to IPFS.
+    contract_addresses: list[dict] | None = None
+
+    # Per-subgraph starter GraphQL query, derived from the parsed schema.
+    # Provides agents a working copy-paste example tailored to this
+    # subgraph's actual top entity + fields, instead of the generic
+    # `{ pools(first:5) }` boilerplate that doesn't compile against most
+    # subgraphs.
+    example_query: str | None = None
+
 
 def _score_domain(sg: dict, entities: list[SchemaEntity]) -> tuple[str, int, dict]:
     scores: dict[str, int] = {}
@@ -554,6 +568,96 @@ def _generate_description(
     return " ".join(parts)
 
 
+# Common timestamp-shaped field names — used to pick a sensible orderBy default
+# when generating starter queries. First match wins.
+_TIMESTAMP_FIELDS = (
+    "createdAt", "createdAtTimestamp", "blockTimestamp", "timestamp",
+    "updatedAt", "blockNumber", "block_number",
+)
+
+# Common numeric-shaped fields — used as orderBy fallback for entities like
+# pools/markets that have a "size" metric.
+_VOLUME_FIELDS = (
+    "totalValueLockedUSD", "tvlUSD", "totalLiquidityUSD",
+    "totalDepositBalanceUSD", "volumeUSD", "queryCount", "txCount",
+)
+
+
+def _generate_example_query(entities: list[SchemaEntity], canonical: list[dict]) -> str | None:
+    """Build a copy-pasteable starter GraphQL query for this subgraph.
+
+    Picks the most informative top entity (prefers canonical-mapped entities
+    when present — they're the ones agents most often want — otherwise the
+    largest entity by field count). Selects scalar fields that exist on the
+    entity, plus a sensible orderBy guess. Falls back to None if there's
+    nothing to work with.
+
+    Beats the previous generic `{ pools(first:5) }` example, which only
+    compiled against subgraphs that happen to have a `pools` collection.
+    """
+    if not entities:
+        return None
+
+    # Prefer entities that mapped to a canonical type — they're the ones the
+    # classifier thinks are the subgraph's primary domain entities.
+    canonical_names = {c["name"] for c in (canonical or [])}
+    candidates = [e for e in entities if e.name in canonical_names]
+    if not candidates:
+        # No canonical hits — fall back to the entity with the most fields.
+        candidates = sorted(entities, key=lambda e: e.field_count, reverse=True)
+
+    top = candidates[0]
+    field_set = set(top.fields)
+
+    # GraphQL collection name is the pluralized lowercased entity name. The
+    # actual subgraph likely uses the same convention (camelCase + 's') but
+    # there are edge cases (e.g. Index -> indexes vs indices) we'd need to
+    # introspect to handle perfectly. For a starter query that's "good
+    # enough to read and adapt," this is fine.
+    collection = top.name[0].lower() + top.name[1:] + "s"
+
+    # Always include id — every subgraph entity has it.
+    selected_fields: list[str] = ["id"]
+
+    # Pick up to 5 more scalar-looking fields (heuristic: skip ones that
+    # look like references like xxxId, prefer short names).
+    extras = []
+    for f in top.fields:
+        if f in selected_fields:
+            continue
+        if f.endswith("Id") or f.endswith("_ref") or f == "internalRef":
+            continue
+        extras.append(f)
+    selected_fields.extend(extras[:5])
+
+    # orderBy: pick a timestamp field if present, else a volume metric, else
+    # nothing (let the gateway use default ordering).
+    order_by = None
+    for f in _TIMESTAMP_FIELDS:
+        if f in field_set:
+            order_by = (f, "desc")
+            break
+    if not order_by:
+        for f in _VOLUME_FIELDS:
+            if f in field_set:
+                order_by = (f, "desc")
+                break
+
+    args = ["first: 5"]
+    if order_by:
+        args.append(f'orderBy: {order_by[0]}')
+        args.append(f'orderDirection: {order_by[1]}')
+
+    args_str = ", ".join(args)
+    fields_block = "\n    ".join(selected_fields)
+    return (
+        f"{{\n  _meta {{ block {{ number timestamp }} }}\n"
+        f"  {collection}({args_str}) {{\n"
+        f"    {fields_block}\n"
+        f"  }}\n}}"
+    )
+
+
 def classify_one(sg: dict, query_volume: int = 0) -> Classification:
     entities = parse_schema(sg.get("schema"))
     domain, confidence, domain_scores = _score_domain(sg, entities)
@@ -605,6 +709,8 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
         created_at=sg.get("created_at", 0),
         updated_at=sg.get("updated_at", 0),
         active_allocation_count=sg.get("active_allocation_count", 0),
+        contract_addresses=sg.get("contract_addresses"),
+        example_query=_generate_example_query(entities, canonical),
     )
 
 

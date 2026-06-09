@@ -151,14 +151,22 @@ def write_sqlite(
             categories TEXT,
             canonical_entities TEXT,
             all_entities TEXT,
-            active_allocation_count INTEGER DEFAULT 0
+            active_allocation_count INTEGER DEFAULT 0,
+            contract_addresses TEXT,
+            example_query TEXT
         )
     """)
-    # Backfill column on pre-existing DBs (incremental sync path).
-    try:
-        c.execute("ALTER TABLE subgraphs ADD COLUMN active_allocation_count INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
+    # Backfill columns on pre-existing DBs (incremental sync path). Each ALTER
+    # is wrapped because SQLite has no "ADD COLUMN IF NOT EXISTS."
+    for ddl in (
+        "ALTER TABLE subgraphs ADD COLUMN active_allocation_count INTEGER DEFAULT 0",
+        "ALTER TABLE subgraphs ADD COLUMN contract_addresses TEXT",
+        "ALTER TABLE subgraphs ADD COLUMN example_query TEXT",
+    ):
+        try:
+            c.execute(ddl)
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     c.execute("CREATE INDEX IF NOT EXISTS idx_domain ON subgraphs(domain)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_network ON subgraphs(network)")
@@ -169,7 +177,7 @@ def write_sqlite(
 
     for sg in classified:
         c.execute("""
-            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
@@ -181,6 +189,8 @@ def write_sqlite(
             json.dumps([ce["canonical_type"] for ce in sg.canonical_entities]),
             json.dumps(sg.all_entities),
             sg.active_allocation_count,
+            json.dumps(sg.contract_addresses) if sg.contract_addresses else None,
+            sg.example_query,
         ))
 
     conn.commit()
