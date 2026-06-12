@@ -28,10 +28,14 @@ import {
 // dashboard feel real-time without burning gateway query budget.
 export const dynamic = "force-dynamic";
 
-// 5-min ISR cache for the route-level fetch dedup window. Must stay in
-// sync with REVALIDATE_SECONDS in lib/subgraph.ts (used for the per-fetch
-// `next.revalidate` option). Next.js requires this to be a static literal.
-export const revalidate = 300;
+// Note on caching: `dynamic = "force-dynamic"` makes Next render the route
+// at every request, so a page-level `revalidate` export here would conflict
+// (Next 15 rejects the route segment config on build with "can't recognize
+// the exported `config` field"). Per-fetch caching still happens via the
+// `next.revalidate` option passed inside lib/subgraph.ts (REVALIDATE_SECONDS),
+// which feeds Next's Data Cache for the GraphQL responses — that's where the
+// 5-min staleness window actually lives. Don't add `export const revalidate`
+// here without also changing dynamic to "auto".
 
 // Hard wall-clock budget for the page render. Vercel functions default to
 // 10s on Hobby and 60s on Pro; 60s is plenty for the workhorse subgraph
