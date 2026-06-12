@@ -8,24 +8,35 @@ import { NewVsReturning } from "@/components/NewVsReturning";
 import { RecentActivity } from "@/components/RecentActivity";
 import { identifyAgents } from "@/lib/identifyAgents";
 import {
-  deriveNewVsReturningByWeek,
   fetchActivityHeatmap,
   fetchConcentration,
   fetchCumulative,
   fetchDaily,
   fetchLifetimeTotals,
-  fetchNewPayers,
+  fetchNewVsReturningByWeek,
   fetchRecentPayments,
   fetchTopPayers,
   fetchTrends,
-  REVALIDATE_SECONDS,
 } from "@/lib/subgraph";
 
-// Subgraph data is live; revalidate every 5 minutes (set in subgraph.ts).
-// Previous architecture relied on a daily Dune cron (revalidate=86400);
-// migrating to the x402-omnigraph subgraph lets the dashboard feel real-time
-// without burning gateway query budget.
-export const revalidate = REVALIDATE_SECONDS;
+// Dynamic rendering: the page is rendered on demand and the underlying
+// gateway fetches are cached via `next.revalidate` (300s) and React's
+// per-request `cache()`. Avoiding static prerender at build time means
+// builds don't require GRAPH_API_KEY to be set in the build environment
+// (only runtime). Previous architecture relied on a daily Dune cron
+// (revalidate=86400); migrating to the x402-omnigraph subgraph lets the
+// dashboard feel real-time without burning gateway query budget.
+export const dynamic = "force-dynamic";
+
+// 5-min ISR cache for the route-level fetch dedup window. Must stay in
+// sync with REVALIDATE_SECONDS in lib/subgraph.ts (used for the per-fetch
+// `next.revalidate` option). Next.js requires this to be a static literal.
+export const revalidate = 300;
+
+// Hard wall-clock budget for the page render. Vercel functions default to
+// 10s on Hobby and 60s on Pro; 60s is plenty for the workhorse subgraph
+// fetch (single-digit pages) + cached identifyAgents directory build.
+export const maxDuration = 60;
 
 function extractAgentName(agent: string): string {
   const m = /^\[([^\]]+)\]/.exec(agent);
@@ -38,13 +49,13 @@ function extractAgentLink(agent: string, fallback: string): string {
 
 export default async function Page() {
   // All gateway-scoped panels derive from a single paginated payment fetch
-  // memoized inside subgraph.ts; the parallel Promise.all here is mostly
-  // about keeping the call graph readable.
+  // memoized inside subgraph.ts via React's cache(); the parallel Promise.all
+  // here is mostly about keeping the call graph readable.
   const [
     lifetime,
     daily,
     cumulative,
-    newPayers,
+    nrPoints,
     paymentRows,
     heatPoints,
     concRows,
@@ -54,7 +65,7 @@ export default async function Page() {
     fetchLifetimeTotals(),
     fetchDaily(),
     fetchCumulative(),
-    fetchNewPayers(),
+    fetchNewVsReturningByWeek(),
     fetchRecentPayments(50),
     fetchActivityHeatmap(),
     fetchConcentration(),
@@ -62,9 +73,10 @@ export default async function Page() {
     fetchTrends(),
   ]);
 
-  // Agent identity is the only off-subgraph data: enriched at build time via
-  // 8004scan + agent0. With backoff + skip-on-429, this degrades gracefully
-  // if 8004scan is rate-limiting.
+  // Agent identity is the only off-subgraph data: enriched via 8004scan +
+  // agent0 and cached for 6h via unstable_cache so per-render latency stays
+  // bounded. With backoff + skip-on-429, this degrades gracefully if
+  // 8004scan is rate-limiting.
   const agentRows = await identifyAgents(topPayers);
 
   const identityByWallet = new Map<string, { name: string; link: string }>();
@@ -98,10 +110,13 @@ export default async function Page() {
 
   const lastPaymentAt = paymentRows[0]?.block_time ?? lifetime.last_payment_at ?? "";
 
-  // This-week new agents from the directory (first-seen >= 7d ago)
+  // "Agents this week" — distinct NEW agents whose first-ever payment to the
+  // gateway is in the last 7 days. Uses first_seen (set by fetchTopPayers
+  // and propagated through identifyAgents) so a long-time repeat payer
+  // doesn't get re-counted every week.
   const weekAgo = Date.now() - 7 * 86_400_000;
   const agentsThisWeek = agentRows.filter((a) => {
-    const t = Date.parse(a.last_seen);
+    const t = Date.parse(a.first_seen);
     return Number.isFinite(t) && t >= weekAgo;
   }).length;
 
@@ -110,16 +125,18 @@ export default async function Page() {
     totalPayments,
     agentsKnown: agentRows.length,
     agentsRepeat,
+    // 0% delta is meaningful (= "exactly on prior-week pace"); coerce to
+    // undefined so the StatCard hides the chip rather than rendering "+0%"
+    // for a quiet week. Matches the Dune-era visual behaviour.
     weekDeltaUSDC: weekDeltaUSDC || undefined,
     weekDeltaPayments: weekDeltaPayments || undefined,
     agentsThisWeek,
     repeatsThisWeek: undefined,
     lastPaymentAt,
-    paymentsToday: paymentsToday || undefined,
+    // Preserve 0 — "0 payments today" is different from "no data". Hero
+    // hides the chip when undefined and renders "0 today" when zero.
+    paymentsToday: paymentsToday ?? undefined,
   };
-
-  // New vs returning weekly cohort
-  const nrPoints = deriveNewVsReturningByWeek(daily, newPayers);
 
   return (
     <>

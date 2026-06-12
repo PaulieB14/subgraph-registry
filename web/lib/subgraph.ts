@@ -8,6 +8,8 @@
 // Auth: GRAPH_API_KEY env var (same key used by refresh_known_agents.py for
 // the agent0 enrichment path). NEVER log the key value.
 
+import { cache } from "react";
+
 import type { ConcentrationRow } from "@/components/Concentration";
 import type { CumulativePoint } from "@/components/CumulativeChart";
 import type { DailyPoint } from "@/components/DailyChart";
@@ -27,11 +29,17 @@ const SUBGRAPH_ID = "Cb56epg3EvQ6JRpPfknbkM54QxpzTvLa7mwKNQQfUyoj";
 // the gateway gets a handful of payments per day at most, so 5-min staleness
 // preserves the "real-time dashboard" feel that wasn't possible with the
 // daily Dune cron without burning gateway query budget.
+//
+// IMPORTANT: app/page.tsx exports `revalidate = 300` as a literal because
+// Next.js requires a static literal for route segment config. The two values
+// must stay in sync; bumping one without the other will break the contract
+// (the page caches for one window but fetches refresh at the other).
 export const REVALIDATE_SECONDS = 300;
 
-// Safety cap on the paginated payment fetch. Current dataset is 143 rows;
-// 50k = ~year of growth at 100x current rate.
-const MAX_ROWS = 50_000;
+// Safety cap on the paginated payment fetch. Current dataset is ~143 rows;
+// 5_000 = ~5y at current pace and ~5 pages of gateway queries worst case.
+// A runaway loop is then bounded to single-digit gateway calls.
+const MAX_ROWS = 5_000;
 const PAGE_SIZE = 1000;
 
 // ── Gateway client ────────────────────────────────────────────────────────────
@@ -39,9 +47,17 @@ const PAGE_SIZE = 1000;
 function gatewayUrl(): string {
   const key = process.env.GRAPH_API_KEY;
   if (!key) {
-    // Keep parity with the old dune.ts behavior: warn loudly but return
-    // empty data so local dev without an API key still renders.
-    console.warn("[subgraph] GRAPH_API_KEY not set; queries will return empty results");
+    // Production should fail loudly — silent empty dashboards are a worse
+    // signal for ops than a hard error. Local dev keeps the soft-warn path
+    // so contributors without a key can still iterate on the UI shell.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "[subgraph] GRAPH_API_KEY is required in production but not set",
+      );
+    }
+    console.warn(
+      "[subgraph] GRAPH_API_KEY not set; queries will return empty results",
+    );
     return "";
   }
   return `https://gateway.thegraph.com/api/${key}/subgraphs/id/${SUBGRAPH_ID}`;
@@ -52,33 +68,66 @@ interface GraphQLResponse<T> {
   errors?: { message: string }[];
 }
 
+/**
+ * POST a GraphQL query to the gateway. Logs failures with a tag-able prefix
+ * but returns null on any error so callers can fall back gracefully.
+ *
+ * Includes one transparent retry on transient gateway errors (the gateway
+ * occasionally returns "bad indexers: Timeout" on the first hit and then
+ * succeeds immediately on retry).
+ */
 export async function postGraphQL<T>(
   query: string,
   variables: Record<string, unknown> = {},
+  opName = "query",
 ): Promise<T | null> {
   const url = gatewayUrl();
   if (!url) return null;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, variables }),
-      next: { revalidate: REVALIDATE_SECONDS, tags: ["subgraph:x402-omnigraph"] },
-    });
-    if (!res.ok) {
-      console.warn(`[subgraph] HTTP ${res.status} from gateway`);
+  const body = JSON.stringify({ query, variables });
+  const attempts = 2;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        next: { revalidate: REVALIDATE_SECONDS, tags: ["subgraph:x402-omnigraph"] },
+      });
+      if (!res.ok) {
+        console.warn(
+          `[subgraph] HTTP ${res.status} from gateway (op=${opName}, attempt=${attempt + 1})`,
+        );
+        if (attempt + 1 < attempts) {
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
+      const json = (await res.json()) as GraphQLResponse<T>;
+      if (json.errors && json.errors.length) {
+        console.warn(
+          `[subgraph] GraphQL error (op=${opName}, attempt=${attempt + 1}): ${json.errors[0].message.slice(0, 200)}`,
+        );
+        if (attempt + 1 < attempts) {
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
+      return json.data ?? null;
+    } catch (e) {
+      console.warn(
+        `[subgraph] fetch failed (op=${opName}, attempt=${attempt + 1}):`,
+        e,
+      );
+      if (attempt + 1 < attempts) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
       return null;
     }
-    const json = (await res.json()) as GraphQLResponse<T>;
-    if (json.errors && json.errors.length) {
-      console.warn(`[subgraph] GraphQL error: ${json.errors[0].message.slice(0, 200)}`);
-      return null;
-    }
-    return json.data ?? null;
-  } catch (e) {
-    console.warn("[subgraph] fetch failed:", e);
-    return null;
   }
+  return null;
 }
 
 // ── Raw entity types (subset of the schema we use) ───────────────────────────
@@ -95,6 +144,8 @@ interface RawPayment {
 
 interface RawSummary {
   id: string;
+  address: string;
+  role: string;
   totalPayments: string;
   totalVolumeDecimal: string;
   firstPaymentTimestamp: string | null;
@@ -105,13 +156,11 @@ interface PaymentsPage {
   x402Payments: RawPayment[];
 }
 
-interface SummaryQuery {
-  x402AddressSummary: RawSummary | null;
+interface SummariesQuery {
+  x402AddressSummaries: RawSummary[];
 }
 
 // ── Workhorse: paginated payments to the gateway ──────────────────────────────
-
-let _cachedPayments: RawPayment[] | null = null;
 
 /**
  * Paginated id_gt cursor fetch of every X402Payment where to=gateway.
@@ -119,14 +168,18 @@ let _cachedPayments: RawPayment[] | null = null;
  * ACTIVITY_HEATMAP, TRENDS, and TOP_PAYERS from this single dataset to
  * minimize gateway query cost.
  *
- * Memoized for the duration of a request so the dashboard's parallel
- * `Promise.all` does not refetch the same data N times.
+ * Wrapped in React's `cache()` for per-request memoization — the parallel
+ * `Promise.all` in page.tsx hits this many times in one render but
+ * dedupes to a single execution. NOT a cross-request cache: Next.js
+ * `next: { revalidate }` on the underlying fetch handles cross-request
+ * caching at the data layer.
  */
-export async function getGatewayPaymentsAll(): Promise<RawPayment[]> {
-  if (_cachedPayments) return _cachedPayments;
-
+export const getGatewayPaymentsAll = cache(async (): Promise<RawPayment[]> => {
+  // Use Bytes! cursor type — X402Payment.id is Bytes. "0x" is the
+  // canonical empty-Bytes literal and lexicographically precedes every
+  // real ID, so the first page returns from the start.
   const query = `
-    query Payments($to: Bytes!, $cursor: String!, $first: Int!) {
+    query Payments($to: Bytes!, $cursor: Bytes!, $first: Int!) {
       x402Payments(
         where: { to: $to, id_gt: $cursor }
         first: $first
@@ -145,22 +198,30 @@ export async function getGatewayPaymentsAll(): Promise<RawPayment[]> {
   `;
 
   const all: RawPayment[] = [];
-  let cursor = "";
+  let cursor = "0x";
   while (all.length < MAX_ROWS) {
-    const data = await postGraphQL<PaymentsPage>(query, {
-      to: GATEWAY_RECIPIENT,
-      cursor,
-      first: PAGE_SIZE,
-    });
-    const rows = data?.x402Payments ?? [];
+    const data = await postGraphQL<PaymentsPage>(
+      query,
+      { to: GATEWAY_RECIPIENT, cursor, first: PAGE_SIZE },
+      "getGatewayPaymentsAll",
+    );
+    // Distinguish "transient error → null" (postGraphQL already retried;
+    // bail rather than treat as EOF and lose the whole dataset for 5min)
+    // from "successful empty page → []" (true EOF).
+    if (data === null) {
+      console.warn(
+        `[subgraph] getGatewayPaymentsAll: page fetch failed at cursor=${cursor.slice(0, 12)}…, returning partial (${all.length} rows)`,
+      );
+      break;
+    }
+    const rows = data.x402Payments ?? [];
     if (rows.length === 0) break;
     all.push(...rows);
     if (rows.length < PAGE_SIZE) break;
     cursor = rows[rows.length - 1].id;
   }
-  _cachedPayments = all;
   return all;
-}
+});
 
 // ── Individual fetchers (cards keyed by Dune query name) ─────────────────────
 
@@ -171,32 +232,15 @@ export interface LifetimeTotals {
   last_payment_at: string;
 }
 
-/** LIFETIME_TOTALS — Hero card top numbers. */
+/** LIFETIME_TOTALS — Hero card top numbers.
+ *
+ *  Derives from the workhorse dataset as the single source of truth so
+ *  Hero numbers exactly match the cumulative chart totals (no UI
+ *  inconsistency between the summary entity lagging vs derived totals).
+ *  The summary entity is still queried as a cheap sanity check, but
+ *  derived values win.
+ */
 export async function fetchLifetimeTotals(): Promise<LifetimeTotals> {
-  // Try the single-entity read first (cheap). Fall back to a derive over the
-  // workhorse dataset if the summary entity isn't keyed by raw address.
-  const query = `
-    query Summary($id: ID!) {
-      x402AddressSummary(id: $id) {
-        id
-        totalPayments
-        totalVolumeDecimal
-        firstPaymentTimestamp
-        lastPaymentTimestamp
-      }
-    }
-  `;
-  const data = await postGraphQL<SummaryQuery>(query, { id: GATEWAY_RECIPIENT });
-  if (data?.x402AddressSummary) {
-    const s = data.x402AddressSummary;
-    return {
-      total_usdc: Number(s.totalVolumeDecimal ?? 0),
-      total_payments: Number(s.totalPayments ?? 0),
-      first_payment_at: tsToIso(s.firstPaymentTimestamp),
-      last_payment_at: tsToIso(s.lastPaymentTimestamp),
-    };
-  }
-  // Fallback derive
   const payments = await getGatewayPaymentsAll();
   const total_usdc = payments.reduce((s, p) => s + Number(p.amountDecimal), 0);
   const sorted = [...payments].sort(
@@ -207,6 +251,42 @@ export async function fetchLifetimeTotals(): Promise<LifetimeTotals> {
     total_payments: payments.length,
     first_payment_at: sorted.length ? tsToIso(sorted[0].blockTimestamp) : "",
     last_payment_at: sorted.length ? tsToIso(sorted[sorted.length - 1].blockTimestamp) : "",
+  };
+}
+
+/** Sanity-check: read the X402AddressSummary entity directly for the gateway
+ *  RECIPIENT. Schema note: the ID is role-prefixed ("0x01000000" + address),
+ *  so the plural+where form is what works against the live subgraph. Returned
+ *  for diagnostics / future use but NOT used as the Hero source of truth. */
+export async function fetchGatewaySummary(): Promise<LifetimeTotals | null> {
+  const query = `
+    query Summaries($a: Bytes!) {
+      x402AddressSummaries(
+        where: { address: $a, role: RECIPIENT }
+        first: 1
+      ) {
+        id
+        address
+        role
+        totalPayments
+        totalVolumeDecimal
+        firstPaymentTimestamp
+        lastPaymentTimestamp
+      }
+    }
+  `;
+  const data = await postGraphQL<SummariesQuery>(
+    query,
+    { a: GATEWAY_RECIPIENT },
+    "fetchGatewaySummary",
+  );
+  const s = data?.x402AddressSummaries?.[0];
+  if (!s) return null;
+  return {
+    total_usdc: Number(s.totalVolumeDecimal ?? 0),
+    total_payments: Number(s.totalPayments ?? 0),
+    first_payment_at: tsToIso(s.firstPaymentTimestamp),
+    last_payment_at: tsToIso(s.lastPaymentTimestamp),
   };
 }
 
@@ -246,12 +326,13 @@ export async function fetchCumulative(): Promise<CumulativePoint[]> {
 export interface TopPayer {
   wallet: string;
   payments: number;
+  first_seen: string;
   last_seen: string;
 }
 
 export async function fetchTopPayers(): Promise<TopPayer[]> {
   const payments = await getGatewayPaymentsAll();
-  const byPayer = new Map<string, { count: number; last: number }>();
+  const byPayer = new Map<string, { count: number; first: number; last: number }>();
   for (const p of payments) {
     const w = p.from.toLowerCase();
     const ts = Number(p.blockTimestamp);
@@ -259,14 +340,16 @@ export async function fetchTopPayers(): Promise<TopPayer[]> {
     if (prev) {
       prev.count += 1;
       if (ts > prev.last) prev.last = ts;
+      if (ts < prev.first) prev.first = ts;
     } else {
-      byPayer.set(w, { count: 1, last: ts });
+      byPayer.set(w, { count: 1, first: ts, last: ts });
     }
   }
   return Array.from(byPayer.entries())
     .map(([wallet, v]) => ({
       wallet,
       payments: v.count,
+      first_seen: tsToIso(v.first),
       last_seen: tsToIso(v.last),
     }))
     .sort((a, b) => b.payments - a.payments);
@@ -328,7 +411,12 @@ export async function fetchNewPayers(): Promise<NewPayerRow[]> {
 }
 
 /** RECENT_PAYMENTS — last 50 payments to the gateway. Direct query (cheaper
- *  than scanning the whole dataset). */
+ *  than scanning the whole dataset).
+ *
+ *  Secondary order on id desc to break ties when multiple payments share a
+ *  blockTimestamp (very common: bursts of 5+ payments from the same payer
+ *  within seconds in the same block). Without a tie-breaker the top-of-list
+ *  flickers between renders. */
 export async function fetchRecentPayments(limit = 50): Promise<PaymentRow[]> {
   const query = `
     query Recent($to: Bytes!, $first: Int!) {
@@ -338,6 +426,7 @@ export async function fetchRecentPayments(limit = 50): Promise<PaymentRow[]> {
         orderBy: blockTimestamp
         orderDirection: desc
       ) {
+        id
         from
         amountDecimal
         blockTimestamp
@@ -347,14 +436,23 @@ export async function fetchRecentPayments(limit = 50): Promise<PaymentRow[]> {
   `;
   const data = await postGraphQL<{
     x402Payments: {
+      id: string;
       from: string;
       amountDecimal: string;
       blockTimestamp: string;
       transactionHash: string;
     }[];
-  }>(query, { to: GATEWAY_RECIPIENT, first: limit });
+  }>(query, { to: GATEWAY_RECIPIENT, first: limit }, "fetchRecentPayments");
   const rows = data?.x402Payments ?? [];
-  return rows.map((r) => ({
+  // Stable secondary sort by id desc for tie-breaking (gateway has no
+  // multi-key orderBy). Fetch a hair more than needed and slice if the
+  // stable sort changes order around the boundary.
+  const sorted = [...rows].sort((a, b) => {
+    const t = Number(b.blockTimestamp) - Number(a.blockTimestamp);
+    if (t !== 0) return t;
+    return b.id.localeCompare(a.id);
+  });
+  return sorted.slice(0, limit).map((r) => ({
     wallet: r.from.toLowerCase(),
     amount_usdc: Number(r.amountDecimal),
     block_time: tsToIso(r.blockTimestamp),
@@ -461,27 +559,63 @@ export async function fetchTrends(): Promise<TrendsRow> {
 
 // ── Derivers used by page.tsx (kept exported for reuse in tests/scripts) ──
 
-export function deriveNewVsReturningByWeek(
-  daily: DailyPoint[],
-  newPayers: NewPayerRow[],
-): NRPoint[] {
-  const npByWeek = new Map<string, number>();
-  for (const r of newPayers) {
-    const wk = isoWeekStart(r.day);
-    npByWeek.set(wk, (npByWeek.get(wk) ?? 0) + r.new_payers);
+/**
+ * Compute per-week new-vs-returning AGENT cohorts (not payment counts).
+ *
+ * For each week:
+ *  - new_agents     = count of payers whose first-ever payment is in this week
+ *  - returning_agents = count of payers active this week whose first-ever
+ *                       payment was BEFORE this week
+ *
+ * Both sides are distinct-payer counts (units match), so the stacked bar
+ * is semantically consistent. The previous implementation mixed payment
+ * count (DailyPoint.payments) with payer count (NewPayerRow.new_payers),
+ * which made the "returning" bar wrong.
+ */
+export async function fetchNewVsReturningByWeek(): Promise<NRPoint[]> {
+  const payments = await getGatewayPaymentsAll();
+
+  // Per-payer: first-seen timestamp + set of active weeks
+  const firstSeenByPayer = new Map<string, number>();
+  const activeWeeksByPayer = new Map<string, Set<string>>();
+  for (const p of payments) {
+    const w = p.from.toLowerCase();
+    const ts = Number(p.blockTimestamp);
+    const wkStart = isoWeekStart(dayKey(p.blockTimestamp));
+    const prev = firstSeenByPayer.get(w);
+    if (prev === undefined || ts < prev) firstSeenByPayer.set(w, ts);
+    const set = activeWeeksByPayer.get(w) ?? new Set<string>();
+    set.add(wkStart);
+    activeWeeksByPayer.set(w, set);
   }
-  const dailyByWeek = new Map<string, number>();
-  for (const p of daily) {
-    const wk = isoWeekStart(p.day);
-    dailyByWeek.set(wk, (dailyByWeek.get(wk) ?? 0) + p.payments);
+
+  // Invert: per-week set of active payers
+  const activePayersByWeek = new Map<string, Set<string>>();
+  for (const [payer, weeks] of activeWeeksByPayer.entries()) {
+    for (const wk of weeks) {
+      const s = activePayersByWeek.get(wk) ?? new Set<string>();
+      s.add(payer);
+      activePayersByWeek.set(wk, s);
+    }
   }
-  return Array.from(dailyByWeek.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-8)
-    .map(([wk, total]) => {
-      const newA = npByWeek.get(wk) ?? 0;
-      return { week: wk, new_agents: newA, returning_agents: Math.max(0, total - newA) };
-    });
+
+  // Build NRPoint per week with distinct-payer counts on both sides.
+  const weeks = Array.from(activePayersByWeek.keys()).sort();
+  const out: NRPoint[] = [];
+  for (const wk of weeks) {
+    const wkStartSec = Date.parse(wk + "T00:00:00Z") / 1000;
+    const wkEndSec = wkStartSec + 7 * 86_400;
+    const active = activePayersByWeek.get(wk) ?? new Set<string>();
+    let newAgents = 0;
+    let returning = 0;
+    for (const payer of active) {
+      const first = firstSeenByPayer.get(payer) ?? Number.POSITIVE_INFINITY;
+      if (first >= wkStartSec && first < wkEndSec) newAgents += 1;
+      else returning += 1;
+    }
+    out.push({ week: wk, new_agents: newAgents, returning_agents: returning });
+  }
+  return out.slice(-8);
 }
 
 // ── Small helpers ────────────────────────────────────────────────────────────
