@@ -244,13 +244,21 @@ def enrich_from_agent0(wallet: str, api_key: str) -> tuple[str, str, str, str] |
     """
     import base64
     url = f"https://gateway.thegraph.com/api/{api_key}/subgraphs/id/{AGENT0_BASE_SUBGRAPH_ID}"
+    # Schema note: the agent0 subgraph has NO top-level `operators` query.
+    # `operators` is a [Bytes!]! field on the Agent type. Earlier versions of
+    # this script queried `operators(first: 5, where: {address: $w})` and
+    # silently failed every time with `Type Query has no field operators`,
+    # so the agent0 source contributed 0 matches indefinitely. Use
+    # `operators_contains` on the Agent filter instead — this captures the
+    # operator-paid case 8004scan misses without needing a separate query.
     query = """
     query($w: Bytes!) {
-      agents(first: 5, where: {or: [{owner: $w}, {agentWallet: $w}]}) {
-        agentId owner agentWallet agentURI
-      }
-      operators(first: 5, where: {address: $w}) {
-        agent { agentId owner agentWallet agentURI }
+      agents(first: 5, where: {or: [
+        {owner: $w},
+        {agentWallet: $w},
+        {operators_contains: [$w]}
+      ]}) {
+        agentId owner agentWallet agentURI operators
       }
     }
     """
@@ -259,10 +267,14 @@ def enrich_from_agent0(wallet: str, api_key: str) -> tuple[str, str, str, str] |
     except Exception as e:
         print(f"  agent0 query for {wallet[:10]}… failed: {e}", file=sys.stderr)
         return None
+    # Surface GraphQL errors that come back as HTTP 200 — otherwise the
+    # whole agent0 source silently no-ops (the bug we just fixed).
+    if isinstance(d, dict) and d.get("errors"):
+        msg = (d["errors"][0] or {}).get("message", "unknown")
+        print(f"  agent0 query for {wallet[:10]}… GraphQL error: {msg[:120]}", file=sys.stderr)
+        return None
     data = d.get("data") or {}
-    agents = (data.get("agents") or []) + [
-        op.get("agent") for op in (data.get("operators") or []) if op.get("agent")
-    ]
+    agents = data.get("agents") or []
     for a in agents:
         if not a:
             continue
