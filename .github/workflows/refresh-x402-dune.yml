@@ -29,6 +29,15 @@ on:
     - cron: '0 13 * * *'
   # Manual button under Actions tab; useful for ad-hoc refresh.
   workflow_dispatch:
+    inputs:
+      queries:
+        description: 'Comma-separated Dune query IDs to re-execute (empty = all 14). Example: 7507131 to refresh only agent classification after Agent0 Base recovers.'
+        required: false
+        default: ''
+      skip_agent_refresh:
+        description: 'Skip the refresh_known_agents.py step (only re-execute selected queries, no agent directory rebuild).'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,6 +62,7 @@ jobs:
         run: dune whoami
 
       - name: Refresh known-agent directory (query 7507131)
+        if: github.event_name == 'schedule' || github.event.inputs.skip_agent_refresh != 'true'
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
           # Optional — enables agent0 subgraph fallback so operator-paid
@@ -67,14 +77,15 @@ jobs:
           python3 scripts/refresh_known_agents.py
           dune query update 7507131 --sql "$(cat /tmp/known_agents_directory.sql)"
 
-      - name: Re-execute all 14 dashboard queries (sequential)
+      - name: Re-execute dashboard queries (sequential)
         env:
           DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+          INPUT_QUERIES: ${{ github.event.inputs.queries }}
         # Don't use `set -e` — we want to tally failures, not crash on the
         # first one. The Dune CLI sometimes returns plain-text errors that
         # jq can't parse; we handle that explicitly below.
         run: |
-          QUERY_IDS=(
+          ALL_QUERY_IDS=(
             7507068   # Lifetime totals
             7507075   # Trends — 24h/7d/30d
             7507076   # Daily volume + payments
@@ -90,6 +101,35 @@ jobs:
             7507132   # Inter-arrival rhythm
             7507133   # Active-days share
           )
+          # If a manual dispatch passed `queries=…`, narrow the set. Reject any
+          # IDs not in the allowlist so a typo or accidental external query ID
+          # doesn't waste credits.
+          if [ -n "$INPUT_QUERIES" ]; then
+            QUERY_IDS=()
+            IFS=',' read -ra REQUESTED <<< "$INPUT_QUERIES"
+            for raw in "${REQUESTED[@]}"; do
+              qid="$(echo "$raw" | xargs)"   # trim whitespace
+              [ -z "$qid" ] && continue
+              found=0
+              for known in "${ALL_QUERY_IDS[@]}"; do
+                if [ "$known" = "$qid" ]; then
+                  QUERY_IDS+=("$qid")
+                  found=1
+                  break
+                fi
+              done
+              if [ "$found" = "0" ]; then
+                echo "::warning::skipping unknown query id $qid (not in the 14-query allowlist)"
+              fi
+            done
+            if [ "${#QUERY_IDS[@]}" -eq 0 ]; then
+              echo "::error::no valid query IDs in input '$INPUT_QUERIES'"
+              exit 1
+            fi
+            echo "Targeted refresh: ${QUERY_IDS[*]}"
+          else
+            QUERY_IDS=("${ALL_QUERY_IDS[@]}")
+          fi
           failures=0
           for qid in "${QUERY_IDS[@]}"; do
             echo "::group::Q$qid"
