@@ -1,10 +1,18 @@
 # Daily refresh of the x402-payments-to-The-Graph Dune dashboard.
 #
+# NOTE (2026-06-12): this workflow is NO LONGER LOAD-BEARING for the
+# x402-watch.vercel.app dashboard. The dashboard now reads live from the
+# x402-omnigraph subgraph (see web/lib/subgraph.ts) and enriches agent
+# identity at build time (see web/lib/identifyAgents.ts). The workflow is
+# kept alive only to keep the public Dune board fresh
+# (https://dune.com/paulieb/x402-payments-to-the-graph-e7ab) — disable it
+# if/when that board is retired.
+#
 # Dashboard: https://dune.com/paulieb/x402-payments-to-the-graph-e7ab
 # Source data: USDC transfers on Base to The Graph's x402 gateway payTo
 # (0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB).
 #
-# Each query is re-executed once a day so the dashboard reflects new
+# Each query is re-executed once a day so the Dune board reflects new
 # payments without anyone touching it. Free tier on Dune doesn't
 # auto-schedule queries; this workflow plays that role.
 #
