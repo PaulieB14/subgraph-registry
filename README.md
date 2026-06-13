@@ -8,6 +8,11 @@ Agent-friendly semantic classification of all subgraphs on [The Graph Network](h
 
 Pre-computed index of **14,700+ subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
 
+> **What's new in 0.8.0** — three agent-discovery upgrades:
+> - **[Semantic search](#semantic-search)** via 384-dim embeddings (`semantic_search_subgraphs`)
+> - **[Schema evolution tracking](#schema-evolution)** with stability days surfaced on every result (`get_schema_changes`)
+> - **[OpenAPI 3.1 spec](#openapi)** auto-generated for MCP tools + REST routes, served at `/.well-known/openapi.json`
+
 ## The Problem
 
 Agents querying The Graph need to discover and select the right subgraph before they can query data. Today this requires 3-4 tool calls (search, check volumes, fetch schema, infer structure) before any real work happens. This registry flips that: agents start with structured knowledge, not a blank slate.
