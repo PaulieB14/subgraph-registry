@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "tsx scripts/build-agent-directory.ts",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "regen:agents": "tsx scripts/build-agent-directory.ts"
   },
   "dependencies": {
     "next": "^15.5.18",
@@ -21,6 +23,7 @@
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.14",
+    "tsx": "^4.19.2",
     "typescript": "5.6.3"
   }
 }

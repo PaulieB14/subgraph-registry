@@ -6,7 +6,7 @@ import { DailyChart } from "@/components/DailyChart";
 import { Hero, type HeroStats } from "@/components/Hero";
 import { NewVsReturning } from "@/components/NewVsReturning";
 import { RecentActivity } from "@/components/RecentActivity";
-import { identifyAgents } from "@/lib/identifyAgents";
+import type { AgentRow } from "@/lib/identifyAgents";
 import {
   fetchActivityHeatmap,
   fetchConcentration,
@@ -15,9 +15,15 @@ import {
   fetchLifetimeTotals,
   fetchNewVsReturningByWeek,
   fetchRecentPayments,
-  fetchTopPayers,
   fetchTrends,
 } from "@/lib/subgraph";
+// Static directory of identified agents, baked at build time by
+// scripts/build-agent-directory.ts. Bypasses the per-request 8004scan +
+// agent0 enrichment that was costing ~10s on every Vercel cold lambda
+// (`unstable_cache` is per-lambda, so cold starts re-pay the full cost).
+// The directory refreshes whenever Vercel rebuilds, which currently
+// happens on every commit to main plus the daily registry crawl.
+import knownAgentsDirectory from "../data/known-agents.json";
 
 // Dynamic rendering: the page is rendered on demand and the underlying
 // gateway fetches are cached via `next.revalidate` (300s) and React's
@@ -63,7 +69,6 @@ export default async function Page() {
     paymentRows,
     heatPoints,
     concRows,
-    topPayers,
     trends,
   ] = await Promise.all([
     fetchLifetimeTotals(),
@@ -73,15 +78,16 @@ export default async function Page() {
     fetchRecentPayments(50),
     fetchActivityHeatmap(),
     fetchConcentration(),
-    fetchTopPayers(),
     fetchTrends(),
   ]);
 
-  // Agent identity is the only off-subgraph data: enriched via 8004scan +
-  // agent0 and cached for 6h via unstable_cache so per-render latency stays
-  // bounded. With backoff + skip-on-429, this degrades gracefully if
-  // 8004scan is rate-limiting.
-  const agentRows = await identifyAgents(topPayers);
+  // Agent identity is pre-baked at build time (see import above + the
+  // scripts/build-agent-directory.ts generator). No per-request enrichment,
+  // no 8004scan rate-limit waits on cold lambdas. If the JSON is the bootstrap
+  // placeholder (count=0), the AgentLeaderboard panel just renders the
+  // "no matches yet" empty state, which is the same graceful degradation
+  // the previous 6h-unstable_cache path had.
+  const agentRows = knownAgentsDirectory.agents as AgentRow[];
 
   const identityByWallet = new Map<string, { name: string; link: string }>();
   for (const a of agentRows) {
@@ -177,6 +183,16 @@ export default async function Page() {
             rel="noopener noreferrer"
           >
             x402-omnigraph subgraph
+          </a>
+          {" · "}
+          gateway contract on{" "}
+          <a
+            className="text-muted hover:text-accent"
+            href="https://basescan.org/address/0x79DC34E41B2b591078d3dE222C43EcaaBD52FcCB"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            BaseScan
           </a>
           {" · "}
           agent identity via{" "}
