@@ -289,6 +289,16 @@ class Classification:
     # subgraphs.
     example_query: str | None = None
 
+    # Sentence-transformers/all-MiniLM-L6-v2 embedding (384 float32),
+    # packed as little-endian bytes. Computed post-classification in a
+    # batched pass over all subgraphs (see registry.build_registry).
+    # Used by semantic_search_subgraphs at MCP runtime: the Node server
+    # embeds the query string with the same model via @xenova/transformers
+    # and ranks rows by cosine similarity.
+    # None on subgraphs where the embedder failed (rare; logged at build
+    # time) or when the embedder step was skipped (e.g. tests).
+    embedding: bytes | None = None
+
 
 def _score_domain(sg: dict, entities: list[SchemaEntity]) -> tuple[str, int, dict]:
     scores: dict[str, int] = {}

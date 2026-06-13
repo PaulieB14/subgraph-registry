@@ -48,6 +48,9 @@ jobs:
       - name: Syntax-check MCP server
         run: node --check src/index.js
 
+      - name: Syntax-check OpenAPI generator
+        run: node --check scripts/gen-openapi.js
+
       - name: Verify package.json and server.json versions match
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
@@ -57,3 +60,13 @@ jobs:
             exit 1
           fi
           echo "Versions match: $PKG_VERSION"
+
+      - name: OpenAPI spec drift check
+        # Regenerate the spec from TOOLS[]/REST_ROUTES[] and fail the PR
+        # if openapi.yaml is stale. update-registry.yml regenerates and
+        # commits on every scheduled crawl, but this guards human edits
+        # to src/index.js that would otherwise silently desync the spec
+        # from the runtime.
+        run: |
+          node scripts/gen-openapi.js
+          git diff --exit-code openapi.yaml data/openapi.json

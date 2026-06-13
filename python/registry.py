@@ -19,6 +19,14 @@ from pathlib import Path
 from crawler import full_crawl
 from classifier import classify_all, Classification
 
+try:
+    # Optional at module-import time so test/import paths that don't
+    # need embeddings (e.g. test.yml's smoke-import step) don't pay
+    # the fastembed install cost during CI.
+    import embedder  # type: ignore
+except Exception:  # pragma: no cover
+    embedder = None  # type: ignore
+
 DATA_DIR = Path(__file__).parent / "data"
 REGISTRY_FILE = DATA_DIR / "registry.json"
 SYNC_STATE_FILE = DATA_DIR / "sync-state.json"
@@ -119,10 +127,14 @@ def write_sqlite(
     needed because incremental syncs only fetch the deltas, not the full
     corpus.
     """
-    if not incremental:
-        db_path.unlink(missing_ok=True)
+    # Full rebuild: DROP the subgraphs table but preserve schema_history
+    # so the time-series record of schema-fingerprint changes survives
+    # across rebuilds. (Previously this was `db_path.unlink()` which
+    # wiped history along with everything else.)
     conn = sqlite3.connect(str(db_path))
     c = conn.cursor()
+    if not incremental:
+        c.execute("DROP TABLE IF EXISTS subgraphs")
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS subgraphs (
@@ -153,7 +165,8 @@ def write_sqlite(
             all_entities TEXT,
             active_allocation_count INTEGER DEFAULT 0,
             contract_addresses TEXT,
-            example_query TEXT
+            example_query TEXT,
+            embedding BLOB
         )
     """)
     # Backfill columns on pre-existing DBs (incremental sync path). Each ALTER
@@ -162,11 +175,31 @@ def write_sqlite(
         "ALTER TABLE subgraphs ADD COLUMN active_allocation_count INTEGER DEFAULT 0",
         "ALTER TABLE subgraphs ADD COLUMN contract_addresses TEXT",
         "ALTER TABLE subgraphs ADD COLUMN example_query TEXT",
+        "ALTER TABLE subgraphs ADD COLUMN embedding BLOB",
     ):
         try:
             c.execute(ddl)
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+    # Schema-evolution history. Append-only; never truncated. Each row is
+    # a single fingerprint change for a subgraph_id (or the bootstrap
+    # entry on first sight). Read at query time to answer "how stable is
+    # this subgraph's schema?"
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS schema_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subgraph_id TEXT NOT NULL,
+            ipfs_hash TEXT,
+            fingerprint TEXT NOT NULL,
+            prev_fingerprint TEXT,
+            detected_at INTEGER NOT NULL
+        )
+    """)
+    c.execute(
+        "CREATE INDEX IF NOT EXISTS idx_history_sg_time "
+        "ON schema_history(subgraph_id, detected_at DESC)"
+    )
 
     c.execute("CREATE INDEX IF NOT EXISTS idx_domain ON subgraphs(domain)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_network ON subgraphs(network)")
@@ -175,9 +208,40 @@ def write_sqlite(
     c.execute("CREATE INDEX IF NOT EXISTS idx_fingerprint ON subgraphs(schema_fingerprint)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_allocation ON subgraphs(active_allocation_count)")
 
+    # Snapshot prior fingerprints BEFORE the upsert so we can diff and
+    # write to schema_history. Empty dict on full rebuild (we just
+    # dropped the table) — every subgraph that gets classified will then
+    # bootstrap a single history row. Incremental runs see the existing
+    # rows and only insert when the fingerprint actually changed.
+    prior_fp: dict[str, str | None] = {}
+    try:
+        for row in c.execute("SELECT id, schema_fingerprint FROM subgraphs").fetchall():
+            prior_fp[row[0]] = row[1]
+    except sqlite3.OperationalError:
+        pass  # Table was just created and is empty
+
+    now_unix = int(time.time())
+    history_inserts: list[tuple] = []
+
     for sg in classified:
+        # Diff-and-record: write a history row whenever a subgraph
+        # appears with a fingerprint we haven't seen for that ID, OR
+        # when the fingerprint changed from the previous run.
+        # Skip nulls (schema fetch failed) — recording None would
+        # confuse "stability" queries.
+        if sg.schema_fingerprint is not None:
+            old = prior_fp.get(sg.id)
+            if old != sg.schema_fingerprint:
+                history_inserts.append((
+                    sg.id,
+                    sg.ipfs_hash,
+                    sg.schema_fingerprint,
+                    old,
+                    now_unix,
+                ))
+
         c.execute("""
-            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
@@ -191,7 +255,17 @@ def write_sqlite(
             sg.active_allocation_count,
             json.dumps(sg.contract_addresses) if sg.contract_addresses else None,
             sg.example_query,
+            sg.embedding,
         ))
+
+    if history_inserts:
+        c.executemany(
+            "INSERT INTO schema_history "
+            "(subgraph_id, ipfs_hash, fingerprint, prev_fingerprint, detected_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            history_inserts,
+        )
+        print(f"  Schema history: inserted {len(history_inserts)} new fingerprint events")
 
     conn.commit()
     conn.close()
@@ -259,6 +333,49 @@ async def build_registry(
     removed = before_count - len(classified)
     if removed > 0:
         print(f"  Deduplicated: removed {removed} duplicate deployments ({before_count} → {len(classified)})")
+
+    # 2c. Compute semantic embeddings for each classified subgraph.
+    # Runs in one batched pass via fastembed (5-10x faster than per-row).
+    # The Node MCP server uses the SAME model at query time via
+    # @xenova/transformers — vectors are bitwise-comparable so cosine
+    # similarity works across runtimes. Skipped if the optional
+    # fastembed install isn't available (e.g. CI smoke imports).
+    if embedder is not None and classified:
+        print("\n=== Embedding subgraphs ===")
+        t_emb = time.time()
+        texts = [
+            embedder.build_source_text(
+                display_name=c.display_name,
+                description=c.description,
+                auto_description=c.auto_description,
+                canonical_entities=c.canonical_entities,
+                all_entities=c.all_entities,
+                domain=c.domain,
+                protocol_type=c.protocol_type,
+                network=c.network,
+                contract_addresses=c.contract_addresses,
+            )
+            for c in classified
+        ]
+        try:
+            blobs = embedder.encode_batch(texts)
+            for c, blob in zip(classified, blobs):
+                c.embedding = blob
+            n_with_emb = sum(1 for c in classified if c.embedding)
+            print(
+                f"  Embedded {n_with_emb}/{len(classified)} subgraphs in "
+                f"{time.time()-t_emb:.1f}s "
+                f"(+{n_with_emb * embedder.EMBEDDING_DIM * 4 / 1024 / 1024:.1f} MB)"
+            )
+        except Exception as e:  # pragma: no cover
+            # Embedder failure shouldn't break the rest of the pipeline.
+            # registry.db without an embedding column populated just
+            # means semantic search returns nothing — search_subgraphs
+            # still works.
+            print(f"  WARNING: embedding pass failed: {e}; continuing without embeddings")
+    elif embedder is None:
+        print("\n=== Embedding subgraphs ===")
+        print("  fastembed not installed; skipping embedding pass")
 
     # 3. Build summary + indices
     print("\n=== Building Indices ===")

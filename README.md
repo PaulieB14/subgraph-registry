@@ -162,11 +162,13 @@ The registry is available as an MCP server with **dual transport** — stdio for
 
 > The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx subgraph-registry-mcp` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
 
-**4 tools:**
+**6 tools:**
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
-- **recommend_subgraph** — natural language goal to best subgraphs
-- **get_subgraph_detail** — full classification for a specific subgraph
+- **recommend_subgraph** — natural language goal to best subgraphs (includes `schema_stable_days`)
+- **get_subgraph_detail** — full classification for a specific subgraph (includes `schema_changed_at`)
 - **list_registry_stats** — registry overview (domains, networks, counts)
+- **semantic_search_subgraphs** — vector-similarity search over precomputed embeddings (sentence-transformers/all-MiniLM-L6-v2, 384-dim). Use for fuzzy/paraphrased goals where literal keyword match would miss.
+- **get_schema_changes** — chronological schema-fingerprint history for a subgraph (one row per detected change). Helps agents prefer mature subgraphs whose data contract has been stable.
 
 ### Install
 
@@ -212,6 +214,64 @@ npx subgraph-registry-mcp --http-only
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld
 ```
+
+---
+
+## Semantic Search
+
+Every subgraph has a precomputed 384-dim embedding from `sentence-transformers/all-MiniLM-L6-v2`, built from its display name, description, canonical entities, top schema entity names, and protocol metadata. At MCP-tool-call time the Node server embeds the query string with the same model (via [@xenova/transformers](https://github.com/xenova/transformers.js), quantized ONNX bundled in the npm package — no first-call download) and ranks rows by cosine similarity.
+
+```js
+const { subgraphs } = await mcp.call("semantic_search_subgraphs", {
+  query: "lending positions near liquidation on a Layer 2",
+  limit: 5,
+});
+// subgraphs[i].semantic_score is cosine similarity in [0, 1]; >0.5 ~= strong match.
+```
+
+Use it when:
+- The goal is paraphrased or use-case-shaped (`search_subgraphs` is keyword-only).
+- You're exploring "what data exists for X?" rather than fetching a specific protocol's subgraph.
+
+Same model is shared between Python crawl-time (`fastembed`) and JS runtime (`@xenova/transformers`) — vectors are bitwise-comparable so cosine math gives consistent rankings across runtimes.
+
+Embeddings add ~22 MB to `registry.db` (14k × 384 × 4 bytes); model bundle adds ~23 MB to the npm package.
+
+---
+
+## Schema Evolution
+
+Each crawl computes a `schema_fingerprint` (MD5 of sorted `entity:field_count` pairs) per subgraph. Whenever the fingerprint changes from the previous sync, an immutable row is written to `schema_history`. The table is append-only and survives full DB rebuilds.
+
+```js
+const history = await mcp.call("get_schema_changes", {
+  subgraph_id: "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+});
+// {
+//   total_changes: 3,
+//   stable_days: 47.2,
+//   changed_within_24h: false,
+//   changed_within_7d: false,
+//   changes: [
+//     { fingerprint: "abc123...", prev_fingerprint: "def456...", detected_at: 1717... },
+//     ...
+//   ]
+// }
+```
+
+`recommend_subgraph` and `get_subgraph_detail` results now also include `schema_changed_at` (unix seconds of last detected change) and `schema_stable_days` so agents can prefer subgraphs whose data contract has been stable longer — useful when a query needs to keep working across the agent's planning horizon.
+
+---
+
+## OpenAPI
+
+The full API surface (MCP tools + REST routes) is published as OpenAPI 3.1:
+
+- `openapi.yaml` — checked into the repo, single source of truth
+- `data/openapi.json` — bundled with the npm tarball
+- `GET /.well-known/openapi.json` — served by the HTTP transport for live discovery
+
+The spec is regenerated on every release from the declarative `TOOLS[]` + `REST_ROUTES[]` exports in [`src/index.js`](src/index.js) via [`scripts/gen-openapi.js`](scripts/gen-openapi.js). CI fails any PR that touches `src/index.js` without regenerating the spec.
 
 ---
 

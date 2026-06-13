@@ -44,6 +44,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r python/requirements.txt
 
+      - name: Cache fastembed model + transformers JS model
+        # The embedder downloads ~50 MB on first use; cache against the
+        # pip requirements hash so we only re-download when the deps
+        # change. Both Python (~/.cache/fastembed) and the JS bundle
+        # path (data/models) get cached so semantic search is fast
+        # both at crawl time and runtime.
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/fastembed
+            data/models
+          key: embedding-models-${{ hashFiles('python/requirements.txt') }}-v1
+
       - name: Run registry sync (${{ inputs.mode || 'incremental' }})
         working-directory: python
         env:
@@ -110,6 +123,23 @@ jobs:
             console.log('bumped to', next);
           "
 
+      - name: Install Node deps (for openapi gen + onnx fetch)
+        run: npm install --no-audit --no-fund
+
+      - name: Fetch ONNX embedding model (one-shot, cached)
+        # @xenova/transformers ships the runtime that does cosine
+        # similarity at MCP-tool-call time. The model itself isn't
+        # in npm; we cache it here and bundle into the npm tarball
+        # via package.json `files` so consumers run offline.
+        run: node scripts/fetch-onnx-model.js
+
+      - name: Regenerate OpenAPI spec
+        # Source of truth for the spec is src/index.js TOOLS[] +
+        # REST_ROUTES[]. Regenerate alongside the DB so the spec
+        # always tracks the runtime — bundled in the npm tarball
+        # and served at /.well-known/openapi.json.
+        run: node scripts/gen-openapi.js
+
       - name: Generate charts and category docs
         run: python python/generate_docs.py
 
@@ -120,7 +150,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Stage the four interlocked artifacts together — the repo is
           # never published in an inconsistent state.
-          git add data/registry.db python/data/ docs/ src/index.js package.json server.json
+          git add data/registry.db python/data/ docs/ src/index.js package.json server.json openapi.yaml data/openapi.json data/models/
           if git diff --cached --quiet; then
             echo "no-op (no DB/docs/hash changes); skipping commit + publish"
             echo "committed=false" >> "$GITHUB_OUTPUT"
