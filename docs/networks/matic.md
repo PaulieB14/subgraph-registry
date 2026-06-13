@@ -1,13 +1,13 @@
 ---
 network: matic
-count: 1291
+count: 1293
 percentage: 8.6
-updated: 2026-06-10
+updated: 2026-06-13
 ---
 
 # Polygon Subgraphs
 
-**1,291** subgraphs (8.6% of registry)
+**1,293** subgraphs (8.6% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -37,7 +37,7 @@ updated: 2026-06-10
 | holiverse-analytics | defi | dex | 0.76 | 3,126,409 |
 | Aave V3 Polygon | defi | lending | 0.75 | 489,424 |
 | Polygon Optimistic Oracle | infrastructure | options | 0.74 | 3,346,157 |
-| Boost Indexer Production | defi | dex | 0.74 | 4,412,879 |
+| uniswap-v3-matic | defi | dex | 0.74 | 56,023 |
 
 ## Query This Network
 

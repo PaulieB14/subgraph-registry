@@ -1,13 +1,13 @@
 ---
 domain: gaming
-count: 246
+count: 247
 percentage: 1.6
-updated: 2026-06-10
+updated: 2026-06-13
 ---
 
 # Gaming Subgraphs
 
-**246** subgraphs (1.6% of registry)
+**247** subgraphs (1.6% of registry)
 
 ## Top Subgraphs by Reliability
 
