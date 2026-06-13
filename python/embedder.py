@@ -67,13 +67,16 @@ def build_source_text(
     protocol_type: Optional[str],
     network: Optional[str],
     contract_addresses: Optional[Sequence[dict]],
-    max_chars: int = 512,
+    max_chars: int = 1000,
 ) -> str:
     """Build the input string fed to the embedder for one subgraph.
 
     Order: display_name | description | entities | schema | domain |
     protocol | network | contracts. Truncated to max_chars at the end —
-    MiniLM has a 256-token limit so 512 chars is a safe upper bound.
+    MiniLM tokenizes ~4 chars/token and its cap is 256 tokens, so 1000
+    chars keeps us comfortably under (~250 tokens) while preserving the
+    contracts/schema tail for schema-rich subgraphs. The model auto-
+    truncates internally if we overshoot.
     """
     name = (display_name or "").strip()
     desc = (description or auto_description or "").strip()

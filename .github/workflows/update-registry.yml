@@ -24,6 +24,11 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    # Crawl + classify + embed + ONNX fetch + openapi gen + docs fits
+    # comfortably under 30min on a 2-core ubuntu-latest runner. A 45min
+    # cap means a stuck HuggingFace download or hung gateway can't burn
+    # GitHub's 6-hour default and block the concurrency:group queue.
+    timeout-minutes: 45
     permissions:
       contents: write
 

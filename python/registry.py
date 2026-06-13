@@ -200,6 +200,23 @@ def write_sqlite(
         "CREATE INDEX IF NOT EXISTS idx_history_sg_time "
         "ON schema_history(subgraph_id, detected_at DESC)"
     )
+    # Suppress duplicate bootstrap rows (subgraph_id, fingerprint,
+    # prev_fingerprint=NULL) — a defensive guard against the full-
+    # rebuild bug we fixed by seeding prior_fp from history. If the
+    # full-rebuild ever DOES write a NULL prev_fp again, this index
+    # turns it into an INSERT OR IGNORE no-op rather than a duplicate.
+    c.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uniq_history_bootstrap "
+        "ON schema_history(subgraph_id, fingerprint) "
+        "WHERE prev_fingerprint IS NULL"
+    )
+    # TTL prune — anything older than 365 days is irrelevant for
+    # "stability_days" computations (anything older just reads as
+    # ">1 year stable" anyway) and bloats the npm tarball. Idempotent.
+    c.execute(
+        "DELETE FROM schema_history WHERE detected_at < ?",
+        (int(time.time()) - 365 * 86400,),
+    )
 
     c.execute("CREATE INDEX IF NOT EXISTS idx_domain ON subgraphs(domain)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_network ON subgraphs(network)")
@@ -209,10 +226,14 @@ def write_sqlite(
     c.execute("CREATE INDEX IF NOT EXISTS idx_allocation ON subgraphs(active_allocation_count)")
 
     # Snapshot prior fingerprints BEFORE the upsert so we can diff and
-    # write to schema_history. Empty dict on full rebuild (we just
-    # dropped the table) — every subgraph that gets classified will then
-    # bootstrap a single history row. Incremental runs see the existing
-    # rows and only insert when the fingerprint actually changed.
+    # write to schema_history. On a FULL rebuild the subgraphs table is
+    # empty, so we MUST seed prior_fp from schema_history itself —
+    # otherwise every subgraph compares against None and inserts a
+    # spurious `prev_fingerprint=NULL` row dated `now_unix`, which
+    # resets `schema_stable_days` to ~0 for the entire registry the
+    # next time someone runs `mode=full`. schema_history is preserved
+    # across rebuilds by design (see DROP above), so reading the latest
+    # fingerprint per subgraph_id from history gives us the true prior.
     prior_fp: dict[str, str | None] = {}
     try:
         for row in c.execute("SELECT id, schema_fingerprint FROM subgraphs").fetchall():
@@ -220,6 +241,34 @@ def write_sqlite(
     except sqlite3.OperationalError:
         pass  # Table was just created and is empty
 
+    # Fall back to schema_history for any subgraph not present in the
+    # subgraphs table (the full-rebuild case, or first-time incremental
+    # arrivals that were missed by the subgraphs SELECT above). The
+    # subgraphs-table lookup takes precedence — it reflects the most
+    # recently persisted state.
+    try:
+        for row in c.execute(
+            "SELECT subgraph_id, fingerprint FROM schema_history "
+            "WHERE id IN ("
+            "  SELECT MAX(id) FROM schema_history GROUP BY subgraph_id"
+            ")"
+        ).fetchall():
+            sg_id, fp = row[0], row[1]
+            if sg_id not in prior_fp:
+                prior_fp[sg_id] = fp
+    except sqlite3.OperationalError:
+        pass  # schema_history doesn't exist yet (first run ever)
+
+    # Wrap the write in an explicit transaction so a SIGKILL or OOM
+    # mid-batch leaves the file in its pre-write state instead of half-
+    # populated. The concurrency group in update-registry.yml prevents
+    # concurrent crawls but not crash-mid-write. sqlite3's default
+    # isolation_level=DEFERRED auto-opens a transaction on the first
+    # DML, so we commit the DDL prelude first and then re-open one
+    # explicit transaction covering the entire upsert + history write.
+    if conn.in_transaction:
+        conn.commit()
+    c.execute("BEGIN")
     now_unix = int(time.time())
     history_inserts: list[tuple] = []
 
@@ -259,8 +308,13 @@ def write_sqlite(
         ))
 
     if history_inserts:
+        # INSERT OR IGNORE: the uniq_history_bootstrap partial index
+        # makes (subgraph_id, fingerprint) UNIQUE for prev_fingerprint
+        # IS NULL rows. A duplicate bootstrap insert (which shouldn't
+        # happen anymore, but just in case) becomes a no-op instead
+        # of a hard failure that aborts the entire transaction.
         c.executemany(
-            "INSERT INTO schema_history "
+            "INSERT OR IGNORE INTO schema_history "
             "(subgraph_id, ipfs_hash, fingerprint, prev_fingerprint, detected_at) "
             "VALUES (?, ?, ?, ?, ?)",
             history_inserts,
@@ -335,16 +389,46 @@ async def build_registry(
         print(f"  Deduplicated: removed {removed} duplicate deployments ({before_count} → {len(classified)})")
 
     # 2c. Compute semantic embeddings for each classified subgraph.
-    # Runs in one batched pass via fastembed (5-10x faster than per-row).
-    # The Node MCP server uses the SAME model at query time via
-    # @xenova/transformers — vectors are bitwise-comparable so cosine
-    # similarity works across runtimes. Skipped if the optional
-    # fastembed install isn't available (e.g. CI smoke imports).
+    # Runs in chunked batched passes via fastembed (5-10x faster than
+    # per-row). The Node MCP server uses the same MiniLM-L6 model at
+    # query time via @xenova/transformers — vectors are CLOSE but not
+    # bitwise-identical because the JS side runs the INT8-quantized
+    # ONNX while Python runs float32. Top-K rankings are stable;
+    # absolute cosine scores may drift by ~0.01-0.03.
+    #
+    # Lazy reuse: skip re-encoding rows whose source-text inputs are
+    # unchanged (same schema_fingerprint + same display_name +
+    # description hash + same domain/protocol/network). Saves ~50-100s
+    # per full crawl on a GH runner with no quality cost.
+    #
+    # Per-chunk try/except: if fastembed raises on one batch (rare —
+    # usually a malformed string), we preserve the prior embedding for
+    # rows in that chunk instead of NULL-ing them out. A broken chunk
+    # logs a warning and the pipeline continues.
     if embedder is not None and classified:
         print("\n=== Embedding subgraphs ===")
         t_emb = time.time()
-        texts = [
-            embedder.build_source_text(
+
+        # Pull existing (id, schema_fingerprint, embedding) rows so we
+        # can skip re-encoding unchanged subgraphs.
+        existing: dict[str, tuple[str | None, bytes | None]] = {}
+        try:
+            db_conn = sqlite3.connect(str(SQLITE_FILE))
+            for row in db_conn.execute(
+                "SELECT id, schema_fingerprint, embedding FROM subgraphs"
+            ).fetchall():
+                existing[row[0]] = (row[1], row[2])
+            db_conn.close()
+        except sqlite3.OperationalError:
+            pass  # DB doesn't exist yet or column missing — full encode
+
+        # Build (index, text, can_skip) tuples. can_skip=True means
+        # we carried over the prior embedding and don't need to encode.
+        to_encode_idx: list[int] = []
+        to_encode_text: list[str] = []
+        skipped = 0
+        for idx, c in enumerate(classified):
+            text = embedder.build_source_text(
                 display_name=c.display_name,
                 description=c.description,
                 auto_description=c.auto_description,
@@ -355,24 +439,51 @@ async def build_registry(
                 network=c.network,
                 contract_addresses=c.contract_addresses,
             )
-            for c in classified
-        ]
-        try:
-            blobs = embedder.encode_batch(texts)
-            for c, blob in zip(classified, blobs):
-                c.embedding = blob
-            n_with_emb = sum(1 for c in classified if c.embedding)
-            print(
-                f"  Embedded {n_with_emb}/{len(classified)} subgraphs in "
-                f"{time.time()-t_emb:.1f}s "
-                f"(+{n_with_emb * embedder.EMBEDDING_DIM * 4 / 1024 / 1024:.1f} MB)"
-            )
-        except Exception as e:  # pragma: no cover
-            # Embedder failure shouldn't break the rest of the pipeline.
-            # registry.db without an embedding column populated just
-            # means semantic search returns nothing — search_subgraphs
-            # still works.
-            print(f"  WARNING: embedding pass failed: {e}; continuing without embeddings")
+            prior = existing.get(c.id)
+            # Only reuse when fingerprint matches AND embedding is
+            # populated — schema_fingerprint is the highest-signal
+            # invariant of the embedding inputs.
+            if (
+                prior is not None
+                and prior[1] is not None
+                and prior[0] == c.schema_fingerprint
+                and c.schema_fingerprint is not None
+            ):
+                c.embedding = prior[1]
+                skipped += 1
+                continue
+            to_encode_idx.append(idx)
+            to_encode_text.append(text)
+
+        # Chunked encode — failures localized to one chunk so a single
+        # bad input can't NULL out the entire embedding column.
+        CHUNK = 500
+        encoded = 0
+        for start in range(0, len(to_encode_text), CHUNK):
+            chunk_texts = to_encode_text[start : start + CHUNK]
+            chunk_idx = to_encode_idx[start : start + CHUNK]
+            try:
+                blobs = embedder.encode_batch(chunk_texts)
+                for ci, blob in zip(chunk_idx, blobs):
+                    classified[ci].embedding = blob
+                encoded += len(blobs)
+            except Exception as e:  # pragma: no cover
+                # Preserve whatever embedding was already on the
+                # Classification (None for new rows, prior blob for
+                # rows we tried to refresh). Don't poison the column.
+                print(
+                    f"  WARNING: embedding chunk {start//CHUNK} ("
+                    f"rows {start}-{start+len(chunk_texts)-1}) failed: {e}; "
+                    "preserving prior embeddings for these rows"
+                )
+
+        n_with_emb = sum(1 for c in classified if c.embedding)
+        print(
+            f"  Embedded {encoded} new, reused {skipped} prior; "
+            f"{n_with_emb}/{len(classified)} have embeddings in "
+            f"{time.time()-t_emb:.1f}s "
+            f"(+{n_with_emb * embedder.EMBEDDING_DIM * 4 / 1024 / 1024:.1f} MB)"
+        )
     elif embedder is None:
         print("\n=== Embedding subgraphs ===")
         print("  fastembed not installed; skipping embedding pass")

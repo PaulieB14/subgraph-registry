@@ -71,6 +71,21 @@ const spec = {
   },
 };
 
+// Build a short summary from the description: prefer the first
+// sentence, then fall back to a word-boundary truncation under 120
+// chars. Avoids the mid-word cut "...identifies the protocol_type and ent"
+// that Swagger UI renders awkwardly.
+function shortSummary(desc) {
+  if (!desc) return "";
+  const firstSentence = desc.split(/(?<=\.)\s/)[0];
+  if (firstSentence && firstSentence.length <= 120) return firstSentence;
+  if (desc.length <= 120) return desc;
+  // Word-boundary truncation
+  const cut = desc.slice(0, 120);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 60 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
+
 // ── MCP tools → POST /mcp/tools/{name} ─────────────────────
 // Each tool's JSON Schema inputSchema drops directly into the request
 // body schema — MCP tool schemas are OpenAPI-compatible by design.
@@ -78,7 +93,7 @@ for (const tool of TOOLS) {
   spec.paths[`/mcp/tools/${tool.name}`] = {
     post: {
       operationId: `tool_${tool.name}`,
-      summary: tool.description.slice(0, 120),
+      summary: shortSummary(tool.description),
       description: tool.description,
       tags: ["mcp-tools"],
       requestBody: {

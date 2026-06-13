@@ -22,8 +22,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import Database from "better-sqlite3";
 import express from "express";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import { basename, dirname, join } from "path";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { get as httpsGet } from "https";
 import { createHash } from "crypto";
@@ -328,15 +328,25 @@ function recommendSubgraph({ goal, chain = "" }) {
   `;
 
   const rows = getDb().prepare(sql).all(...params);
+  // De-dup first so we batch the stability lookup over the trimmed set.
   const seenIpfs = new Set();
-  const recommendations = [];
+  const keep = [];
   for (const r of rows) {
     if (r.ipfs_hash && seenIpfs.has(r.ipfs_hash)) continue;
     if (r.ipfs_hash) seenIpfs.add(r.ipfs_hash);
-    // Annotate with schema-stability so agents can prefer mature
-    // subgraphs whose data contract hasn't shifted recently.
-    const stab = getSchemaStabilityFor(r.id);
-    recommendations.push({
+    keep.push(r);
+    if (keep.length >= 5) break;
+  }
+  // Batch the schema-stability lookup into ONE SELECT instead of N+1.
+  // Falls back to {} if the schema_history table doesn't exist (pre-
+  // feature DB snapshot).
+  const stabMap = getSchemaStabilityBatch(keep.map((r) => r.id));
+  const recommendations = keep.map((r) => {
+    const stab = stabMap[r.id] || {
+      schema_changed_at: null,
+      schema_stable_days: null,
+    };
+    return {
       id: r.id,
       display_name: r.display_name,
       description: (r.description || r.auto_description || "").slice(0, 300),
@@ -350,9 +360,8 @@ function recommendSubgraph({ goal, chain = "" }) {
       schema_changed_at: stab.schema_changed_at,
       schema_stable_days: stab.schema_stable_days,
       ...buildQueryEndpoints(r.id),
-    });
-    if (recommendations.length >= 5) break;
-  }
+    };
+  });
 
   return {
     goal,
@@ -493,10 +502,18 @@ function listRegistryStats() {
 // At crawl time the Python pipeline computes a 384-dim
 // sentence-transformers/all-MiniLM-L6-v2 embedding per subgraph and
 // stores it as a little-endian float32 BLOB in the `embedding` column.
-// At query time the Node MCP server loads the SAME model via
-// @xenova/transformers (quantized ONNX bundled under data/models/),
-// embeds the query string once, then ranks rows by cosine similarity.
-// No PyTorch, no Python sidecar — runtime is pure JS + sqlite.
+// At query time the Node MCP server loads the SAME model architecture
+// via @xenova/transformers (quantized INT8 ONNX bundled under
+// data/models/) and embeds the query string once, then ranks rows by
+// cosine similarity. No PyTorch, no Python sidecar — runtime is pure
+// JS + sqlite.
+//
+// IMPORTANT: vectors are NOT bitwise-identical across runtimes. The JS
+// side is INT8-quantized; the Python side is float32. Top-K rankings
+// are stable but absolute scores can drift by ~0.01-0.03. The default
+// `min_score: 0.3` is calibrated for the quantized JS side. If you
+// run cross-runtime cosine comparisons, expect approximate not exact
+// agreement.
 
 let _embedderPromise = null;
 
@@ -538,14 +555,19 @@ async function embedQuery(text) {
 }
 
 function blobToFloat32(buf) {
-  // SQLite returns the BLOB as a Node Buffer. Wrap (not copy) as a
-  // Float32Array view — 384 floats = 1536 bytes, always little-endian
-  // because we packed it with Python's struct.pack("<384f", ...).
-  return new Float32Array(
-    buf.buffer,
+  // SQLite returns the BLOB as a Node Buffer. better-sqlite3's Buffers
+  // are views into a pooled slab with NO byteOffset alignment guarantee
+  // — and Float32Array requires byteOffset to be a multiple of 4. Wrap-
+  // without-copy used to throw `RangeError: start offset of Float32Array
+  // should be a multiple of 4` on any row whose blob landed at an odd
+  // offset (~7/8 of the time in production). Copy the bytes into a
+  // fresh aligned ArrayBuffer instead — the 1.5 KB/row alloc dwarfs the
+  // cosine compute that follows anyway.
+  const ab = buf.buffer.slice(
     buf.byteOffset,
-    buf.byteLength / 4,
+    buf.byteOffset + buf.byteLength,
   );
+  return new Float32Array(ab);
 }
 
 function cosineSim(a, b) {
@@ -563,18 +585,47 @@ async function semanticSearchSubgraphs({
   limit = 10,
   min_score = 0.3,
   include_unserved = false,
+  domain = "",
+  network = "",
+  protocol_type = "",
+  min_reliability = 0,
 }) {
   if (!query || typeof query !== "string") {
     return { error: "query is required and must be a string" };
   }
+  // Clamp limit — the inputSchema declares maximum:50 but MCP clients
+  // don't validate by default. Without the clamp, `limit: 10000` just
+  // sorts more results pointlessly.
+  limit = Math.max(1, Math.min(Number(limit) || 10, 50));
+  if (typeof min_score !== "number" || isNaN(min_score)) min_score = 0.3;
 
   const qvec = await embedQuery(query);
 
-  const where = include_unserved
-    ? ""
-    : "WHERE active_allocation_count > 0";
-  // Pull only rows with an embedding — older DB snapshots may have a
-  // NULL embedding column on some rows.
+  // SQL pre-filter shaves ~14k → <1k rows for narrow queries (e.g.
+  // "lending positions on Arbitrum"). Cosine math runs only on the
+  // post-filter set.
+  const conditions = ["embedding IS NOT NULL"];
+  const params = [];
+  if (!include_unserved) {
+    conditions.push("active_allocation_count > 0");
+  }
+  if (domain) {
+    conditions.push("domain = ?");
+    params.push(domain);
+  }
+  if (network) {
+    conditions.push("network = ?");
+    params.push(network);
+  }
+  if (protocol_type) {
+    conditions.push("protocol_type = ?");
+    params.push(protocol_type);
+  }
+  if (typeof min_reliability === "number" && min_reliability > 0) {
+    conditions.push("reliability_score >= ?");
+    params.push(min_reliability);
+  }
+  const where = `WHERE ${conditions.join(" AND ")}`;
   const rows = getDb()
     .prepare(
       `SELECT id, display_name, description, auto_description, domain,
@@ -582,9 +633,9 @@ async function semanticSearchSubgraphs({
               entity_count, canonical_entities, powered_by_substreams,
               active_allocation_count, embedding
        FROM subgraphs
-       ${where ? where + " AND" : "WHERE"} embedding IS NOT NULL`,
+       ${where}`,
     )
-    .all();
+    .all(...params);
 
   // Score every row. With ~14k subgraphs × 384 floats this is ~5ms on
   // a modern x64 box — cheap enough to do linearly per request.
@@ -638,7 +689,29 @@ async function semanticSearchSubgraphs({
 // of data is mature.
 
 function getSchemaChanges({ subgraph_id, since_timestamp = 0 }) {
-  if (!subgraph_id) return { error: "subgraph_id is required" };
+  if (!subgraph_id || typeof subgraph_id !== "string") {
+    return { error: "subgraph_id is required and must be a string" };
+  }
+  // Coerce since_timestamp to a non-negative integer. SQLite has loose
+  // typing so passing a string like "2024-01-01" used to silently match
+  // nothing; passing NaN matched everything. Validate at the boundary.
+  let since = Number(since_timestamp);
+  if (!Number.isFinite(since) || since < 0) since = 0;
+  since = Math.floor(since);
+
+  // Always return the same key set so agents can pattern-match against
+  // a stable shape even when the schema_history table is missing.
+  const now = Math.floor(Date.now() / 1000);
+  const baseShape = {
+    subgraph_id,
+    total_changes: 0,
+    last_changed_at: null,
+    stable_days: null,
+    changed_within_24h: false,
+    changed_within_7d: false,
+    changes: [],
+  };
+
   let rows;
   try {
     rows = getDb()
@@ -648,20 +721,16 @@ function getSchemaChanges({ subgraph_id, since_timestamp = 0 }) {
          WHERE subgraph_id = ? AND detected_at >= ?
          ORDER BY detected_at DESC`,
       )
-      .all(subgraph_id, since_timestamp);
+      .all(subgraph_id, since);
   } catch (err) {
     // schema_history table doesn't exist yet (pre-feature DB snapshot).
     return {
-      subgraph_id,
-      total_changes: 0,
-      changes: [],
+      ...baseShape,
       note: "schema_history table not present in this registry.db — feature ships in v0.7+.",
     };
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  let last_changed_at = null;
-  if (rows.length > 0) last_changed_at = rows[0].detected_at;
+  const last_changed_at = rows.length > 0 ? rows[0].detected_at : null;
   const stable_days =
     last_changed_at !== null
       ? Math.round(((now - last_changed_at) / 86400) * 10) / 10
@@ -686,9 +755,11 @@ function getSchemaChanges({ subgraph_id, since_timestamp = 0 }) {
 }
 
 function getSchemaStabilityFor(id) {
-  // Light-weight helper used by recommend_subgraph / get_subgraph_detail
-  // to enrich each row with schema-stability fields. Falls back to nulls
-  // if the schema_history table doesn't exist (older DB snapshots).
+  // Light-weight helper used by get_subgraph_detail to enrich a single
+  // row with schema-stability fields. Falls back to nulls if the
+  // schema_history table doesn't exist (older DB snapshots). For
+  // recommend_subgraph, use getSchemaStabilityBatch instead — it
+  // collapses N queries into one.
   try {
     const r = getDb()
       .prepare(
@@ -707,6 +778,43 @@ function getSchemaStabilityFor(id) {
   }
 }
 
+function getSchemaStabilityBatch(ids) {
+  // Single GROUP BY query for up to ~5-50 subgraph IDs. Returns a map
+  // { [id]: { schema_changed_at, schema_stable_days } }. Empty map on
+  // missing table or empty input.
+  if (!Array.isArray(ids) || ids.length === 0) return {};
+  try {
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = getDb()
+      .prepare(
+        `SELECT subgraph_id, MAX(detected_at) AS schema_changed_at
+         FROM schema_history
+         WHERE subgraph_id IN (${placeholders})
+         GROUP BY subgraph_id`,
+      )
+      .all(...ids);
+    const now = Math.floor(Date.now() / 1000);
+    const out = {};
+    for (const r of rows) {
+      if (r.schema_changed_at == null) {
+        out[r.subgraph_id] = {
+          schema_changed_at: null,
+          schema_stable_days: null,
+        };
+        continue;
+      }
+      out[r.subgraph_id] = {
+        schema_changed_at: r.schema_changed_at,
+        schema_stable_days:
+          Math.round(((now - r.schema_changed_at) / 86400) * 10) / 10,
+      };
+    }
+    return out;
+  } catch (_) {
+    return {};
+  }
+}
+
 // ── MCP Server ─────────────────────────────────────────────
 
 const TOOLS = [
@@ -716,6 +824,7 @@ const TOOLS = [
       "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required).",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {
         query: { type: "string", description: "Free-text search across names and descriptions" },
         domain: { type: "string", description: "Filter by domain: defi, nfts, dao, gaming, identity, infrastructure, social, analytics" },
@@ -733,6 +842,7 @@ const TOOLS = [
       "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Each result includes query_url_x402 (preferred — POST GraphQL, pay $0.01 USDC on Base per query, no API key) and a legacy query_url for Studio-key flows.",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {
         goal: { type: "string", description: "What you want to do, e.g. 'query Uniswap pool data on Base'" },
         chain: { type: "string", description: "Optional chain filter: mainnet, arbitrum-one, base, matic, etc." },
@@ -746,6 +856,7 @@ const TOOLS = [
       "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, all entity names with field counts, reliability score, signal data, both query URLs (x402 and legacy), the x402 pricing manifest ($0.01 USDC on Base), and step-by-step instructions for both query paths.",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {
         subgraph_id: { type: "string", description: "Subgraph ID or IPFS hash (Qm...)" },
       },
@@ -758,15 +869,17 @@ const TOOLS = [
       "Get an overview of the subgraph registry: total count, available domains, networks, and protocol types with counts. Use this to understand what data is available before searching.",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {},
     },
   },
   {
     name: "semantic_search_subgraphs",
     description:
-      "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model used at crawl time) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match).",
+      "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model architecture used at crawl time; the runtime uses an INT8-quantized ONNX build so absolute scores can drift ~0.01-0.03 from the float32 reference but top-K rankings are stable) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Supports the same domain/network/protocol_type/min_reliability pre-filters as search_subgraphs (applied as SQL WHERE before cosine scoring for performance). Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match).",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {
         query: {
           type: "string",
@@ -789,6 +902,22 @@ const TOOLS = [
           description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
           default: false,
         },
+        domain: {
+          type: "string",
+          description: "Pre-filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics)",
+        },
+        network: {
+          type: "string",
+          description: "Pre-filter by chain (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc.)",
+        },
+        protocol_type: {
+          type: "string",
+          description: "Pre-filter by protocol type (dex, lending, bridge, staking, options, perpetuals, etc.)",
+        },
+        min_reliability: {
+          type: "number",
+          description: "Pre-filter: minimum reliability score (0-1).",
+        },
       },
       required: ["query"],
     },
@@ -799,6 +928,7 @@ const TOOLS = [
       "Return chronological schema-fingerprint changes for a subgraph. Each row is one detected fingerprint change with prev_fingerprint, fingerprint, and detected_at (unix seconds). Use to assess schema stability before depending on a subgraph: a long stable_days value means the schema contract is mature; a recent changed_within_24h means the upstream protocol just shipped a schema update and queries may need to be revisited.",
     inputSchema: {
       type: "object",
+      additionalProperties: false,
       properties: {
         subgraph_id: {
           type: "string",
@@ -1049,10 +1179,13 @@ export { TOOLS };
 
 // Only auto-start when invoked as the entry point — importing the
 // module for tooling (scripts/gen-openapi.js, tests) MUST NOT spawn
-// the MCP server or open the SQLite file.
+// the MCP server or open the SQLite file. Use pathToFileURL so the
+// comparison works on Windows where process.argv[1] uses backslashes
+// while import.meta.url is forward-slashed.
 const _isMain =
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith("src/index.js");
+  process.argv[1] !== undefined &&
+  (pathToFileURL(process.argv[1]).href === import.meta.url ||
+    basename(process.argv[1]) === "index.js");
 
 if (_isMain) {
   main().catch((err) => {

@@ -22,7 +22,7 @@
     "/mcp/tools/search_subgraphs": {
       "post": {
         "operationId": "tool_search_subgraphs",
-        "summary": "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, ident",
+        "summary": "Search and filter the classified subgraph registry (15,500+ subgraphs).",
         "description": "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required).",
         "tags": [
           "mcp-tools"
@@ -33,6 +33,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "query": {
                     "type": "string",
@@ -95,7 +96,7 @@
     "/mcp/tools/recommend_subgraph": {
       "post": {
         "operationId": "tool_recommend_subgraph",
-        "summary": "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best mat",
+        "summary": "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best…",
         "description": "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Each result includes query_url_x402 (preferred — POST GraphQL, pay $0.01 USDC on Base per query, no API key) and a legacy query_url for Studio-key flows.",
         "tags": [
           "mcp-tools"
@@ -106,6 +107,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "goal": {
                     "type": "string",
@@ -150,7 +152,7 @@
     "/mcp/tools/get_subgraph_detail": {
       "post": {
         "operationId": "tool_get_subgraph_detail",
-        "summary": "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, c",
+        "summary": "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash.",
         "description": "Get full classification detail for a specific subgraph by its subgraph ID or IPFS hash. Returns domain, protocol type, canonical entities, all entity names with field counts, reliability score, signal data, both query URLs (x402 and legacy), the x402 pricing manifest ($0.01 USDC on Base), and step-by-step instructions for both query paths.",
         "tags": [
           "mcp-tools"
@@ -161,6 +163,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "subgraph_id": {
                     "type": "string",
@@ -201,7 +204,7 @@
     "/mcp/tools/list_registry_stats": {
       "post": {
         "operationId": "tool_list_registry_stats",
-        "summary": "Get an overview of the subgraph registry: total count, available domains, networks, and protocol types with counts. Use ",
+        "summary": "Get an overview of the subgraph registry: total count, available domains, networks, and protocol types with counts.",
         "description": "Get an overview of the subgraph registry: total count, available domains, networks, and protocol types with counts. Use this to understand what data is available before searching.",
         "tags": [
           "mcp-tools"
@@ -212,6 +215,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {}
               }
             }
@@ -244,8 +248,8 @@
     "/mcp/tools/semantic_search_subgraphs": {
       "post": {
         "operationId": "tool_semantic_search_subgraphs",
-        "summary": "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (",
-        "description": "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model used at crawl time) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match).",
+        "summary": "Semantic vector search over the subgraph registry.",
+        "description": "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model architecture used at crawl time; the runtime uses an INT8-quantized ONNX build so absolute scores can drift ~0.01-0.03 from the float32 reference but top-K rankings are stable) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Supports the same domain/network/protocol_type/min_reliability pre-filters as search_subgraphs (applied as SQL WHERE before cosine scoring for performance). Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match).",
         "tags": [
           "mcp-tools"
         ],
@@ -255,6 +259,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "query": {
                     "type": "string",
@@ -276,6 +281,22 @@
                     "type": "boolean",
                     "description": "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
                     "default": false
+                  },
+                  "domain": {
+                    "type": "string",
+                    "description": "Pre-filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics)"
+                  },
+                  "network": {
+                    "type": "string",
+                    "description": "Pre-filter by chain (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc.)"
+                  },
+                  "protocol_type": {
+                    "type": "string",
+                    "description": "Pre-filter by protocol type (dex, lending, bridge, staking, options, perpetuals, etc.)"
+                  },
+                  "min_reliability": {
+                    "type": "number",
+                    "description": "Pre-filter: minimum reliability score (0-1)."
                   }
                 },
                 "required": [
@@ -312,7 +333,7 @@
     "/mcp/tools/get_schema_changes": {
       "post": {
         "operationId": "tool_get_schema_changes",
-        "summary": "Return chronological schema-fingerprint changes for a subgraph. Each row is one detected fingerprint change with prev_fi",
+        "summary": "Return chronological schema-fingerprint changes for a subgraph.",
         "description": "Return chronological schema-fingerprint changes for a subgraph. Each row is one detected fingerprint change with prev_fingerprint, fingerprint, and detected_at (unix seconds). Use to assess schema stability before depending on a subgraph: a long stable_days value means the schema contract is mature; a recent changed_within_24h means the upstream protocol just shipped a schema update and queries may need to be revisited.",
         "tags": [
           "mcp-tools"
@@ -323,6 +344,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "subgraph_id": {
                     "type": "string",
