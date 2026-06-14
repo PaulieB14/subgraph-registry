@@ -171,6 +171,18 @@ const OPERATOR_SEED: Array<{ wallet: string; agent: string; registry: string; ag
     registry: "operator",
     agent_link: "https://8004scan.io/agents/base/41034",
   },
+  {
+    wallet: "0xe121e3a8611e1f44f7cc52892ee1117fddc8f734",
+    agent: "[Graph Advocate](https://8004scan.io/agents/base/41034)",
+    registry: "operator",
+    agent_link: "https://8004scan.io/agents/base/41034",
+  },
+  {
+    wallet: "0x0ff5a6ecef783bba35463ec2f8403b9b5e9e7c86",
+    agent: "[Graph Advocate](https://8004scan.io/agents/base/41034)",
+    registry: "operator",
+    agent_link: "https://8004scan.io/agents/base/41034",
+  },
 ];
 
 // ── Bazaar enrichment ────────────────────────────────────────────────────────
