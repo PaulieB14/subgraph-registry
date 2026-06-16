@@ -2,7 +2,7 @@
 domain: identity
 count: 407
 percentage: 2.7
-updated: 2026-06-13
+updated: 2026-06-16
 ---
 
 # Identity Subgraphs

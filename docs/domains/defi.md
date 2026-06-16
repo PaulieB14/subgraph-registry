@@ -1,13 +1,13 @@
 ---
 domain: defi
-count: 11578
+count: 11586
 percentage: 76.6
-updated: 2026-06-13
+updated: 2026-06-16
 ---
 
 # Defi Subgraphs
 
-**11,578** subgraphs (76.6% of registry)
+**11,586** subgraphs (76.6% of registry)
 
 ## Top Subgraphs by Reliability
 

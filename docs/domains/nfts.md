@@ -1,13 +1,13 @@
 ---
 domain: nfts
-count: 863
+count: 865
 percentage: 5.7
-updated: 2026-06-13
+updated: 2026-06-16
 ---
 
 # NFTs Subgraphs
 
-**863** subgraphs (5.7% of registry)
+**865** subgraphs (5.7% of registry)
 
 ## Top Subgraphs by Reliability
 

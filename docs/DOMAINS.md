@@ -1,15 +1,15 @@
 ---
 type: domain-index
-updated: 2026-06-13
-total_subgraphs: 15114
+updated: 2026-06-16
+total_subgraphs: 15124
 ---
 
 # Subgraph Domains
 
 | Domain | Count | % | File |
 |--------|-------|---|------|
-| Defi | 11,578 | 76.6% | [View](domains/defi.md) |
-| NFTS | 863 | 5.7% | [View](domains/nfts.md) |
+| Defi | 11,586 | 76.6% | [View](domains/defi.md) |
+| NFTS | 865 | 5.7% | [View](domains/nfts.md) |
 | Unknown | 598 | 4.0% | [View](domains/unknown.md) |
 | Infrastructure | 590 | 3.9% | [View](domains/infrastructure.md) |
 | DAO | 425 | 2.8% | [View](domains/dao.md) |
