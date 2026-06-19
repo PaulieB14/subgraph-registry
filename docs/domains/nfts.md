@@ -2,7 +2,7 @@
 domain: nfts
 count: 865
 percentage: 5.7
-updated: 2026-06-16
+updated: 2026-06-19
 ---
 
 # NFTs Subgraphs
@@ -28,7 +28,6 @@ updated: 2026-06-16
 | Crypto Phunks Auction House | mainnet | nft-marketplace | 0.65 | 58,771 |
 | PUNKS V1 | mainnet | nft-marketplace | 0.64 | 750,473 |
 | phunks | mainnet | nft-marketplace | 0.63 | 247,189 |
-| bid-smart-production | base | nft-marketplace | 0.63 | 330,494 |
 | Lemonade Marketplace Ethereum | mainnet | nft-marketplace | 0.63 | 2,165 |
 | Lemonade Gnosis | gnosis | nft-marketplace | 0.62 | 364 |
 | nftmarket-bsc | bsc | nft-marketplace | 0.62 | 53,638 |
@@ -38,6 +37,7 @@ updated: 2026-06-16
 | Art Blocks Arbitrum | arbitrum-one | nft-marketplace | 0.61 | 207,194 |
 | UNI-V3-Base-User-Txns | base | dex | 0.60 | 23,105 |
 | cryptoart auctionhouse | base | nft-marketplace | 0.60 | 187,969 |
+| Project Galaxy NFT Polygon | matic | general | 0.60 | 24 |
 
 ## Query This Domain
 
