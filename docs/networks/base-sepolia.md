@@ -2,7 +2,7 @@
 network: base-sepolia
 count: 282
 percentage: 1.9
-updated: 2026-06-19
+updated: 2026-06-22
 ---
 
 # Base Sepolia Subgraphs

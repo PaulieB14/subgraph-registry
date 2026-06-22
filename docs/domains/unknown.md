@@ -1,13 +1,13 @@
 ---
 domain: unknown
 count: 598
-percentage: 4.0
-updated: 2026-06-19
+percentage: 3.9
+updated: 2026-06-22
 ---
 
 # Unknown Subgraphs
 
-**598** subgraphs (4.0% of registry)
+**598** subgraphs (3.9% of registry)
 
 ## Top Subgraphs by Reliability
 

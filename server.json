@@ -6,12 +6,12 @@
     "url": "https://github.com/PaulieB14/subgraph-registry",
     "source": "github"
   },
-  "version": "0.8.4",
+  "version": "0.8.5",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "subgraph-registry-mcp",
-      "version": "0.8.4",
+      "version": "0.8.5",
       "transport": {
         "type": "stdio"
       }

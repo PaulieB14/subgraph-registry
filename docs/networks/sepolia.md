@@ -2,7 +2,7 @@
 network: sepolia
 count: 559
 percentage: 3.7
-updated: 2026-06-19
+updated: 2026-06-22
 ---
 
 # Sepolia Subgraphs
@@ -24,7 +24,7 @@ updated: 2026-06-19
 | sepolia-ddocs-comments | social | general | 0.52 | 413,095 |
 | CCTP Sepolia | infrastructure | dex | 0.49 | 62,977 |
 | child-contract-sepolia-6 | defi | general | 0.48 | 4 |
-| Nox Protocol Indexer - Ethereum Sepolia | defi | dex | 0.45 | 11,680 |
+| Nox Protocol Indexer - Ethereum Sepolia | defi | dex | 0.46 | 21,691 |
 | Arb Bridge Eth Arb Sep | defi | bridge | 0.43 | 112,673 |
 | finathlon | defi | bridge | 0.42 | 1,075 |
 | genesis-expedition-sepolia | defi | general | 0.42 | — |
