@@ -1,13 +1,13 @@
 ---
 network: optimism
-count: 572
+count: 573
 percentage: 3.8
-updated: 2026-06-22
+updated: 2026-06-25
 ---
 
 # Optimism Subgraphs
 
-**572** subgraphs (3.8% of registry)
+**573** subgraphs (3.8% of registry)
 
 ## Top Subgraphs by Reliability
 

@@ -1,13 +1,13 @@
 ---
 domain: social
-count: 82
-percentage: 0.5
-updated: 2026-06-22
+count: 84
+percentage: 0.6
+updated: 2026-06-25
 ---
 
 # Social Subgraphs
 
-**82** subgraphs (0.5% of registry)
+**84** subgraphs (0.6% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -28,6 +28,8 @@ updated: 2026-06-22
 | gossy | arbitrum-nova | dex | 0.19 | 81,441 |
 | EchoMarket Testnet V1 | base-sepolia | nft-marketplace | 0.19 | — |
 | router-v3-bsc | bsc | general | 0.19 | 1,160 |
+| suixi life | bsc | general | 0.18 | 28,636 |
+| suixi | bsc | general | 0.17 | 16,418 |
 | UCI | base | general | 0.17 | 1,203 |
 | autopilotmarket-v1-mainnet | mainnet | yield-aggregator | 0.15 | 4,861 |
 | autopilotmarket-v-1-bsc | bsc | yield-aggregator | 0.15 | 4,532 |
@@ -36,8 +38,6 @@ updated: 2026-06-22
 | bodhi | optimism | general | 0.14 | 797 |
 | utonoma-mainnet | avalanche | dex | 0.11 | — |
 | CryptoHighscore | mainnet | governance | 0.09 | — |
-| W3wall | matic | general | 0.08 | — |
-| shitpost-sonic | sonic | general | 0.05 | — |
 
 ## Query This Domain
 
