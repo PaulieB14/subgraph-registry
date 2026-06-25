@@ -1,0 +1,17 @@
+# Scope the published ClawHub skill to the MCP server only — the ClawHub mirror
+# of package.json "files" (which already scopes the npm package the same way).
+#
+# These stay in git: the Vercel x402-watch dashboard (web/) and CI build from
+# them, and they're never shipped to npm. This file only affects what ClawHub
+# packs, so the dashboard + npm package are unaffected.
+#
+# (clawhub reads .gitignore first, then this file — so node_modules/dist/.env
+# are already excluded; here we drop the non-MCP, higher-scope components that
+# the security scanner correctly flagged as broader than "subgraph discovery".)
+
+web/          # x402-watch dashboard: payment analytics, /amp Anthropic SQL chat, DuckDB/parquet, S3/AWS
+scripts/      # Dune regeneration + payer-wallet attribution (chain log scanning)
+python/       # registry crawler / build tooling (not needed at MCP runtime)
+docs/
+.github/      # CI workflows
+*.parquet
