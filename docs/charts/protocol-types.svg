@@ -8,8 +8,8 @@
 <rect x="110" y="68" width="351.8" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
 <text x="467.793334508905" y="83.0" fill="#e8eaed" font-size="11">4,337</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Lending</text>
-<rect x="110" y="96" width="118.1" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
-<text x="234.1026274025745" y="111.0" fill="#e8eaed" font-size="11">1,456</text>
+<rect x="110" y="96" width="118.2" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="234.18374184447185" y="111.0" fill="#e8eaed" font-size="11">1,457</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Staking</text>
 <rect x="110" y="124" width="72.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
 <text x="188.35408217245634" y="139.0" fill="#e8eaed" font-size="11">892</text>
@@ -23,8 +23,8 @@
 <rect x="110" y="208" width="34.2" height="22" rx="4" fill="#f97316" opacity="0.85"/>
 <text x="150.23029448069124" y="223.0" fill="#e8eaed" font-size="11">422</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Governance</text>
-<rect x="110" y="236" width="34.0" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
-<text x="149.98695115499913" y="251.0" fill="#e8eaed" font-size="11">419</text>
+<rect x="110" y="236" width="34.1" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
+<text x="150.0680655968965" y="251.0" fill="#e8eaed" font-size="11">420</text>
 <text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Perpetuals</text>
 <rect x="110" y="264" width="22.0" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
 <text x="137.98201375418796" y="279.0" fill="#e8eaed" font-size="11">271</text>

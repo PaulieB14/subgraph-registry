@@ -1,7 +1,7 @@
 ---
 type: network-index
 updated: 2026-06-25
-total_subgraphs: 15161
+total_subgraphs: 15163
 ---
 
 # Subgraph Networks
@@ -12,7 +12,7 @@ total_subgraphs: 15161
 | Base | 1,810 | 11.9% | [View](networks/base.md) |
 | BSC | 1,644 | 10.8% | [View](networks/bsc.md) |
 | Arbitrum | 1,423 | 9.4% | [View](networks/arbitrum-one.md) |
-| Polygon | 1,297 | 8.6% | [View](networks/matic.md) |
+| Polygon | 1,298 | 8.6% | [View](networks/matic.md) |
 | Optimism | 573 | 3.8% | [View](networks/optimism.md) |
 | Sepolia | 559 | 3.7% | [View](networks/sepolia.md) |
 | Avalanche | 446 | 2.9% | [View](networks/avalanche.md) |

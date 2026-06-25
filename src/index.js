@@ -50,7 +50,7 @@ const GITHUB_DB_URL =
 //   3. Paste the new hash here and bump package.json version
 //   4. Update SKILL.md "Verifying the registry" section
 const EXPECTED_DB_SHA256 =
-  "3f3f815b312a982d68ea1298cb7f15f3c1ffb11ccd3c6ea44fd40a8800aa2a17";
+  "c7056b6f7e2ddb2ed5f31c906981aa48a0ab5b011b1c0f8a472257e9ab71e642";
 // Skip-verification escape hatch (set to "1" only if you're rebuilding the DB
 // locally and know what you're doing — never set in agent-runtime defaults).
 const SKIP_VERIFY = process.env.SUBGRAPH_REGISTRY_SKIP_VERIFY === "1";
