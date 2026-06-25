@@ -152,6 +152,18 @@ export default async function Page() {
     <>
       <Hero stats={heroStats} />
 
+      <a
+        href="https://payql-playground-production.up.railway.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-muted transition hover:border-accent/40 hover:bg-accent/10"
+      >
+        <span>
+          <span className="font-medium text-accent">▶ Try it yourself</span> — ask a question, pay $0.01, and query The Graph live in the PayQL playground
+        </span>
+        <span className="text-accent">↗</span>
+      </a>
+
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <CumulativeChart data={cumulative} />
         <DailyChart data={daily} />
