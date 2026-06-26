@@ -1,17 +1,22 @@
-# Scope the published ClawHub skill to the MCP server only — the ClawHub mirror
-# of package.json "files" (which already scopes the npm package the same way).
+# Scope the published ClawHub skill to the MCP server only — mirrors the npm
+# package.json "files" allowlist (which already scopes the npm package).
 #
-# These stay in git: the Vercel x402-watch dashboard (web/) and CI build from
-# them, and they're never shipped to npm. This file only affects what ClawHub
-# packs, so the dashboard + npm package are unaffected.
+# These stay in git (the Vercel x402-watch dashboard + CI build from them) and
+# are never shipped to npm; this file only controls what ClawHub packs, so the
+# dashboard and npm package are unaffected.
 #
-# (clawhub reads .gitignore first, then this file — so node_modules/dist/.env
-# are already excluded; here we drop the non-MCP, higher-scope components that
-# the security scanner correctly flagged as broader than "subgraph discovery".)
-
-web/          # x402-watch dashboard: payment analytics, /amp Anthropic SQL chat, DuckDB/parquet, S3/AWS
-scripts/      # Dune regeneration + payer-wallet attribution (chain log scanning)
-python/       # registry crawler / build tooling (not needed at MCP runtime)
+# IMPORTANT: .gitignore syntax — NO inline/trailing comments. A "#" only starts
+# a comment at the START of a line, so "web/   # foo" becomes a literal pattern
+# that matches nothing. Keep every pattern on its own bare line. (This was the
+# bug in the first version of this file: web/ scripts/ python/ .github/ all had
+# trailing comments and were therefore NOT excluded.)
+#
+# clawhub reads .gitignore first, then this file, so node_modules/dist/.env are
+# already excluded. Below we drop the non-MCP, higher-scope components the
+# security scanner flagged as broader than "subgraph discovery":
+web/
+scripts/
+python/
 docs/
-.github/      # CI workflows
+.github/
 *.parquet
