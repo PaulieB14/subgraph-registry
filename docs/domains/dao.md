@@ -1,13 +1,13 @@
 ---
 domain: dao
-count: 426
+count: 425
 percentage: 2.8
-updated: 2026-06-25
+updated: 2026-06-28
 ---
 
 # DAO Subgraphs
 
-**426** subgraphs (2.8% of registry)
+**425** subgraphs (2.8% of registry)
 
 ## Top Subgraphs by Reliability
 

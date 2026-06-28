@@ -1,13 +1,13 @@
 ---
 network: bsc
-count: 1644
+count: 1646
 percentage: 10.8
-updated: 2026-06-25
+updated: 2026-06-28
 ---
 
 # BSC Subgraphs
 
-**1,644** subgraphs (10.8% of registry)
+**1,646** subgraphs (10.8% of registry)
 
 ## Top Subgraphs by Reliability
 

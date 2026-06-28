@@ -2,7 +2,7 @@
 network: avalanche
 count: 446
 percentage: 2.9
-updated: 2026-06-25
+updated: 2026-06-28
 ---
 
 # Avalanche Subgraphs
