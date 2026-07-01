@@ -2,7 +2,7 @@
 network: zksync-era
 count: 375
 percentage: 2.5
-updated: 2026-06-28
+updated: 2026-07-01
 ---
 
 # Zksync Era Subgraphs

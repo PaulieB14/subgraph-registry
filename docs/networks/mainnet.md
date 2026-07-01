@@ -1,13 +1,13 @@
 ---
 network: mainnet
-count: 2454
+count: 2456
 percentage: 16.2
-updated: 2026-06-28
+updated: 2026-07-01
 ---
 
 # Ethereum Subgraphs
 
-**2,454** subgraphs (16.2% of registry)
+**2,456** subgraphs (16.2% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -19,7 +19,7 @@ updated: 2026-06-28
 | Uniswap V2 | defi | dex | 0.97 | 46,844,328 |
 | uniswap-v4-ethereum | defi | dex | 0.93 | 19,872,648 |
 | Uni V3 Staker Mainnet | defi | staking | 0.93 | 11,355,595 |
-| snapshot | dao | governance | 0.92 | 7,292,644 |
+| snapshot | dao | governance | 0.91 | 2,875,466 |
 | protocol-v3 | defi | lending | 0.89 | 9,449,988 |
 | Uniswap V3 Mainnet | defi | dex | 0.88 | 2,481,146 |
 | Uniswap V3 Ethereum | defi | dex | 0.86 | 2,302,694 |

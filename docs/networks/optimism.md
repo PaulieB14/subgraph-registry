@@ -2,7 +2,7 @@
 network: optimism
 count: 573
 percentage: 3.8
-updated: 2026-06-28
+updated: 2026-07-01
 ---
 
 # Optimism Subgraphs

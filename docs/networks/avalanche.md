@@ -1,13 +1,13 @@
 ---
 network: avalanche
-count: 446
+count: 447
 percentage: 2.9
-updated: 2026-06-28
+updated: 2026-07-01
 ---
 
 # Avalanche Subgraphs
 
-**446** subgraphs (2.9% of registry)
+**447** subgraphs (2.9% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -32,12 +32,12 @@ updated: 2026-06-28
 | Curve Finance Avalanche | defi | dex | 0.68 | 55,626 |
 | GMX Avalanche | defi | perpetuals | 0.68 | 56,141 |
 | Silo Finance v2 Avalanche | defi | lending | 0.68 | 43,805 |
-| avant-avalanche | defi | general | 0.67 | 102,985 |
 | Avalanche Blocks | infrastructure | general | 0.66 | 68,448 |
 | SushiSwap Avalanche | defi | dex | 0.66 | 54,225 |
 | memetropolis-avax-mainnet | defi | dex | 0.66 | 278,211 |
 | benqi-ecosystem-iso-market | defi | lending | 0.66 | 132,725 |
 | Protocol V2 Avalanche | defi | lending | 0.65 | 9,646 |
+| Phuture Avalanche | defi | dex | 0.65 | 57,507 |
 
 ## Query This Network
 

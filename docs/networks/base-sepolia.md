@@ -2,7 +2,7 @@
 network: base-sepolia
 count: 282
 percentage: 1.9
-updated: 2026-06-28
+updated: 2026-07-01
 ---
 
 # Base Sepolia Subgraphs
@@ -35,9 +35,9 @@ updated: 2026-06-28
 | agent0-base-testnet | infrastructure | name-service | 0.33 | 93,312 |
 | Spheron Protocol | infrastructure | bridge | 0.32 | 2 |
 | DeFi-Choice-Testnet | defi | general | 0.31 | 16 |
-| protocol-stage | defi | staking | 0.30 | 157,806 |
-| snapshot-base-sepolia | dao | governance | 0.29 | 15 |
+| snapshot-base-sepolia | dao | governance | 0.30 | 42 |
 | stickrnet | defi | dex | 0.29 | — |
+| soul-referral-program-base-sepolia-testn | defi | general | 0.26 | — |
 
 ## Query This Network
 
