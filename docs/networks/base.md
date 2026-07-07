@@ -2,7 +2,7 @@
 network: base
 count: 1813
 percentage: 11.9
-updated: 2026-07-04
+updated: 2026-07-07
 ---
 
 # Base Subgraphs
