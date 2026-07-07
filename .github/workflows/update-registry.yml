@@ -199,10 +199,16 @@ jobs:
           npm publish --access public
 
       - name: Publish to ClawHub
-        # CLI v0.17.x reads its token from a local config file. We hold the
-        # full {registry, token} JSON in a single GitHub secret, write it back
-        # to a temp file at runtime, and point CLAWHUB_CONFIG_PATH at it so
-        # the CLI authenticates non-interactively.
+        # Pin to clawhub@0.23 (the current CLI line). The ClawHub *server*
+        # rolls forward and eventually drops compatibility with old publish
+        # payloads: the 7-week-old 0.17.0 CLI started getting rejected with
+        # "API response: skillId: invalid value; versionId: invalid value"
+        # (run 28845541838, 2026-07-07) even though auth still succeeded.
+        # 0.23.x reads its token the same way (CLAWHUB_CONFIG_PATH honored).
+        # If this recurs, bump the pin again toward the latest CLI.
+        if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
+        env:
+          CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
         if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
         env:
           CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
@@ -212,11 +218,11 @@ jobs:
           printf '%s' "$CLAWHUB_CONFIG_JSON" > "$CFG"
           chmod 600 "$CFG"
           export CLAWHUB_CONFIG_PATH="$CFG"
-          npx -y clawhub@0.17 whoami
+          npx -y clawhub@0.23 whoami
           # Slug + path mirror Paul's manual flow: publish the repo root as
           # the `subgraph-registry` skill, version pinned to the bumped npm
           # version so the two registries stay in lockstep.
-          npx -y clawhub@0.17 skill publish . \
+          # In 0.23 --no-input is a GLOBAL flag, so it goes before the subcommand.
+          npx -y clawhub@0.23 --no-input skill publish . \
             --slug subgraph-registry \
-            --version "$NEW_VER" \
-            --no-input
+            --version "$NEW_VER"
