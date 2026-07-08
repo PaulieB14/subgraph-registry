@@ -15,6 +15,8 @@ Agent-friendly discovery of 15,500+ classified subgraphs on The Graph Network. S
 - **recommend_subgraph** — Natural language goal like "find DEX trades on Arbitrum" returns the best matching subgraphs
 - **get_subgraph_detail** — Full classification, entities, reliability score, x402 + legacy query URLs, and step-by-step query instructions for both paths
 - **list_registry_stats** — Registry overview with available domains, networks, and protocol types
+- **semantic_search_subgraphs** — Embedding-based natural-language search over the registry. Uses a bundled ONNX model via `@xenova/transformers`; **if the bundled model is missing it downloads it once from Hugging Face** (see Network & Data Behavior). Skip this tool for a strictly offline runtime.
+- **get_schema_changes** — Report schema/entity changes for a subgraph across indexed versions
 
 ## Query paths
 
@@ -44,8 +46,9 @@ npx subgraph-registry-mcp@0.6.0
 
 - On first run, the server downloads a pre-built `registry.db` (SQLite) from the [GitHub repository](https://github.com/PaulieB14/subgraph-registry) (~5 MB). This is cached locally and reused on subsequent runs.
 - The downloaded file's SHA-256 is **verified against a hash pinned in the npm package** before loading — see "Verifying the registry" below. A mismatched file is deleted and the server refuses to start.
-- All tool queries run against this local database — no external API calls are made at query time.
-- The SSE transport (`--http` / `--http-only`) starts a local HTTP server on port 3848 (configurable via `MCP_HTTP_PORT` env var). Bind only to trusted environments.
+- Filter/lookup tools (`search_subgraphs`, `recommend_subgraph`, `get_subgraph_detail`, `list_registry_stats`, `get_schema_changes`) run entirely against the local database — no external API calls at query time.
+- **Exception — `semantic_search_subgraphs`:** it loads a bundled ONNX embedding model via `@xenova/transformers`. If that bundled model is not present, the runtime downloads it **once** from Hugging Face (`huggingface.co`), then caches it. This is the only query-time network call. Don't call this tool (or pre-bundle the model) for a strictly air-gapped runtime.
+- **Optional local HTTP/SSE server:** default transport is **stdio** (no listener). Passing `--http` or `--http-only` starts a local HTTP/SSE server on port 3848 (`MCP_HTTP_PORT` to change), exposing `/messages`, health, and OpenAPI/manifest endpoints. It is off unless you pass those flags — bind only to trusted/firewalled environments.
 
 ## Verifying the registry
 
