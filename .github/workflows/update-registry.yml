@@ -223,12 +223,10 @@ jobs:
           npx -y clawhub@0.23 --no-input skill publish . \
             --slug subgraph-registry \
             --version "$NEW_VER"
-          # Verify it ACTUALLY registered — the CLI has printed a false
-          # "OK. Published" (e.g. on an unsupported node), so confirm
-          # server-side and fail loudly instead of hiding a silent no-op.
-          echo "verifying subgraph-registry@$NEW_VER on ClawHub..."
-          if npx -y clawhub@0.23 inspect subgraph-registry --version "$NEW_VER" 2>&1 | grep -qi "version not found"; then
-            echo "::error::ClawHub reported OK but $NEW_VER did not register"
-            exit 1
-          fi
-          echo "confirmed: subgraph-registry@$NEW_VER is live on ClawHub"
+          # NOTE: do NOT verify with `inspect` here. ClawHub holds new versions
+          # in a staged pre-publication flow — hidden from inspect/latest until a
+          # security scan finalizes, which for this skill takes ~1-2 days (0.8.13:
+          # published 2026-07-08, promoted 2026-07-10). So "version not found"
+          # right after publish is EXPECTED, not a failed publish (see
+          # openclaw/clawhub#3122). npm is the authoritative data path.
+          echo "uploaded subgraph-registry@$NEW_VER to ClawHub (pending scan → promotes to latest once it finalizes)"

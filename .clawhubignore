@@ -20,3 +20,8 @@ python/
 docs/
 .github/
 *.parquet
+
+# The 70MB registry.db ships via npm, NOT the ClawHub skill (instruction-only).
+# Packing it bloats the artifact and breaks server-side finalization (phantom versions).
+data/*.db
+data/*.db-*
