@@ -2,7 +2,7 @@
 network: base-sepolia
 count: 284
 percentage: 1.9
-updated: 2026-07-07
+updated: 2026-07-16
 ---
 
 # Base Sepolia Subgraphs
@@ -37,7 +37,7 @@ updated: 2026-07-07
 | DeFi-Choice-Testnet | defi | general | 0.31 | 16 |
 | snapshot-base-sepolia | dao | governance | 0.30 | 42 |
 | stickrnet | defi | dex | 0.29 | — |
-| soul-referral-program-base-sepolia-testn | defi | general | 0.26 | — |
+| ACM-Base-Sepolia | defi | nft-marketplace | 0.28 | 233,664 |
 
 ## Query This Network
 

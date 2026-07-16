@@ -1,13 +1,13 @@
 ---
 network: mainnet
-count: 2459
+count: 2464
 percentage: 16.2
-updated: 2026-07-07
+updated: 2026-07-16
 ---
 
 # Ethereum Subgraphs
 
-**2,459** subgraphs (16.2% of registry)
+**2,464** subgraphs (16.2% of registry)
 
 ## Top Subgraphs by Reliability
 

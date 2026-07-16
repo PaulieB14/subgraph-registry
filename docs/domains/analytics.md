@@ -1,13 +1,13 @@
 ---
 domain: analytics
-count: 325
+count: 326
 percentage: 2.1
-updated: 2026-07-07
+updated: 2026-07-16
 ---
 
 # Analytics Subgraphs
 
-**325** subgraphs (2.1% of registry)
+**326** subgraphs (2.1% of registry)
 
 ## Top Subgraphs by Reliability
 

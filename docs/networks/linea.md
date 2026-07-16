@@ -1,13 +1,13 @@
 ---
 network: linea
-count: 321
+count: 323
 percentage: 2.1
-updated: 2026-07-07
+updated: 2026-07-16
 ---
 
 # Linea Subgraphs
 
-**321** subgraphs (2.1% of registry)
+**323** subgraphs (2.1% of registry)
 
 ## Top Subgraphs by Reliability
 
