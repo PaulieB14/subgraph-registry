@@ -354,104 +354,110 @@ def flatten_subgraph(
     }
 
 
-QOS_SUBGRAPH_ID = "Dtr9rETvwokot4BSXaD5tECanXfqfJKcvHuaaEgPDD2D"
-QOS_EPOCH_START = 1608163200  # Day 0 of QoS day numbering (2020-12-17)
+# ── Gateway QoS oracle feed (live replacement for the frozen QoS subgraph) ──
+# The QoS subgraph (Dtr9rET…) froze 2026-06-30 when the gateway rotated its
+# submitter key: queryDailyDataPoints stopped, so a trailing-30-day scan of it
+# decays to zero. The same telemetry is still posted on-chain — the gateway
+# writes a per-deployment query-stats payload to a DataEdge contract on Gnosis
+# every ~5 min as submitQoSPayload(bytes) calldata = JSON {topic, hash (IPFS
+# CID), timestamp}; the bulk rows live on IPFS. We enumerate recent submissions
+# via Blockscout (cheap — no block scan, no key), fetch the per-window IPFS
+# payloads for the query-result topic, aggregate query_count per deployment over
+# a short sample window, then scale to a 30-day estimate. The classifier ranks on
+# log10(queries)/8, so a uniformly-scaled recent sample preserves ordering.
+QOS_DATAEDGE = "0x5b4293b4c0f36cb5d4448950830bc777759b6c4f"  # Gnosis DataEdge
+QOS_TOPIC_QR = "gateway_query_result_qos_5_minutes_prod_v3"  # per-deployment query stats
+QOS_BLOCKSCOUT = os.environ.get("GNOSIS_BLOCKSCOUT_API", "https://gnosis.blockscout.com/api")
+QOS_IPFS = os.environ.get("QOS_IPFS_GATEWAY", "https://api.thegraph.com/ipfs").rstrip("/")
+QOS_SAMPLE_DAYS = float(os.environ.get("QOS_SAMPLE_DAYS", "2"))  # sampled, then scaled to 30d
 
-QOS_DAY_QUERY = """
-query($dayStart: BigInt!, $nextDay: BigInt!, $lastId: String!) {
-  queryDailyDataPoints(
-    first: 1000
-    orderBy: id
-    orderDirection: asc
-    where: { dayStart_gte: $dayStart, dayStart_lt: $nextDay, id_gt: $lastId }
-  ) {
-    id
-    subgraphDeployment { id }
-    query_count
-  }
-}
-"""
+
+def _decode_qos_calldata(input_hex: str):
+    """Decode submitQoSPayload(bytes) calldata into its JSON {topic, hash, timestamp}."""
+    try:
+        h = input_hex[2:] if input_hex.startswith("0x") else input_hex
+        if len(h) <= 8:
+            return None
+        h = h[8:]  # strip the 4-byte selector
+        off = int(h[:64], 16) * 2
+        ln = int(h[off:off + 64], 16) * 2
+        return json.loads(bytes.fromhex(h[off + 64:off + 64 + ln]).decode("utf-8", "replace"))
+    except Exception:
+        return None
 
 
-async def _fetch_qos_day(client: httpx.AsyncClient, qos_url: str, day_start: int) -> dict[str, int]:
-    """Fetch all query volumes for a single UTC day."""
-    next_day = day_start + 86400
-    volumes: dict[str, int] = {}
-    last_id = ""
-
-    for _ in range(10):  # Max pages per day
-        for attempt in range(3):
-            try:
-                resp = await client.post(
-                    qos_url,
-                    json={
-                        "query": QOS_DAY_QUERY,
-                        "variables": {
-                            "dayStart": str(day_start),
-                            "nextDay": str(next_day),
-                            "lastId": last_id,
-                        },
-                    },
-                    timeout=60,
-                )
-                resp_json = resp.json()
-                if "errors" in resp_json:
-                    if attempt < 2:
-                        await asyncio.sleep(3)
-                        continue
-                    return volumes  # Return what we have
-                points = resp_json.get("data", {}).get("queryDailyDataPoints", [])
-                break
-            except Exception:
-                if attempt < 2:
-                    await asyncio.sleep(3)
-                    continue
-                return volumes
-        else:
+async def _list_qos_windows(client: httpx.AsyncClient, since_ts: int) -> dict:
+    """Return {window_timestamp: newest_ipfs_cid} for query-result QoS submissions
+    since `since_ts`, enumerated via Blockscout's txlist (newest-first)."""
+    by_window: dict[int, str] = {}
+    for page in range(1, 21):  # bounded; ~2 pages covers a couple of days of the feed
+        try:
+            r = await client.get(QOS_BLOCKSCOUT, params={
+                "module": "account", "action": "txlist", "address": QOS_DATAEDGE,
+                "sort": "desc", "page": page, "offset": 1000,
+            }, timeout=60)
+            txs = r.json().get("result") or []
+        except Exception:
             break
-
-        if not points:
+        if not isinstance(txs, list) or not txs:
             break
-
-        for p in points:
-            dep = p.get("subgraphDeployment")
-            if dep and dep.get("id"):
-                qc = int(float(p.get("query_count", "0")))
-                volumes[dep["id"]] = volumes.get(dep["id"], 0) + qc
-
-        last_id = points[-1]["id"]
-        if len(points) < 1000:
+        for tx in txs:
+            if (tx.get("to") or "").lower() != QOS_DATAEDGE:
+                continue
+            p = _decode_qos_calldata(tx.get("input", ""))
+            if not p or p.get("topic") != QOS_TOPIC_QR:
+                continue
+            wts = int(p.get("timestamp", 0) or 0)
+            if wts >= since_ts and p.get("hash"):
+                by_window.setdefault(wts, p["hash"])  # desc order → first seen is newest
+        if int(txs[-1].get("timeStamp", 0) or 0) < since_ts:
             break
+    return by_window
 
-    return volumes
+
+async def _fetch_qos_payload(client: httpx.AsyncClient, cid: str) -> list:
+    for attempt in range(3):
+        try:
+            r = await client.post(f"{QOS_IPFS}/api/v0/cat?arg={cid}", timeout=60)
+            j = r.json()
+            return j if isinstance(j, list) else []
+        except Exception:
+            await asyncio.sleep(1.5 * (attempt + 1))
+    return []
 
 
 async def fetch_qos_volumes(client: httpx.AsyncClient, deployment_hashes: list[str]) -> dict[str, int]:
-    """Fetch 30-day query volumes from the QoS subgraph, one day at a time."""
-    if GATEWAY_API_KEY:
-        qos_url = f"https://gateway.thegraph.com/api/{GATEWAY_API_KEY}/subgraphs/id/{QOS_SUBGRAPH_ID}"
-    else:
-        qos_url = f"https://gateway.thegraph.com/api/subgraphs/id/{QOS_SUBGRAPH_ID}"
-
-    # Start from yesterday (today resets at midnight UTC)
+    """Live per-deployment query volumes from the Gateway QoS oracle feed, scaled to a
+    30-day estimate. Replaces the frozen QoS subgraph. {deployment_ipfs: est_30d_query_count}."""
     now = int(time.time())
-    today_start = now - (now % 86400)
+    since = now - int(QOS_SAMPLE_DAYS * 86400)
+    windows = await _list_qos_windows(client, since)
+    if not windows:
+        print("  QoS oracle feed: no submissions found — no volume data this run")
+        return {}
 
-    volumes: dict[str, int] = {}
-    days_fetched = 0
+    sem = asyncio.Semaphore(12)
 
-    for days_ago in range(1, 31):
-        day_start = today_start - (days_ago * 86400)
-        day_volumes = await _fetch_qos_day(client, qos_url, day_start)
+    async def _one(cid: str) -> list:
+        async with sem:
+            return await _fetch_qos_payload(client, cid)
 
-        for ipfs, qc in day_volumes.items():
-            volumes[ipfs] = volumes.get(ipfs, 0) + qc
+    payloads = await asyncio.gather(*[_one(c) for c in windows.values()])
 
-        days_fetched += 1
-        if days_ago % 10 == 0:
-            print(f"  ... {days_ago} days fetched, {len(volumes)} deployments so far")
+    sample: dict[str, int] = {}
+    for rows in payloads:
+        for row in rows:
+            dep = row.get("subgraph_deployment_ipfs_hash")
+            if dep:
+                sample[dep] = sample.get(dep, 0) + int(row.get("query_count", 0) or 0)
 
-    print(f"  Fetched {days_fetched} days of QoS data, {len(volumes)} deployments with volume")
+    # Scale the sampled span up to a 30-day estimate. Ranking is log-scale, so a
+    # uniform scale factor preserves ordering regardless of exactness.
+    span_days = max((now - min(windows)) / 86400.0, 0.5)
+    scale = 30.0 / span_days
+    volumes = {dep: int(qc * scale) for dep, qc in sample.items()}
+    print(f"  QoS oracle feed: {len(windows)} windows over ~{span_days:.1f}d, "
+          f"{len(volumes)} deployments (scaled x{scale:.1f} -> 30d estimate)")
     return volumes
 
 
@@ -509,8 +515,9 @@ async def full_crawl(
         served = sum(1 for h in unique_hashes if allocation_counts.get(h, 0) > 0)
         print(f"  Deployments served by ≥1 indexer: {served} / {len(unique_hashes)}")
 
-        # Fetch 30d query volumes from QoS subgraph
-        print("\n=== Fetching Query Volumes (QoS) ===")
+        # Fetch 30d query volumes from the live Gateway QoS oracle feed
+        # (the QoS subgraph froze 2026-06-30; see fetch_qos_volumes).
+        print("\n=== Fetching Query Volumes (Gateway QoS oracle feed) ===")
         query_volumes = await fetch_qos_volumes(client, unique_hashes)
         print(f"  Deployments with volume data: {len(query_volumes)}")
         if query_volumes:
