@@ -13,31 +13,31 @@ updated: 2026-07-16
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ENS | mainnet | name-service | 0.98 | 44,545,534 |
-| verax-v2-linea | linea | general | 0.80 | 2,451,064 |
-| cypher-tokens | mainnet | options | 0.65 | 136,455 |
-| ens-subgraph | mainnet | name-service | 0.64 | 47,103 |
-| ENS reclaim deposit subgraph | mainnet | name-service | 0.63 | 739 |
-| tokens-polygon | matic | name-service | 0.63 | 2,369 |
-| Unnamed | bsc | general | 0.58 | 33,051 |
-| torn-registry | mainnet | bridge | 0.57 | 10,468 |
-| ens-linea-mainnet | linea | name-service | 0.56 | 51,908 |
-| dapp-explorer | mainnet | general | 0.54 | 21,091 |
-| Enzyme Asset Universe Polygon | matic | general | 0.51 | 6,253 |
-| llens-aggs-base | base | name-service | 0.51 | — |
-| IdentitySubgraph | gnosis | general | 0.50 | 390,875 |
-| llens-aggs-sonic | sonic | name-service | 0.46 | 4 |
-| ensSepolia | sepolia | name-service | 0.43 | 98,026 |
-| Opensig | matic | name-service | 0.42 | 19 |
+| ENS | mainnet | name-service | 0.98 | 37,108,764 |
+| verax-v2-linea | linea | general | 0.80 | 2,262,434 |
+| cypher-tokens | mainnet | options | 0.65 | 119,443 |
+| ens-subgraph | mainnet | name-service | 0.64 | 43,136 |
+| tokens-polygon | matic | name-service | 0.63 | 2,232 |
+| ENS reclaim deposit subgraph | mainnet | name-service | 0.63 | 488 |
+| Unnamed | bsc | general | 0.58 | 30,282 |
+| torn-registry | mainnet | bridge | 0.57 | 11,175 |
+| ens-linea-mainnet | linea | name-service | 0.55 | 38,883 |
+| dapp-explorer | mainnet | general | 0.54 | 19,914 |
+| llens-aggs-base | base | name-service | 0.54 | 5 |
+| Enzyme Asset Universe Polygon | matic | general | 0.51 | 5,717 |
+| IdentitySubgraph | gnosis | general | 0.50 | 357,917 |
+| llens-aggs-sonic | sonic | name-service | 0.46 | 2 |
+| ensSepolia | sepolia | name-service | 0.42 | 55,129 |
 | zns-mainnet | mainnet | name-service | 0.42 | — |
+| Opensig | matic | name-service | 0.41 | 10 |
 | openmind-machine-identity-base | base | general | 0.40 | — |
 | llens-aggs-arbitrum | arbitrum-one | name-service | 0.40 | — |
-| hns-id | optimism | name-service | 0.39 | 239 |
+| hns-id | optimism | name-service | 0.39 | 234 |
 | linke | bsc | general | 0.38 | — |
-| zns-legacy | mainnet | name-service | 0.38 | 812 |
-| xname-base | base | name-service | 0.37 | 97 |
-| xname-arbitrum | arbitrum-one | name-service | 0.36 | 95 |
-| Aurum | base | general | 0.34 | 161 |
+| zns-legacy | mainnet | name-service | 0.38 | 580 |
+| xname-base | base | name-service | 0.37 | 155 |
+| xname-arbitrum | arbitrum-one | name-service | 0.37 | 143 |
+| Aurum | base | general | 0.37 | 712 |
 
 ## Query This Domain
 
