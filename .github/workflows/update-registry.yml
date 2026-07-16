@@ -2,7 +2,7 @@ name: Update Subgraph Registry
 
 on:
   schedule:
-    - cron: "0 2 */3 * *"   # 02:00 UTC every 3rd day
+    - cron: "0 2 */5 * *"   # 02:00 UTC every 5th day (full 30-day QoS oracle scan is heavier)
   workflow_dispatch:
     inputs:
       mode:

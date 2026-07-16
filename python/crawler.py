@@ -362,14 +362,19 @@ def flatten_subgraph(
 # every ~5 min as submitQoSPayload(bytes) calldata = JSON {topic, hash (IPFS
 # CID), timestamp}; the bulk rows live on IPFS. We enumerate recent submissions
 # via Blockscout (cheap — no block scan, no key), fetch the per-window IPFS
-# payloads for the query-result topic, aggregate query_count per deployment over
-# a short sample window, then scale to a 30-day estimate. The classifier ranks on
-# log10(queries)/8, so a uniformly-scaled recent sample preserves ordering.
+# payloads for the query-result topic, and aggregate query_count per deployment
+# over the FULL 30-day window — a true 30-day total per deployment (parity with
+# the old QoS subgraph's 30d sum, incl. long-tail deployments queried on any day).
+# QOS_SAMPLE_DAYS can be lowered for a faster, approximate run — the sampled total
+# is then uniformly scaled up to 30d, which still preserves the classifier's
+# log10(queries)/8 ranking. A full 30-day scan is ~8.6k IPFS fetches / ~10-15 min,
+# which is why the crawl cadence is every 5 days.
 QOS_DATAEDGE = "0x5b4293b4c0f36cb5d4448950830bc777759b6c4f"  # Gnosis DataEdge
 QOS_TOPIC_QR = "gateway_query_result_qos_5_minutes_prod_v3"  # per-deployment query stats
 QOS_BLOCKSCOUT = os.environ.get("GNOSIS_BLOCKSCOUT_API", "https://gnosis.blockscout.com/api")
 QOS_IPFS = os.environ.get("QOS_IPFS_GATEWAY", "https://api.thegraph.com/ipfs").rstrip("/")
-QOS_SAMPLE_DAYS = float(os.environ.get("QOS_SAMPLE_DAYS", "2"))  # sampled, then scaled to 30d
+QOS_SAMPLE_DAYS = float(os.environ.get("QOS_SAMPLE_DAYS", "30"))  # full 30-day window; lower = faster/approx
+QOS_IPFS_CONCURRENCY = int(os.environ.get("QOS_IPFS_CONCURRENCY", "16"))  # bounded fetches over the window
 
 
 def _decode_qos_calldata(input_hex: str):
@@ -390,7 +395,7 @@ async def _list_qos_windows(client: httpx.AsyncClient, since_ts: int) -> dict:
     """Return {window_timestamp: newest_ipfs_cid} for query-result QoS submissions
     since `since_ts`, enumerated via Blockscout's txlist (newest-first)."""
     by_window: dict[int, str] = {}
-    for page in range(1, 21):  # bounded; ~2 pages covers a couple of days of the feed
+    for page in range(1, 61):  # bounded; 30 days of the feed ≈ 18 pages, 60 = safety margin
         try:
             r = await client.get(QOS_BLOCKSCOUT, params={
                 "module": "account", "action": "txlist", "address": QOS_DATAEDGE,
@@ -436,7 +441,7 @@ async def fetch_qos_volumes(client: httpx.AsyncClient, deployment_hashes: list[s
         print("  QoS oracle feed: no submissions found — no volume data this run")
         return {}
 
-    sem = asyncio.Semaphore(12)
+    sem = asyncio.Semaphore(QOS_IPFS_CONCURRENCY)
 
     async def _one(cid: str) -> list:
         async with sem:
