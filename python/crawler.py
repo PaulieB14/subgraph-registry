@@ -391,32 +391,61 @@ def _decode_qos_calldata(input_hex: str):
         return None
 
 
+async def _gnosis_block_at(client: httpx.AsyncClient, ts: int) -> int | None:
+    """Gnosis block number at/just-before `ts`, via Blockscout getblocknobytime."""
+    try:
+        r = await client.get(QOS_BLOCKSCOUT, params={
+            "module": "block", "action": "getblocknobytime",
+            "timestamp": int(ts), "closest": "before",
+        }, timeout=30)
+        res = r.json().get("result")
+        if isinstance(res, dict):
+            return int(res.get("blockNumber"))
+        return int(res) if res else None
+    except Exception:
+        return None
+
+
 async def _list_qos_windows(client: httpx.AsyncClient, since_ts: int) -> dict:
     """Return {window_timestamp: newest_ipfs_cid} for query-result QoS submissions
-    since `since_ts`, enumerated via Blockscout's txlist (newest-first)."""
+    since `since_ts`. Enumerated via Blockscout txlist in BLOCK-RANGE CHUNKS:
+    Blockscout hard-caps a single txlist scan at 10k results (page*offset<=10000),
+    which for this busy DataEdge is only ~12 days — so a plain global paginate can't
+    reach 30 days. Walking back in ~7-day block chunks keeps each chunk under the cap."""
+    now = int(time.time())
+    end_b = await _gnosis_block_at(client, now)
+    start_b = await _gnosis_block_at(client, since_ts)
     by_window: dict[int, str] = {}
-    for page in range(1, 61):  # bounded; 30 days of the feed ≈ 18 pages, 60 = safety margin
-        try:
-            r = await client.get(QOS_BLOCKSCOUT, params={
-                "module": "account", "action": "txlist", "address": QOS_DATAEDGE,
-                "sort": "desc", "page": page, "offset": 1000,
-            }, timeout=60)
-            txs = r.json().get("result") or []
-        except Exception:
-            break
-        if not isinstance(txs, list) or not txs:
-            break
-        for tx in txs:
-            if (tx.get("to") or "").lower() != QOS_DATAEDGE:
-                continue
-            p = _decode_qos_calldata(tx.get("input", ""))
-            if not p or p.get("topic") != QOS_TOPIC_QR:
-                continue
-            wts = int(p.get("timestamp", 0) or 0)
-            if wts >= since_ts and p.get("hash"):
-                by_window.setdefault(wts, p["hash"])  # desc order → first seen is newest
-        if int(txs[-1].get("timeStamp", 0) or 0) < since_ts:
-            break
+    if not end_b or not start_b:
+        return by_window
+    CHUNK_BLOCKS = 120_000  # ~7 days on Gnosis (~5s blocks); ~4k txs/chunk, under the 10k cap
+    b_hi = end_b
+    while b_hi > start_b:
+        b_lo = max(start_b, b_hi - CHUNK_BLOCKS)
+        for page in range(1, 12):  # <=10 pages * 1000 stays under the 10k window per chunk
+            try:
+                r = await client.get(QOS_BLOCKSCOUT, params={
+                    "module": "account", "action": "txlist", "address": QOS_DATAEDGE,
+                    "startblock": b_lo, "endblock": b_hi, "sort": "desc",
+                    "page": page, "offset": 1000,
+                }, timeout=60)
+                txs = r.json().get("result") or []
+            except Exception:
+                break
+            if not isinstance(txs, list) or not txs:
+                break
+            for tx in txs:
+                if (tx.get("to") or "").lower() != QOS_DATAEDGE:
+                    continue
+                p = _decode_qos_calldata(tx.get("input", ""))
+                if not p or p.get("topic") != QOS_TOPIC_QR:
+                    continue
+                wts = int(p.get("timestamp", 0) or 0)
+                if wts >= since_ts and p.get("hash"):
+                    by_window.setdefault(wts, p["hash"])  # newest-first → first seen wins
+            if len(txs) < 1000:
+                break
+        b_hi = b_lo - 1
     return by_window
 
 
