@@ -209,9 +209,6 @@ jobs:
         if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
         env:
           CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
-        if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
-        env:
-          CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
         run: |
           NEW_VER="${{ steps.commit.outputs.new_version }}"
           CFG="$RUNNER_TEMP/clawhub-config.json"
