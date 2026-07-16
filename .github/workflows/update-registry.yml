@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"   # clawhub@0.23.1 requires node>=22; on node 20 the publish silently no-ops (0.8.14/0.8.15 reported OK but never registered)
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
@@ -223,3 +223,12 @@ jobs:
           npx -y clawhub@0.23 --no-input skill publish . \
             --slug subgraph-registry \
             --version "$NEW_VER"
+          # Verify it ACTUALLY registered — the CLI has printed a false
+          # "OK. Published" (e.g. on an unsupported node), so confirm
+          # server-side and fail loudly instead of hiding a silent no-op.
+          echo "verifying subgraph-registry@$NEW_VER on ClawHub..."
+          if npx -y clawhub@0.23 inspect subgraph-registry --version "$NEW_VER" 2>&1 | grep -qi "version not found"; then
+            echo "::error::ClawHub reported OK but $NEW_VER did not register"
+            exit 1
+          fi
+          echo "confirmed: subgraph-registry@$NEW_VER is live on ClawHub"
