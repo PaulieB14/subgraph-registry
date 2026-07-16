@@ -13,37 +13,31 @@ updated: 2026-07-16
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ENS | mainnet | name-service | 0.97 | 27,943,845 |
-| verax-v2-linea | linea | general | 0.79 | 2,651,478 |
-| ENS reclaim deposit subgraph | mainnet | name-service | 0.73 | 572,786 |
-| ens-subgraph | mainnet | name-service | 0.65 | 54,775 |
-| cypher-tokens | mainnet | options | 0.64 | 179,095 |
-| tokens-polygon | matic | name-service | 0.63 | 2,505 |
-| Unnamed | bsc | general | 0.58 | 35,086 |
-| torn-registry | mainnet | bridge | 0.57 | 16,347 |
-| llens-aggs-base | base | name-service | 0.55 | 7 |
-| ens-linea-mainnet | linea | name-service | 0.54 | 31,005 |
-| Enzyme Asset Universe Polygon | matic | general | 0.50 | 5,054 |
-| OW Gnosis | gnosis | dex | 0.47 | 4,839 |
-| llens-aggs-sonic | sonic | name-service | 0.44 | — |
-| Opensig | matic | name-service | 0.43 | 28 |
-| hns-id | optimism | name-service | 0.42 | 1,554 |
+| ENS | mainnet | name-service | 0.98 | 44,545,534 |
+| verax-v2-linea | linea | general | 0.80 | 2,451,064 |
+| cypher-tokens | mainnet | options | 0.65 | 136,455 |
+| ens-subgraph | mainnet | name-service | 0.64 | 47,103 |
+| ENS reclaim deposit subgraph | mainnet | name-service | 0.63 | 739 |
+| tokens-polygon | matic | name-service | 0.63 | 2,369 |
+| Unnamed | bsc | general | 0.58 | 33,051 |
+| torn-registry | mainnet | bridge | 0.57 | 10,468 |
+| ens-linea-mainnet | linea | name-service | 0.56 | 51,908 |
+| dapp-explorer | mainnet | general | 0.54 | 21,091 |
+| Enzyme Asset Universe Polygon | matic | general | 0.51 | 6,253 |
+| llens-aggs-base | base | name-service | 0.51 | — |
+| IdentitySubgraph | gnosis | general | 0.50 | 390,875 |
+| llens-aggs-sonic | sonic | name-service | 0.46 | 4 |
+| ensSepolia | sepolia | name-service | 0.43 | 98,026 |
+| Opensig | matic | name-service | 0.42 | 19 |
 | zns-mainnet | mainnet | name-service | 0.42 | — |
-| ensSepolia | sepolia | name-service | 0.42 | 46,799 |
-| openmind-machine-identity-base | base | general | 0.41 | 1 |
-| unifiedid-child
-
-
-
-
-
- | sepolia | name-service | 0.41 | 2 |
+| openmind-machine-identity-base | base | general | 0.40 | — |
 | llens-aggs-arbitrum | arbitrum-one | name-service | 0.40 | — |
-| linke | bsc | general | 0.40 | — |
-| seer-futarchy-outcome-tokens | gnosis | name-service | 0.39 | 1 |
-| zns-legacy | mainnet | name-service | 0.39 | 1,229 |
-| xname-base | base | name-service | 0.38 | 215 |
-| xname-arbitrum | arbitrum-one | name-service | 0.37 | 199 |
+| hns-id | optimism | name-service | 0.39 | 239 |
+| linke | bsc | general | 0.38 | — |
+| zns-legacy | mainnet | name-service | 0.38 | 812 |
+| xname-base | base | name-service | 0.37 | 97 |
+| xname-arbitrum | arbitrum-one | name-service | 0.36 | 95 |
+| Aurum | base | general | 0.34 | 161 |
 
 ## Query This Domain
 
