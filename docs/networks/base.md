@@ -1,13 +1,13 @@
 ---
 network: base
-count: 1819
+count: 1821
 percentage: 12.0
-updated: 2026-07-16
+updated: 2026-07-21
 ---
 
 # Base Subgraphs
 
-**1,819** subgraphs (12.0% of registry)
+**1,821** subgraphs (12.0% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -32,12 +32,12 @@ updated: 2026-07-16
 | odos-loyalty-base | defi | general | 0.79 | 649,097 |
 | Compoundor Base | defi | lending | 0.79 | 467,133 |
 | Compound V3 Base | defi | lending | 0.79 | 3,840,237 |
-| quickswap-v4-base | defi | dex | 0.78 | 1,573,681 |
 | Uniswap V3 Base | defi | dex | 0.78 | 934,670 |
 | maverick-base | defi | dex | 0.77 | 345,520 |
 | v3-base | defi | dex | 0.77 | 946,513 |
 | Umbrae V1 | defi | dex | 0.77 | 693,258 |
 | tracker-v2-base | defi | bridge | 0.76 | 690,183 |
+| Base Blocks | infrastructure | general | 0.75 | 636,323 |
 
 ## Query This Network
 

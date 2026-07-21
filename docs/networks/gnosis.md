@@ -1,13 +1,13 @@
 ---
 network: gnosis
-count: 284
+count: 285
 percentage: 1.9
-updated: 2026-07-16
+updated: 2026-07-21
 ---
 
 # Gnosis Subgraphs
 
-**284** subgraphs (1.9% of registry)
+**285** subgraphs (1.9% of registry)
 
 ## Top Subgraphs by Reliability
 
