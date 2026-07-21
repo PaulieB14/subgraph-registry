@@ -34,10 +34,10 @@ updated: 2026-07-21
 | Child Token Gateway Arb One | defi | dex | 0.79 | 4,759,944 |
 | Sushiswap Arbitrum | defi | dex | 0.79 | 319,498 |
 | Enzyme Core Arbitrum | defi | staking | 0.78 | 1,658,138 |
-| Livepeer | defi | staking | 0.78 | 1,566,419 |
 | Marlin-Staking-Staging | defi | staking | 0.77 | 1,094,886 |
 | WOOFi Arbitrum | defi | dex | 0.77 | 929,105 |
 | V2 Arbitrum | defi | dex | 0.76 | 796,141 |
+| Revert Vault Arbitrum | defi | lending | 0.76 | 454,158 |
 
 ## Query This Network
 
