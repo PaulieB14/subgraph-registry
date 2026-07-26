@@ -1,13 +1,13 @@
 ---
 network: base-sepolia
-count: 286
+count: 287
 percentage: 1.9
-updated: 2026-07-21
+updated: 2026-07-26
 ---
 
 # Base Sepolia Subgraphs
 
-**286** subgraphs (1.9% of registry)
+**287** subgraphs (1.9% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -37,7 +37,7 @@ updated: 2026-07-21
 | soul-referral-program-base-sepolia-testn | defi | general | 0.26 | — |
 | v3-uniswap-base-sepolia | defi | dex | 0.26 | 10,296 |
 | stickrnet | defi | dex | 0.26 | — |
-| ACM-Base-Sepolia | defi | nft-marketplace | 0.24 | 24,430 |
+| ACM-Base-Sepolia | defi | nft-marketplace | 0.24 | 20,837 |
 
 ## Query This Network
 

@@ -1,13 +1,13 @@
 ---
 network: sepolia
-count: 559
+count: 560
 percentage: 3.7
-updated: 2026-07-21
+updated: 2026-07-26
 ---
 
 # Sepolia Subgraphs
 
-**559** subgraphs (3.7% of registry)
+**560** subgraphs (3.7% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -30,8 +30,8 @@ updated: 2026-07-21
 | satsumeShopTest | defi | dex | 0.44 | 120,014 |
 | ensSepolia | identity | name-service | 0.42 | 55,129 |
 | genesis-expedition-sepolia | defi | general | 0.41 | — |
-| finathlon | defi | perpetuals | 0.40 | 416 |
 | Arb Bridge Eth Arb Sep | defi | bridge | 0.40 | 28,941 |
+| finathlon | defi | perpetuals | 0.39 | 209 |
 | dex223-v1-sepolia | defi | dex | 0.36 | 89,344 |
 | dex223-subgraph-revenue-sepolia | defi | dex | 0.35 | 178,652 |
 | Balancer CoW AMM Sepolia | defi | dex | 0.34 | 25,274 |

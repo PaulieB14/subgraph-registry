@@ -1,13 +1,13 @@
 ---
 domain: gaming
-count: 247
+count: 248
 percentage: 1.6
-updated: 2026-07-21
+updated: 2026-07-26
 ---
 
 # Gaming Subgraphs
 
-**247** subgraphs (1.6% of registry)
+**248** subgraphs (1.6% of registry)
 
 ## Top Subgraphs by Reliability
 
@@ -23,7 +23,6 @@ updated: 2026-07-21
 | Prosperity Passport | celo | general | 0.58 | 63,016 |
 | BetSwirl Base | base | options | 0.57 | 68,591 |
 | miaobsc | bsc | bridge | 0.57 | 288 |
-| astroblock-base | base | general | 0.56 | 10,935 |
 | BetSwirl BNB Chain | bsc | options | 0.55 | 61,739 |
 | blocks matic mainnet | matic | dex | 0.54 | 152 |
 | mana ethereum mainnet | mainnet | general | 0.53 | 340 |
@@ -31,6 +30,7 @@ updated: 2026-07-21
 | Staking Score Polygon | matic | staking | 0.48 | 1,762 |
 | xsynergy-matrix-polygon | matic | general | 0.47 | 157 |
 | Index Fun | sonic | dex | 0.47 | 3,124 |
+| astroblock-base | base | general | 0.40 | 3,379 |
 | Nifty League | mainnet | general | 0.39 | 134 |
 | Planet Pass | matic | general | 0.35 | 26,650 |
 | Tontine | mainnet | general | 0.35 | 2 |
