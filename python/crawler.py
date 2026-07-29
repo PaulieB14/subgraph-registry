@@ -678,6 +678,10 @@ async def full_crawl(
         "sync_timestamp": int(time.time()),
         "network_stats": stats,
         "subgraphs": subgraphs,
+        # Whole-corpus dynamic signals (fetched for ALL deployments every run, even
+        # incremental) so the caller can refresh rows outside the updatedAt delta.
+        "allocation_counts": allocation_counts,
+        "query_volumes": query_volumes,
     }
 
 

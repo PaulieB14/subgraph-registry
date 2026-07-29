@@ -2,7 +2,8 @@ name: Update Subgraph Registry
 
 on:
   schedule:
-    - cron: "0 2 */5 * *"   # 02:00 UTC every 5th day (full 30-day QoS oracle scan is heavier)
+    - cron: "0 2 */5 * *"   # 02:00 UTC every 5th day — incremental (delta + whole-corpus dynamic refresh)
+    - cron: "0 3 1 * *"     # 03:00 UTC 1st of month — FULL crawl: prunes deprecated subgraphs (DROP+rebuild) and refreshes signal/stake/fees corpus-wide (incremental can't; those don't bump updatedAt)
   workflow_dispatch:
     inputs:
       mode:
@@ -67,7 +68,8 @@ jobs:
         env:
           GATEWAY_API_KEY: ${{ secrets.GATEWAY_API_KEY }}
         run: |
-          if [ "${{ inputs.mode }}" = "full" ]; then
+          # full on manual dispatch OR the monthly full-crawl cron; else incremental
+          if [ "${{ inputs.mode }}" = "full" ] || [ "${{ github.event.schedule }}" = "0 3 1 * *" ]; then
             echo "Running full crawl..."
             python registry.py
           else

@@ -326,6 +326,54 @@ def write_sqlite(
     print(f"  SQLite written to {db_path} ({db_path.stat().st_size / 1024:.0f} KB)")
 
 
+def _refresh_dynamic_signals_all_rows(allocation_counts: dict, query_volumes: dict) -> int:
+    """P0b freshness. The crawler fetches active allocations + 30d QoS volumes for the
+    ENTIRE corpus on every run (incremental included), but incremental write_sqlite only
+    touches the updatedAt delta — so reliability_score, allocation counts and query
+    volumes freeze for ~96%+ of rows between (rare, manual) full crawls. This upserts the
+    already-fetched dynamic signals to every row and recomputes reliability_score.
+
+    Conservative: allocations are authoritative when fetched (absent = 0 served), but a
+    volume is only overwritten when this run has a value for that deployment — never
+    zeroed on a partial/failed QoS fetch (keeps the prior value if absent)."""
+    if not allocation_counts and not query_volumes:
+        print("  Whole-corpus refresh skipped: no allocation/volume data this run")
+        return 0
+    from classifier import _reliability_score
+    conn = sqlite3.connect(str(SQLITE_FILE))
+    c = conn.cursor()
+    rows = c.execute(
+        "SELECT ipfs_hash, signalled_tokens, staked_tokens, query_fees, "
+        "query_volume_30d, active_allocation_count FROM subgraphs "
+        "WHERE ipfs_hash IS NOT NULL AND ipfs_hash != ''"
+    ).fetchall()
+    updates = []
+    for ipfs, signalled, staked, fees, old_vol, old_alloc in rows:
+        alloc = allocation_counts.get(ipfs, 0) if allocation_counts else (old_alloc or 0)
+        vol = query_volumes.get(ipfs, old_vol or 0) if query_volumes else (old_vol or 0)
+        rel = _reliability_score(
+            {
+                "signalled_tokens": signalled or "0",
+                "staked_tokens": staked or "0",
+                "query_fees": fees or "0",
+            },
+            vol,
+        )
+        updates.append((alloc, vol, rel, ipfs))
+    c.executemany(
+        "UPDATE subgraphs SET active_allocation_count=?, query_volume_30d=?, "
+        "reliability_score=? WHERE ipfs_hash=?",
+        updates,
+    )
+    conn.commit()
+    conn.close()
+    print(
+        f"  Whole-corpus refresh: {len(updates)} rows' allocations/volumes/reliability "
+        f"updated from the global scan (allocs={len(allocation_counts)}, vols={len(query_volumes)})"
+    )
+    return len(updates)
+
+
 async def build_registry(
     max_subgraphs: int | None = None,
     incremental: bool = False,
@@ -517,6 +565,15 @@ async def build_registry(
 
     if write_db:
         write_sqlite(classified, incremental=incremental)
+        # P0b freshness: incremental write only touches the updatedAt delta, but the
+        # crawler fetched allocations + 30d QoS volumes for the WHOLE corpus this run.
+        # Upsert those to every row + recompute reliability so rankings don't freeze
+        # for the ~96% of rows outside the delta between full crawls.
+        if incremental:
+            _refresh_dynamic_signals_all_rows(
+                raw_data.get("allocation_counts") or {},
+                raw_data.get("query_volumes") or {},
+            )
 
     # Update sync state
     save_sync_state({
