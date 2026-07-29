@@ -2,7 +2,7 @@
 network: optimism
 count: 578
 percentage: 3.8
-updated: 2026-07-26
+updated: 2026-07-29
 ---
 
 # Optimism Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-07-26
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Optimism Post Regenesis | defi | dex | 0.87 | 1,848,704 |
-| PikaPerpV4_New | defi | perpetuals | 0.85 | 1,135,830 |
-| Uniswap V3 Optimism | defi | dex | 0.83 | 1,297,774 |
-| uniswap-v3-optimism | defi | dex | 0.81 | 4,584,016 |
-| Protocol V3 Optimism | defi | lending | 0.81 | 1,760,827 |
-| Compoundor Optimism | defi | lending | 0.79 | 292,840 |
-| Request Payments Optimism | defi | dex | 0.78 | 2,998,703 |
-| Unnamed | defi | dex | 0.78 | 535,754 |
-| Uniswap V3 Optimism | defi | dex | 0.78 | 68,903 |
-| seer-uniswap-v3-optimism | defi | dex | 0.75 | 457,033 |
-| WOOFi Optimism Testing | defi | dex | 0.75 | 2,788,980 |
-| tracker-v2-optimism | defi | bridge | 0.72 | 423,427 |
-| giveconomy-op-main-fallback | defi | dex | 0.71 | 1,186,677 |
-| wombat-exchange-op-develop | defi | dex | 0.70 | 61,000 |
-| Optimism Optimistic Oracle V3 | infrastructure | options | 0.70 | 415,304 |
-| Velodrome Optimism Full | defi | dex | 0.70 | 54,402 |
-| exactly optimism | defi | lending | 0.70 | 70,293 |
-| steer-protocol-optimism | defi | yield-aggregator | 0.69 | 375,969 |
-| Optimism Blocks | infrastructure | general | 0.69 | 72,947 |
-| Optimism Optimistic Oracle | infrastructure | options | 0.68 | 487,476 |
-| Optimism-jiffy-scan | defi | staking | 0.68 | 19,025 |
-| v3-optimism | defi | dex | 0.68 | 192,425 |
-| NFTMarket-Optimism | nfts | nft-marketplace | 0.68 | 14,828 |
-| Aave V3 Optimism | defi | lending | 0.67 | 45,133 |
-| Super Accounts | social | general | 0.65 | 50,009 |
+| Optimism Post Regenesis | defi | dex | 0.87 | 2,298,096 |
+| PikaPerpV4_New | defi | perpetuals | 0.84 | 1,083,262 |
+| Uniswap V3 Optimism | defi | dex | 0.83 | 1,267,092 |
+| uniswap-v3-optimism | defi | dex | 0.82 | 8,576,317 |
+| Protocol V3 Optimism | defi | lending | 0.81 | 2,169,965 |
+| Uniswap V3 Optimism | defi | dex | 0.79 | 167,349 |
+| Request Payments Optimism | defi | dex | 0.79 | 3,276,648 |
+| WOOFi Optimism Testing | defi | dex | 0.75 | 3,370,584 |
+| seer-uniswap-v3-optimism | defi | dex | 0.75 | 366,956 |
+| Compoundor Optimism | defi | lending | 0.74 | 158,099 |
+| Unnamed | defi | dex | 0.74 | 602,110 |
+| tracker-v2-optimism | defi | bridge | 0.73 | 510,775 |
+| giveconomy-op-main-fallback | defi | dex | 0.71 | 1,372,518 |
+| wombat-exchange-op-develop | defi | dex | 0.71 | 70,624 |
+| Optimism Optimistic Oracle V3 | infrastructure | options | 0.70 | 421,395 |
+| Velodrome Optimism Full | defi | dex | 0.70 | 55,134 |
+| exactly optimism | defi | lending | 0.69 | 84,746 |
+| Optimism Optimistic Oracle | infrastructure | options | 0.69 | 503,734 |
+| steer-protocol-optimism | defi | yield-aggregator | 0.68 | 193,591 |
+| NFTMarket-Optimism | nfts | nft-marketplace | 0.67 | 10,892 |
+| solidly-v3-optimism-2 | defi | dex | 0.66 | 264,193 |
+| Optimism Blocks | infrastructure | general | 0.65 | 84,845 |
+| uniswap-v4-optimism | defi | dex | 0.65 | 103,612 |
+| Super Accounts | social | general | 0.65 | 39,107 |
+| Stargate Optimism | defi | bridge | 0.65 | 1,376 |
 
 ## Query This Network
 

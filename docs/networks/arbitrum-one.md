@@ -1,43 +1,43 @@
 ---
 network: arbitrum-one
-count: 1427
+count: 1428
 percentage: 9.4
-updated: 2026-07-26
+updated: 2026-07-29
 ---
 
 # Arbitrum Subgraphs
 
-**1,427** subgraphs (9.4% of registry)
+**1,428** subgraphs (9.4% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Graph Network Arbitrum | infrastructure | staking | 0.97 | 20,794,620 |
-| Arbitrum Minimal | defi | dex | 0.93 | 6,845,496 |
-| uniswap-v3-arbitrum | defi | dex | 0.92 | 20,024,191 |
-| Graph TAP Arbitrum One | infrastructure | general | 0.91 | 2,862,687 |
-| camelot-amm-v3 | defi | dex | 0.91 | 1,885,287 |
-| Graph Network Arbitrum - Horizon Temp | infrastructure | staking | 0.88 | 4,382,159 |
-| Protocol V3 Arbitrum | defi | lending | 0.86 | 2,517,865 |
-| Uniswap V3 Arbitrum | defi | dex | 0.84 | 371,363 |
-| Uniswap V3 Arbitrum | defi | dex | 0.83 | 3,051,480 |
-| Arbitrum One Blocks | analytics | dex | 0.83 | 1,111,120 |
-| Request Payments Arbitrum One | defi | dex | 0.82 | 2,891,177 |
-| camelot-amm | defi | dex | 0.81 | 937,011 |
-| sofa arbitrum opt | defi | lending | 0.81 | 2,340,920 |
-| Balancer Arbitrum V2 | defi | dex | 0.81 | 541,520 |
-| Compoundor Arbitrum | defi | lending | 0.80 | 434,734 |
-| Arbitrum Exchange | defi | dex | 0.80 | 836,985 |
-| uniswap-v4-arbitrum | defi | dex | 0.80 | 851,607 |
-| Graph Billing Arbitrum | infrastructure | general | 0.80 | 741,962 |
-| Child Token Gateway Arb One | defi | dex | 0.79 | 4,759,944 |
-| Sushiswap Arbitrum | defi | dex | 0.79 | 319,498 |
-| Enzyme Core Arbitrum | defi | staking | 0.78 | 1,658,138 |
-| Marlin-Staking-Staging | defi | staking | 0.77 | 1,094,886 |
-| WOOFi Arbitrum | defi | dex | 0.77 | 929,105 |
-| V2 Arbitrum | defi | dex | 0.76 | 796,141 |
-| Revert Vault Arbitrum | defi | lending | 0.76 | 454,158 |
+| Graph Network Arbitrum | infrastructure | staking | 0.97 | 19,747,158 |
+| uniswap-v3-arbitrum | defi | dex | 0.93 | 24,640,200 |
+| Arbitrum Minimal | defi | dex | 0.93 | 7,296,064 |
+| camelot-amm-v3 | defi | dex | 0.91 | 2,138,666 |
+| Graph TAP Arbitrum One | infrastructure | general | 0.91 | 1,899,016 |
+| Graph Network Arbitrum - Horizon Temp | infrastructure | staking | 0.88 | 4,765,940 |
+| Protocol V3 Arbitrum | defi | lending | 0.86 | 2,912,176 |
+| Uniswap V3 Arbitrum | defi | dex | 0.84 | 628,741 |
+| Uniswap V3 Arbitrum | defi | dex | 0.83 | 3,810,744 |
+| Arbitrum One Blocks | analytics | dex | 0.83 | 1,195,757 |
+| Request Payments Arbitrum One | defi | dex | 0.83 | 3,076,056 |
+| camelot-amm | defi | dex | 0.82 | 1,074,170 |
+| sofa arbitrum opt | defi | lending | 0.82 | 2,739,841 |
+| Balancer Arbitrum V2 | defi | dex | 0.81 | 590,728 |
+| Arbitrum Exchange | defi | dex | 0.80 | 935,745 |
+| uniswap-v4-arbitrum | defi | dex | 0.80 | 749,658 |
+| Graph Billing Arbitrum | infrastructure | general | 0.80 | 878,470 |
+| Compoundor Arbitrum | defi | lending | 0.80 | 321,878 |
+| Enzyme Core Arbitrum | defi | staking | 0.79 | 1,602,863 |
+| Child Token Gateway Arb One | defi | dex | 0.79 | 2,339,254 |
+| Sushiswap Arbitrum | defi | dex | 0.78 | 341,204 |
+| Marlin-Staking-Staging | defi | staking | 0.78 | 1,361,120 |
+| WOOFi Arbitrum | defi | dex | 0.77 | 1,120,609 |
+| Aave V3 Arbitrum | defi | lending | 0.76 | 1,302,159 |
+| camelot-amm-v4 | defi | dex | 0.76 | 1,051,694 |
 
 ## Query This Network
 

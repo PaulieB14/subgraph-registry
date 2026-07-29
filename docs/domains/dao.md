@@ -1,43 +1,43 @@
 ---
 domain: dao
-count: 420
+count: 421
 percentage: 2.8
-updated: 2026-07-26
+updated: 2026-07-29
 ---
 
 # DAO Subgraphs
 
-**420** subgraphs (2.8% of registry)
+**421** subgraphs (2.8% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| snapshot | mainnet | governance | 0.90 | 1,706,380 |
-| Prediction V2 | bsc | dex | 0.85 | 2,463,790 |
-| inverse-governance-subgraph | mainnet | governance | 0.82 | 1,747,934 |
-| onyx_graph | mainnet | governance | 0.78 | 1,962,229 |
-| rari-locking | mainnet | governance | 0.77 | 276,392 |
-| gardens-gnosis | gnosis | governance | 0.71 | 38,892 |
-| agreement-gnosis | gnosis | governance | 0.69 | 33,784 |
-| snapshot-base | base | governance | 0.69 | 33,615 |
-| realityeth-gnosis | gnosis | general | 0.68 | 100,516 |
-| connect-gnosis | gnosis | governance | 0.68 | 15,815 |
-| Nouns | mainnet | governance | 0.65 | 28,559 |
-| dao-pools Upgraded | bsc | governance | 0.64 | 24,991 |
-| snapshot-arbitrum-one | arbitrum-one | governance | 0.64 | 16,870 |
-| unlock-protocol-base | base | governance | 0.63 | 174,655 |
-| DAOhaus v2 | mainnet | governance | 0.62 | 13,990 |
-| rootstockcollective-governance-release-c | rootstock | governance | 0.62 | 233,918 |
-| boost | mainnet | general | 0.62 | 41,732 |
-| boost-sepolia | sepolia | general | 0.61 | 41,750 |
-| Venus Governance | bsc | governance | 0.60 | 85,396 |
-| prediction-v3-ai-arb | arbitrum-one | general | 0.60 | 771 |
-| DAOhaus v3 gnosis | gnosis | governance | 0.60 | 13,556 |
-| boost-base | base | general | 0.60 | 41,721 |
-| governance-v3 | mainnet | governance | 0.59 | 1,183 |
-| thelao | mainnet | governance | 0.59 | 1,998 |
-| prediction-bsc-btc | bsc | general | 0.59 | 32,926 |
+| snapshot | mainnet | governance | 0.90 | 1,817,552 |
+| Prediction V2 | bsc | dex | 0.85 | 2,881,259 |
+| inverse-governance-subgraph | mainnet | governance | 0.82 | 2,053,591 |
+| onyx_graph | mainnet | governance | 0.79 | 2,254,576 |
+| rari-locking | mainnet | governance | 0.77 | 281,992 |
+| snapshot-base | base | governance | 0.69 | 33,276 |
+| realityeth-gnosis | gnosis | general | 0.68 | 107,854 |
+| gardens-gnosis | gnosis | governance | 0.68 | 4,062 |
+| rootstockcollective-governance-release-c | rootstock | governance | 0.67 | 270,180 |
+| Nouns | mainnet | governance | 0.66 | 45,117 |
+| dao-pools Upgraded | bsc | governance | 0.66 | 47,433 |
+| agreement-gnosis | gnosis | governance | 0.65 | 2,888 |
+| connect-gnosis | gnosis | governance | 0.64 | 2,012 |
+| snapshot-arbitrum-one | arbitrum-one | governance | 0.63 | 14,400 |
+| DAOhaus v2 | mainnet | governance | 0.62 | 17,397 |
+| Venus Governance | bsc | governance | 0.62 | 151,771 |
+| boost | mainnet | general | 0.62 | 43,121 |
+| unlock-protocol-base | base | governance | 0.61 | 71,444 |
+| boost-sepolia | sepolia | general | 0.61 | 43,210 |
+| prediction-v3-ai-arb | arbitrum-one | general | 0.61 | 1,007 |
+| DAOhaus v3 gnosis | gnosis | governance | 0.60 | 16,550 |
+| boost-base | base | general | 0.60 | 43,066 |
+| Snapshot | mainnet | governance | 0.59 | 5,517 |
+| prediction-bsc-btc | bsc | general | 0.59 | 50,182 |
+| governance-v3 | mainnet | governance | 0.58 | 702 |
 
 ## Query This Domain
 

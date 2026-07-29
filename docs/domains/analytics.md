@@ -2,7 +2,7 @@
 domain: analytics
 count: 324
 percentage: 2.1
-updated: 2026-07-26
+updated: 2026-07-29
 ---
 
 # Analytics Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-07-26
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ApoloBsc | bsc | general | 0.85 | 8,572,532 |
-| Arbitrum One Blocks | arbitrum-one | dex | 0.83 | 1,111,120 |
-| Ethereum Blocks | mainnet | dex | 0.81 | 1,243,499 |
-| maticblocks | matic | dex | 0.78 | 12,312 |
-| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 277,838 |
-| Blocks | fantom | dex | 0.71 | 89,378 |
-| Blocks Base | base | general | 0.70 | 21,261 |
-| Fantom Blocks | fantom | general | 0.68 | 49,461 |
-| Lottery | bsc | dex | 0.68 | 62,576 |
-| Pulsar-Blocks | moonbeam | dex | 0.67 | 61,556 |
-| BNB Chain Block | bsc | general | 0.66 | 22,029 |
-| olympus-protocol-metrics | mainnet | nft-marketplace | 0.61 | 14,340 |
-| protocol-metrics-arbitrum | arbitrum-one | nft-marketplace | 0.60 | 14 |
-| protocol-metrics-base | base | nft-marketplace | 0.57 | 21 |
-| SonicBlocks | sonic | general | 0.54 | 95,042 |
-| Gnosis Blocks | gnosis | general | 0.53 | 70,086 |
-| blocks-xlayer-mainnet | xlayer-mainnet | general | 0.53 | 719,548 |
-| iExec DataProtector - Arbitrum Mainnet | arbitrum-one | nft-marketplace | 0.53 | 3,836 |
-| blocks | bsc | general | 0.53 | 2 |
+| Arbitrum One Blocks | arbitrum-one | dex | 0.83 | 1,195,757 |
+| Ethereum Blocks | mainnet | dex | 0.81 | 1,588,886 |
+| maticblocks | matic | dex | 0.78 | 12,617 |
+| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 329,720 |
+| Blocks | fantom | dex | 0.71 | 102,906 |
+| Blocks Base | base | general | 0.70 | 15,906 |
+| Lottery | bsc | dex | 0.69 | 92,797 |
+| ApoloBsc | bsc | general | 0.68 | 296 |
+| Fantom Blocks | fantom | general | 0.68 | 44,105 |
+| Pulsar-Blocks | moonbeam | dex | 0.66 | 41,469 |
+| BNB Chain Block | bsc | general | 0.61 | 26,783 |
+| protocol-metrics-arbitrum | arbitrum-one | nft-marketplace | 0.60 | 13 |
+| olympus-protocol-metrics | mainnet | nft-marketplace | 0.59 | 5,489 |
+| protocol-metrics-base | base | nft-marketplace | 0.58 | 12 |
+| SonicBlocks | sonic | general | 0.54 | 109,788 |
+| blocks-xlayer-mainnet | xlayer-mainnet | general | 0.54 | 1,045,811 |
+| Gnosis Blocks | gnosis | general | 0.53 | 77,153 |
+| blocks | bsc | general | 0.53 | 3 |
+| iExec DataProtector - Arbitrum Mainnet | arbitrum-one | nft-marketplace | 0.53 | 2,516 |
+| Polygon Blocks | matic | dex | 0.52 | 928 |
 | arbone-chain-block | arbitrum-one | general | 0.51 | 1 |
-| Polygon Blocks | matic | dex | 0.51 | 790 |
-| hmt-stats-polygon | matic | general | 0.51 | 22,361 |
-| galxe-passport | bsc | general | 0.50 | 1,716 |
+| hmt-stats-polygon | matic | general | 0.51 | 23,737 |
+| galxe-passport | bsc | general | 0.51 | 2,969 |
+| arbitrum-blocks | arbitrum-one | general | 0.50 | 83,356 |
 | avax-chain-block | avalanche | dex | 0.50 | 3 |
-| arbitrum-blocks | arbitrum-one | general | 0.49 | 62,481 |
 
 ## Query This Domain
 
