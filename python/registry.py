@@ -166,7 +166,8 @@ def write_sqlite(
             active_allocation_count INTEGER DEFAULT 0,
             contract_addresses TEXT,
             example_query TEXT,
-            embedding BLOB
+            embedding BLOB,
+            denied_at INTEGER DEFAULT 0
         )
     """)
     # Backfill columns on pre-existing DBs (incremental sync path). Each ALTER
@@ -176,6 +177,7 @@ def write_sqlite(
         "ALTER TABLE subgraphs ADD COLUMN contract_addresses TEXT",
         "ALTER TABLE subgraphs ADD COLUMN example_query TEXT",
         "ALTER TABLE subgraphs ADD COLUMN embedding BLOB",
+        "ALTER TABLE subgraphs ADD COLUMN denied_at INTEGER DEFAULT 0",
     ):
         try:
             c.execute(ddl)
@@ -290,7 +292,7 @@ def write_sqlite(
                 ))
 
         c.execute("""
-            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT OR REPLACE INTO subgraphs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             sg.id, sg.display_name, sg.description, sg.auto_description,
             sg.website, sg.code_repository, sg.owner, sg.ipfs_hash, sg.network,
@@ -305,6 +307,7 @@ def write_sqlite(
             json.dumps(sg.contract_addresses) if sg.contract_addresses else None,
             sg.example_query,
             sg.embedding,
+            sg.denied_at,
         ))
 
     if history_inserts:

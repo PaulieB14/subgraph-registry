@@ -140,6 +140,31 @@ jobs:
         # via package.json `files` so consumers run offline.
         run: node scripts/fetch-onnx-model.js
 
+      - name: Assert semantic_search model loads offline (guards the 0.6.0-style silent break)
+        run: node scripts/assert-semantic.js
+
+      - name: Template live count/version/hash into package.json + SKILL.md
+        # Keeps the agent-facing subgraph count, version, and DB hash from drifting
+        # (previously hardcoded; SKILL.md — the ClawHub content — was never regenerated).
+        run: |
+          python3 - <<'PY'
+          import sqlite3, re, json, hashlib
+          count = sqlite3.connect('data/registry.db').execute('SELECT COUNT(*) FROM subgraphs').fetchone()[0]
+          ver = json.load(open('package.json'))['version']
+          h = hashlib.sha256(open('data/registry.db','rb').read()).hexdigest()
+          cs = f'{count:,}'
+          pj = open('package.json').read()
+          pj = re.sub(r'[\d,]+ classified subgraphs', cs + ' classified subgraphs', pj)
+          open('package.json','w').write(pj)
+          s = open('SKILL.md').read()
+          s = re.sub(r'[\d,]+(?=\+? (?:classified subgraphs|The Graph subgraphs))', cs, s)
+          s = re.sub(r'@\d+\.\d+\.\d+', '@' + ver, s)
+          s = re.sub(r'`\d+\.\d+\.\d+`', '`' + ver + '`', s)
+          s = re.sub(r'SHA-256\(registry\.db\) = [a-f0-9]{64}', 'SHA-256(registry.db) = ' + h, s)
+          open('SKILL.md','w').write(s)
+          print(f'templated docs: count={cs} ver={ver} hash={h[:12]}')
+          PY
+
       - name: Regenerate OpenAPI spec
         # Source of truth for the spec is src/index.js TOOLS[] +
         # REST_ROUTES[]. Regenerate alongside the DB so the spec
@@ -157,7 +182,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Stage the four interlocked artifacts together — the repo is
           # never published in an inconsistent state.
-          git add data/registry.db python/data/ docs/ src/index.js package.json server.json openapi.yaml data/openapi.json data/models/
+          git add data/registry.db python/data/ docs/ src/index.js package.json server.json openapi.yaml data/openapi.json data/models/ SKILL.md scripts/assert-semantic.js
           if git diff --cached --quiet; then
             echo "no-op (no DB/docs/hash changes); skipping commit + publish"
             echo "committed=false" >> "$GITHUB_OUTPUT"
@@ -222,9 +247,17 @@ jobs:
           # the `subgraph-registry` skill, version pinned to the bumped npm
           # version so the two registries stay in lockstep.
           # In 0.23 --no-input is a GLOBAL flag, so it goes before the subcommand.
-          npx -y clawhub@0.23 --no-input skill publish . \
+          # Capture output: ClawHub can return exit 0 while the server REJECTS the
+          # payload (CLI rolled out of compat) — "skillId: invalid value" etc. Fail
+          # loudly so npm and ClawHub can't silently diverge behind a green check.
+          out=$(npx -y clawhub@0.23 --no-input skill publish . \
             --slug subgraph-registry \
-            --version "$NEW_VER"
+            --version "$NEW_VER" 2>&1)
+          echo "$out"
+          if echo "$out" | grep -qiE "invalid value|rejected|unauthorized|forbidden|not permitted"; then
+            echo "::error::ClawHub publish returned a rejection marker despite exit 0 — bump the clawhub CLI pin (server likely dropped this CLI version)."
+            exit 1
+          fi
           # NOTE: do NOT verify with `inspect` here. ClawHub holds new versions
           # in a staged pre-publication flow — hidden from inspect/latest until a
           # security scan finalizes, which for this skill takes ~1-2 days (0.8.13:

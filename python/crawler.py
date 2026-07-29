@@ -302,7 +302,11 @@ async def crawl_active_allocations(client: httpx.AsyncClient) -> dict[str, int]:
                 counts[h] = counts.get(h, 0) + 1
         last_id = allocs[-1]["id"]
         page += 1
-        if len(allocs) < 1000 or page > 50:
+        if page > 50:
+            print(f"  WARNING: allocation pagination hit the {page - 1}-page safety cap "
+                  f"(~{(page - 1) * 1000} allocations) — counts may be truncated. Raise the cap.")
+            break
+        if len(allocs) < 1000:
             break
     return counts
 

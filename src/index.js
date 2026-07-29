@@ -604,7 +604,9 @@ async function semanticSearchSubgraphs({
   // SQL pre-filter shaves ~14k → <1k rows for narrow queries (e.g.
   // "lending positions on Arbitrum"). Cosine math runs only on the
   // post-filter set.
-  const conditions = ["embedding IS NOT NULL"];
+  // Exclude the handful of null-ipfs "shell" rows — they carry embeddings but
+  // are unqueryable (no deployment) so they must not surface as recommendations.
+  const conditions = ["embedding IS NOT NULL", "ipfs_hash != ''", "ipfs_hash IS NOT NULL"];
   const params = [];
   if (!include_unserved) {
     conditions.push("active_allocation_count > 0");

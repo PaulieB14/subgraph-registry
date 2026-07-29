@@ -17,17 +17,20 @@ from dataclasses import dataclass, field
 
 DOMAIN_KEYWORDS: dict[str, dict[str, list[str]]] = {
     "defi": {
+        # Dropped universal ERC20 fields (fee/mint/burn/token/erc20/reward) that
+        # appear in nearly every subgraph and drove defi to 77% of the corpus.
+        # Keep defi-specific signals only.
         "schema": [
             "swap", "pool", "liquidity", "vault", "borrow", "lend", "stake",
-            "deposit", "withdraw", "collateral", "debt", "interest", "yield",
-            "farm", "reward", "fee", "amm", "pair", "reserve", "flash",
-            "leverage", "margin", "perpetual", "option", "strike", "premium",
-            "bridge", "wrap", "mint", "burn", "token", "erc20",
+            "collateral", "debt", "yield",
+            "farm", "amm", "reserve", "flash",
+            "leverage", "margin", "perpetual", "strike", "premium",
         ],
+        # Dropped "fi" — a substring that matched verify/notify/profile/etc.
         "name": [
             "swap", "dex", "exchange", "lend", "borrow", "vault", "yield",
-            "farm", "stake", "bridge", "amm", "pool", "finance", "fi",
-            "perp", "option", "derivative",
+            "farm", "amm", "finance",
+            "perp", "derivative",
         ],
     },
     "nfts": {
@@ -274,6 +277,10 @@ class Classification:
     # Currently-active indexer allocations for this deployment.
     # 0 means no one is serving it — paid queries return "no allocations".
     active_allocation_count: int = 0
+
+    # Curation-denied deployments (deniedAt > 0). Drives a 0.5 reliability
+    # penalty; persisted so agents can filter denied subgraphs.
+    denied_at: int = 0
 
     # Contract addresses extracted from manifest YAML — list of
     # {kind, name, address, network, startBlock} dicts. None means we
@@ -716,6 +723,7 @@ def classify_one(sg: dict, query_volume: int = 0) -> Classification:
         staked_tokens=sg.get("staked_tokens", "0"),
         query_fees=sg.get("query_fees", "0"),
         query_volume_30d=query_volume,
+        denied_at=sg.get("denied_at", 0),
         created_at=sg.get("created_at", 0),
         updated_at=sg.get("updated_at", 0),
         active_allocation_count=sg.get("active_allocation_count", 0),
