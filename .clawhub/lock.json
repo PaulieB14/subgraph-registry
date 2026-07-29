@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "skills": {
+    "subgraph-registry": {
+      "version": "0.8.13",
+      "installedAt": 1784233218983
+    }
+  }
+}

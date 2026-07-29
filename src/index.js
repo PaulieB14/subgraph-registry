@@ -36,7 +36,7 @@ const OPENAPI_JSON_PATH = join(DATA_DIR, "openapi.json");
 // Bundled with the npm package so runtime semantic search has zero
 // network dependency. Same model fastembed uses at crawl time
 // (Xenova/all-MiniLM-L6-v2) — vectors are bitwise-comparable.
-const EMBEDDING_MODEL_DIR = join(DATA_DIR, "models", "all-MiniLM-L6-v2");
+const EMBEDDING_MODEL_DIR = join(DATA_DIR, "models", "Xenova", "all-MiniLM-L6-v2");
 const GITHUB_DB_URL =
   "https://github.com/PaulieB14/subgraph-registry/raw/main/python/data/registry.db";
 
@@ -536,7 +536,7 @@ async function getEmbedder() {
       }
       const extractor = await pipeline(
         "feature-extraction",
-        "all-MiniLM-L6-v2",
+        "Xenova/all-MiniLM-L6-v2",
         { quantized: true },
       );
       return extractor;
@@ -956,7 +956,7 @@ const HANDLERS = {
 
 function createServer() {
   const server = new Server(
-    { name: "subgraph-registry", version: "0.6.0" },
+    { name: "subgraph-registry", version: "0.8.20" },
     { capabilities: { tools: {} } }
   );
 
