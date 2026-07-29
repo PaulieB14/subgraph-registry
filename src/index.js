@@ -221,7 +221,7 @@ function searchSubgraphs({
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
-           powered_by_substreams, active_allocation_count
+           powered_by_substreams, active_allocation_count, example_query
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
@@ -249,6 +249,9 @@ function searchSubgraphs({
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
+      // Ready-to-run GraphQL generated from this subgraph's actual schema — so an
+      // agent can POST it to query_url_x402 immediately, no get_subgraph_detail round-trip.
+      example_query: r.example_query || null,
       ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
@@ -257,7 +260,7 @@ function searchSubgraphs({
   return {
     total: results.length,
     subgraphs: results,
-    query_instructions: "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Call get_subgraph_detail first for the schema.",
+    query_instructions: "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Each result includes a ready-to-run `example_query` generated from that subgraph's real schema — POST it to query_url_x402 as-is, or adapt the entity/fields. Use get_subgraph_detail for the full schema.",
   };
 }
 
@@ -320,7 +323,7 @@ function recommendSubgraph({ goal, chain = "" }) {
   const where = `WHERE ${conditions.join(" AND ")}`;
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
-           reliability_score, ipfs_hash, canonical_entities, active_allocation_count
+           reliability_score, ipfs_hash, canonical_entities, active_allocation_count, example_query
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
@@ -357,6 +360,7 @@ function recommendSubgraph({ goal, chain = "" }) {
       ipfs_hash: r.ipfs_hash,
       canonical_entities: JSON.parse(r.canonical_entities),
       active_allocation_count: r.active_allocation_count || 0,
+      example_query: r.example_query || null,
       schema_changed_at: stab.schema_changed_at,
       schema_stable_days: stab.schema_stable_days,
       ...buildQueryEndpoints(r.id),
@@ -633,7 +637,7 @@ async function semanticSearchSubgraphs({
       `SELECT id, display_name, description, auto_description, domain,
               protocol_type, network, reliability_score, ipfs_hash,
               entity_count, canonical_entities, powered_by_substreams,
-              active_allocation_count, embedding
+              active_allocation_count, example_query, embedding
        FROM subgraphs
        ${where}`,
     )
@@ -668,6 +672,7 @@ async function semanticSearchSubgraphs({
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
+      example_query: r.example_query || null,
       semantic_score: Number(score.toFixed(4)),
       ...buildQueryEndpoints(r.id),
     });
