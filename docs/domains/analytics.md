@@ -1,43 +1,43 @@
 ---
 domain: analytics
-count: 324
-percentage: 2.1
+count: 767
+percentage: 5.0
 updated: 2026-07-29
 ---
 
 # Analytics Subgraphs
 
-**324** subgraphs (2.1% of registry)
+**767** subgraphs (5.0% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| Arbitrum One Blocks | arbitrum-one | dex | 0.83 | 1,195,757 |
-| Ethereum Blocks | mainnet | dex | 0.81 | 1,588,886 |
-| maticblocks | matic | dex | 0.78 | 12,617 |
-| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 329,720 |
-| Blocks | fantom | dex | 0.71 | 102,906 |
-| Blocks Base | base | general | 0.70 | 15,906 |
-| Lottery | bsc | dex | 0.69 | 92,797 |
-| ApoloBsc | bsc | general | 0.68 | 296 |
-| Fantom Blocks | fantom | general | 0.68 | 44,105 |
-| Pulsar-Blocks | moonbeam | dex | 0.66 | 41,469 |
-| BNB Chain Block | bsc | general | 0.61 | 26,783 |
-| protocol-metrics-arbitrum | arbitrum-one | nft-marketplace | 0.60 | 13 |
-| olympus-protocol-metrics | mainnet | nft-marketplace | 0.59 | 5,489 |
-| protocol-metrics-base | base | nft-marketplace | 0.58 | 12 |
-| SonicBlocks | sonic | general | 0.54 | 109,788 |
-| blocks-xlayer-mainnet | xlayer-mainnet | general | 0.54 | 1,045,811 |
-| Gnosis Blocks | gnosis | general | 0.53 | 77,153 |
-| blocks | bsc | general | 0.53 | 3 |
-| iExec DataProtector - Arbitrum Mainnet | arbitrum-one | nft-marketplace | 0.53 | 2,516 |
-| Polygon Blocks | matic | dex | 0.52 | 928 |
-| arbone-chain-block | arbitrum-one | general | 0.51 | 1 |
-| hmt-stats-polygon | matic | general | 0.51 | 23,737 |
-| galxe-passport | bsc | general | 0.51 | 2,969 |
-| arbitrum-blocks | arbitrum-one | general | 0.50 | 83,356 |
-| avax-chain-block | avalanche | dex | 0.50 | 3 |
+| Gnosis Blocks | gnosis | general | 0.84 | 757,692 |
+| Arbitrum One Blocks | arbitrum-one | dex | 0.83 | 1,194,740 |
+| Ethereum Blocks | mainnet | dex | 0.81 | 1,587,366 |
+| Compoundor Polygon | matic | lending | 0.80 | 203,725 |
+| Compoundor Arbitrum | arbitrum-one | lending | 0.80 | 321,671 |
+| Compoundor Base | base | lending | 0.79 | 356,724 |
+| metrics | bsc | staking | 0.78 | 2,459,170 |
+| maticblocks | matic | dex | 0.78 | 12,605 |
+| Compoundor Mainnet | mainnet | lending | 0.78 | 225,171 |
+| WOOFi Arbitrum | arbitrum-one | dex | 0.77 | 1,119,536 |
+| orizon | bsc | staking | 0.77 | 1,586,139 |
+| holiverse-analytics | matic | dex | 0.77 | 1,707,298 |
+| fna-metrcis2 | bsc | staking | 0.77 | 900,474 |
+| phi-statistics | bsc | staking | 0.76 | 370,346 |
+| WOOFi Sonic Staging | sonic | dex | 0.75 | 3,251,706 |
+| Compoundor BNB | bsc | lending | 0.75 | 173,352 |
+| WOOFi Optimism Testing | optimism | dex | 0.75 | 3,368,187 |
+| WOOFi Linea | linea | dex | 0.75 | 2,800,890 |
+| Compoundor Optimism | optimism | lending | 0.74 | 157,947 |
+| WOOFi Fantom Staging | fantom | dex | 0.73 | 2,765,430 |
+| WOOFi Polygon zkEVM Staging | polygon-zkevm | dex | 0.73 | 2,731,752 |
+| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 329,406 |
+| Orbs TWAP - BSC | bsc | general | 0.72 | 651,382 |
+| WOOFi Base | base | dex | 0.72 | 1,120,761 |
+| WOOFi zkSync Testing | zksync-era | dex | 0.71 | 2,735,601 |
 
 ## Query This Domain
 

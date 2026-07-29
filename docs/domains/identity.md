@@ -1,43 +1,43 @@
 ---
 domain: identity
-count: 409
-percentage: 2.7
+count: 1058
+percentage: 6.9
 updated: 2026-07-29
 ---
 
 # Identity Subgraphs
 
-**409** subgraphs (2.7% of registry)
+**1,058** subgraphs (6.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ENS | mainnet | name-service | 0.98 | 43,521,734 |
-| verax-v2-linea | linea | general | 0.80 | 2,597,378 |
-| cypher-tokens | mainnet | options | 0.65 | 187,933 |
-| ens-subgraph | mainnet | name-service | 0.65 | 50,014 |
-| ENS reclaim deposit subgraph | mainnet | name-service | 0.63 | 728 |
-| tokens-polygon | matic | name-service | 0.62 | 2,466 |
-| Unnamed | bsc | general | 0.58 | 34,962 |
-| torn-registry | mainnet | bridge | 0.57 | 11,304 |
-| ens-linea-mainnet | linea | name-service | 0.55 | 45,409 |
-| dapp-explorer | mainnet | general | 0.54 | 20,657 |
-| Enzyme Asset Universe Polygon | matic | general | 0.52 | 7,051 |
-| llens-aggs-base | base | name-service | 0.51 | — |
-| IdentitySubgraph | gnosis | general | 0.51 | 413,403 |
-| llens-aggs-sonic | sonic | name-service | 0.46 | 2 |
-| Opensig | matic | name-service | 0.42 | 26 |
-| ensSepolia | sepolia | name-service | 0.42 | 58,056 |
-| llens-aggs-arbitrum | arbitrum-one | name-service | 0.42 | 2 |
-| zns-mainnet | mainnet | name-service | 0.41 | — |
-| hns-id | optimism | name-service | 0.41 | 867 |
-| openmind-machine-identity-base | base | general | 0.40 | — |
-| linke | bsc | general | 0.38 | — |
-| zns-legacy | mainnet | name-service | 0.38 | 845 |
-| xname-base | base | name-service | 0.37 | 122 |
-| xname-arbitrum | arbitrum-one | name-service | 0.37 | 114 |
-| records-avalanche-mainnet | avalanche | general | 0.34 | 1,289 |
+| ENS | mainnet | name-service | 0.98 | 43,480,080 |
+| conditional-tokens-gc | gnosis | name-service | 0.91 | 4,048,693 |
+| verax-v2-linea | linea | general | 0.80 | 2,594,894 |
+| astherus-earn-bsc | bsc | bridge | 0.77 | 823,504 |
+| LIS_AAVE_PROD | mainnet | lending | 0.76 | 1,967,034 |
+| Realtoken gnosis | gnosis | bridge | 0.76 | 74,340 |
+| tracker-v2-base | base | bridge | 0.76 | 871,118 |
+| tracker-v2-ethereum | mainnet | bridge | 0.74 | 704,632 |
+| tracker-v2-polygon | matic | bridge | 0.73 | 534,334 |
+| tracker-v2-avalanche | avalanche | bridge | 0.73 | 521,368 |
+| tracker-v2-arbitrum | arbitrum-one | bridge | 0.73 | 1,053,798 |
+| tracker-v2-optimism | optimism | bridge | 0.73 | 510,393 |
+| poh-origin-gnosis | gnosis | bridge | 0.71 | 979,497 |
+| tracker-v2-bsc | bsc | bridge | 0.71 | 345,732 |
+| RMM v3 wrapper - gnosis | gnosis | general | 0.70 | 38,921 |
+| tracker-v2-unichain | unichain | bridge | 0.70 | 414,437 |
+| poh-origin-mainnet | mainnet | bridge | 0.70 | 841,911 |
+| LIS_NEW_STAGE | sepolia | general | 0.70 | 912,285 |
+| referral-prod | zksync-era | general | 0.68 | 810,928 |
+| LIS_AAVE_DEV | sepolia | lending | 0.68 | 1,014,883 |
+| tracker-v2-linea | linea | bridge | 0.67 | 178,506 |
+| Realtoken ethereum | mainnet | bridge | 0.67 | 25,968 |
+| Bridge Realtokens gnosis | gnosis | bridge | 0.66 | 95,639 |
+| cypher-tokens | mainnet | options | 0.65 | 187,799 |
+| ens-subgraph | mainnet | name-service | 0.65 | 49,966 |
 
 ## Query This Domain
 

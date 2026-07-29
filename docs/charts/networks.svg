@@ -11,8 +11,8 @@
 <rect x="110" y="96" width="307.8" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
 <text x="423.78452814904824" y="111.0" fill="#e8eaed" font-size="11">1,652</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Arbitrum One</text>
-<rect x="110" y="124" width="266.1" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="382.0510328068044" y="139.0" fill="#e8eaed" font-size="11">1,428</text>
+<rect x="110" y="124" width="266.6" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="382.60996354799516" y="139.0" fill="#e8eaed" font-size="11">1,431</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Matic</text>
 <rect x="110" y="152" width="242.8" height="22" rx="4" fill="#10b981" opacity="0.85"/>
 <text x="358.76225192385584" y="167.0" fill="#e8eaed" font-size="11">1,303</text>
@@ -20,8 +20,8 @@
 <rect x="110" y="180" width="107.7" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
 <text x="223.68732280275415" y="195.0" fill="#e8eaed" font-size="11">578</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Sepolia</text>
-<rect x="110" y="208" width="104.3" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="220.33373835560957" y="223.0" fill="#e8eaed" font-size="11">560</text>
+<rect x="110" y="208" width="104.5" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="220.52004860267314" y="223.0" fill="#e8eaed" font-size="11">561</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Avalanche</text>
 <rect x="110" y="236" width="83.7" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
 <text x="199.65330093155123" y="251.0" fill="#e8eaed" font-size="11">449</text>

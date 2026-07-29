@@ -13,31 +13,31 @@ updated: 2026-07-29
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v4-bnb | defi | dex | 0.98 | 52,615,742 |
-| uniswap-v3-bsc | defi | dex | 0.96 | 35,691,764 |
-| forsage-x2-prod | defi | general | 0.89 | 12,053,302 |
-| Pancakeswap V3 BSC | defi | dex | 0.88 | 2,967,987 |
-| Prediction V2 | dao | dex | 0.85 | 2,881,259 |
-| exchange-v3-bsc | defi | dex | 0.85 | 2,497,024 |
-| Uniswap V3 BNB | defi | dex | 0.84 | 720,382 |
-| sofa bsc opt | defi | lending | 0.82 | 2,727,104 |
-| protocol-v3-bnb | defi | lending | 0.82 | 1,886,518 |
-| Request Payments BSC | defi | dex | 0.82 | 2,454,014 |
-| apx-perp-bnb | defi | perpetuals | 0.80 | 1,150,948 |
-| uniswap-v4-bsc | defi | dex | 0.79 | 1,374,974 |
-| Venus Core Pool Subgraph | defi | lending | 0.79 | 639,445 |
-| PancakeSwap Infinity CL Bsc | defi | dex | 0.79 | 4,878,183 |
-| metrics | defi | staking | 0.78 | 2,461,401 |
-| Uniswap V3 BSC | defi | dex | 0.78 | 1,428,144 |
-| orizon | defi | staking | 0.77 | 1,587,658 |
-| TSDTDEFI | defi | staking | 0.77 | 627,579 |
-| fna-metrcis2 | defi | staking | 0.77 | 901,046 |
-| astherus-earn-bsc | defi | bridge | 0.77 | 824,196 |
-| DODOEX V2 BSC | defi | dex | 0.76 | 398,212 |
-| Thena BSC V1 | defi | dex | 0.76 | 496,114 |
-| Pancakeswap V3 BNB | defi | dex | 0.76 | 219,852 |
-| phi-statistics | defi | staking | 0.76 | 370,700 |
-| Compoundor BNB | defi | lending | 0.75 | 173,518 |
+| uniswap-v4-bnb | defi | dex | 0.98 | 52,565,385 |
+| uniswap-v3-bsc | defi | dex | 0.96 | 35,664,201 |
+| forsage-x2-prod | defi | general | 0.89 | 12,041,766 |
+| Pancakeswap V3 BSC | defi | dex | 0.88 | 2,965,146 |
+| Prediction V2 | dao | dex | 0.85 | 2,879,047 |
+| exchange-v3-bsc | defi | dex | 0.85 | 2,495,228 |
+| Uniswap V3 BNB | defi | dex | 0.84 | 719,793 |
+| sofa bsc opt | defi | lending | 0.82 | 2,724,494 |
+| protocol-v3-bnb | defi | lending | 0.82 | 1,884,713 |
+| Request Payments BSC | infrastructure | dex | 0.82 | 2,451,665 |
+| apx-perp-bnb | defi | perpetuals | 0.80 | 1,150,128 |
+| uniswap-v4-bsc | defi | dex | 0.79 | 1,374,050 |
+| Venus Core Pool Subgraph | defi | lending | 0.79 | 639,151 |
+| PancakeSwap Infinity CL Bsc | defi | dex | 0.79 | 4,875,027 |
+| metrics | analytics | staking | 0.78 | 2,459,170 |
+| Uniswap V3 BSC | defi | dex | 0.78 | 1,427,282 |
+| orizon | analytics | staking | 0.77 | 1,586,139 |
+| TSDTDEFI | defi | staking | 0.77 | 627,230 |
+| fna-metrcis2 | analytics | staking | 0.77 | 900,474 |
+| astherus-earn-bsc | identity | bridge | 0.77 | 823,504 |
+| DODOEX V2 BSC | defi | dex | 0.76 | 397,831 |
+| Thena BSC V1 | defi | dex | 0.76 | 495,640 |
+| Pancakeswap V3 BNB | defi | dex | 0.76 | 219,682 |
+| phi-statistics | analytics | staking | 0.76 | 370,346 |
+| Compoundor BNB | analytics | lending | 0.75 | 173,352 |
 
 ## Query This Network
 
