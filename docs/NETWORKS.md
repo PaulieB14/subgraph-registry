@@ -1,7 +1,7 @@
 ---
 type: network-index
-updated: 2026-07-29
-total_subgraphs: 15251
+updated: 2026-07-31
+total_subgraphs: 15254
 ---
 
 # Subgraph Networks
@@ -14,7 +14,7 @@ total_subgraphs: 15251
 | Arbitrum | 1,431 | 9.4% | [View](networks/arbitrum-one.md) |
 | Polygon | 1,303 | 8.5% | [View](networks/matic.md) |
 | Optimism | 578 | 3.8% | [View](networks/optimism.md) |
-| Sepolia | 561 | 3.7% | [View](networks/sepolia.md) |
+| Sepolia | 563 | 3.7% | [View](networks/sepolia.md) |
 | Avalanche | 449 | 2.9% | [View](networks/avalanche.md) |
 | Zksync Era | 375 | 2.5% | [View](networks/zksync-era.md) |
 | Linea | 323 | 2.1% | [View](networks/linea.md) |
