@@ -4,14 +4,14 @@
 <rect x="30" y="50" width="420" height="28" rx="6" fill="#1a1f2e"/>
 <rect x="30.0" y="50" width="8.1" height="28" rx="6" fill="#10b981" opacity="0.85"/>
 <rect x="38.1" y="50" width="64.4" height="28" rx="0" fill="#f59e0b" opacity="0.85"/>
-<rect x="102.5" y="50" width="347.5" height="28" rx="0" fill="#6b7280" opacity="0.85"/>
+<rect x="102.6" y="50" width="347.4" height="28" rx="0" fill="#6b7280" opacity="0.85"/>
 <rect x="30" y="108" width="12" height="12" rx="2" fill="#10b981"/>
 <text x="48" y="118" fill="#e8eaed" font-size="11">High (0.7+)</text>
 <text x="48" y="134" fill="#7b8394" font-size="10">295 (1.9%)</text>
 <rect x="190" y="108" width="12" height="12" rx="2" fill="#f59e0b"/>
 <text x="208" y="118" fill="#e8eaed" font-size="11">Medium (0.3&#x2013;0.7)</text>
-<text x="208" y="134" fill="#7b8394" font-size="10">2,338 (15.3%)</text>
+<text x="208" y="134" fill="#7b8394" font-size="10">2,341 (15.3%)</text>
 <rect x="350" y="108" width="12" height="12" rx="2" fill="#6b7280"/>
 <text x="368" y="118" fill="#e8eaed" font-size="11">Low (&#x3c;0.3)</text>
-<text x="368" y="134" fill="#7b8394" font-size="10">12,621 (82.7%)</text>
+<text x="368" y="134" fill="#7b8394" font-size="10">12,620 (82.7%)</text>
 </svg>

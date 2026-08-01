@@ -2,7 +2,7 @@
 domain: gaming
 count: 586
 percentage: 3.8
-updated: 2026-07-31
+updated: 2026-08-01
 ---
 
 # Gaming Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-07-31
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| lotto-1 | bsc | staking | 0.69 | 116,241 |
-| Medieval Empires Staking | matic | staking | 0.69 | 385,401 |
-| kleros-display-gnosis | gnosis | general | 0.68 | 216,512 |
-| conquest-defcon | gnosis | bridge | 0.66 | 73,581 |
-| qlwy | bsc | staking | 0.64 | 10,566 |
-| conquest-2025_1 | gnosis | bridge | 0.64 | 77,178 |
-| mana matic mainnet | matic | general | 0.64 | 1,075 |
-| mech-predict | gnosis | general | 0.63 | 170,907 |
-| lotto-0 | bsc | staking | 0.63 | 26,499 |
-| BetSwirl Polygon | matic | options | 0.62 | 83,339 |
-| BetSwirl Arbitrum One | arbitrum-one | options | 0.61 | 72,451 |
+| Medieval Empires Staking | matic | staking | 0.69 | 392,057 |
+| lotto-1 | bsc | staking | 0.69 | 112,261 |
+| kleros-display-gnosis | gnosis | general | 0.68 | 210,502 |
+| conquest-defcon | gnosis | bridge | 0.66 | 73,282 |
+| qlwy | bsc | staking | 0.64 | 11,127 |
+| conquest-2025_1 | gnosis | bridge | 0.64 | 77,206 |
+| mana matic mainnet | matic | general | 0.64 | 1,048 |
+| mech-predict | gnosis | general | 0.63 | 170,111 |
+| lotto-0 | bsc | staking | 0.63 | 29,141 |
+| BetSwirl Polygon | matic | options | 0.62 | 83,007 |
+| BetSwirl Arbitrum One | arbitrum-one | options | 0.61 | 72,198 |
 | estfor | fantom | dex | 0.61 | — |
-| genie-launchpad-bsc | bsc | general | 0.60 | 100,266 |
-| Hats v1 Arbitrum | arbitrum-one | general | 0.59 | 16,643 |
-| R2R-MembershipPlanController | bsc | general | 0.59 | 29,080 |
-| BetSwirl Avalanche | avalanche | options | 0.58 | 45,503 |
-| BetSwirl Base | base | options | 0.57 | 80,615 |
-| Prosperity Passport | celo | general | 0.57 | 35,362 |
-| Polymarket PnL | matic | general | 0.57 | 70 |
-| miaobsc | bsc | bridge | 0.56 | 201 |
-| Ethereum Gateway V2 | mainnet | dex | 0.56 | 4,944 |
-| Limitless Simple Markets | base | dex | 0.56 | 134,290 |
-| genie-launchpad-polygon | matic | general | 0.56 | 23,810 |
-| Request Payments Boba | boba | dex | 0.56 | 438,937 |
-| kleros-display-mainnet | mainnet | general | 0.56 | 19,084 |
+| genie-launchpad-bsc | bsc | general | 0.60 | 99,849 |
+| Hats v1 Arbitrum | arbitrum-one | general | 0.59 | 16,383 |
+| R2R-MembershipPlanController | bsc | general | 0.59 | 28,953 |
+| BetSwirl Avalanche | avalanche | options | 0.58 | 43,930 |
+| BetSwirl Base | base | options | 0.57 | 80,310 |
+| Prosperity Passport | celo | general | 0.57 | 34,241 |
+| Polymarket PnL | matic | general | 0.57 | 67 |
+| miaobsc | bsc | bridge | 0.56 | 195 |
+| Ethereum Gateway V2 | mainnet | dex | 0.56 | 4,951 |
+| Limitless Simple Markets | base | dex | 0.56 | 130,097 |
+| genie-launchpad-polygon | matic | general | 0.56 | 23,700 |
+| Request Payments Boba | boba | dex | 0.56 | 437,096 |
+| kleros-display-mainnet | mainnet | general | 0.56 | 18,879 |
 
 ## Query This Domain
 
