@@ -233,6 +233,16 @@ jobs:
         # (run 28845541838, 2026-07-07) even though auth still succeeded.
         # 0.23.x reads its token the same way (CLAWHUB_CONFIG_PATH honored).
         # If this recurs, bump the pin again toward the latest CLI.
+        #
+        # The pin floats within the minor ON PURPOSE (staleness is the failure
+        # above), but it cuts both ways and did on 2026-08-04: 0.23.2 introduced
+        # CLIENT-side publish limits — 10MB per file, 50MB per bundle — and CI
+        # inherited them the day they shipped. Last green was 08-01, first red
+        # 08-06, with nothing in this repo having changed. So when this step
+        # breaks and the payload looks untouched, diff the CLI, not the repo:
+        #   npm view clawhub time --json | grep 0.23
+        # Fixed by excluding the 22MB ONNX model in .clawhubignore; the skill is
+        # instruction-only and both the model and registry.db reach users via npm.
         if: steps.commit.outputs.committed == 'true' && env.CLAWHUB_CONFIG_JSON != ''
         env:
           CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
@@ -250,10 +260,25 @@ jobs:
           # Capture output: ClawHub can return exit 0 while the server REJECTS the
           # payload (CLI rolled out of compat) — "skillId: invalid value" etc. Fail
           # loudly so npm and ClawHub can't silently diverge behind a green check.
+          # `set +e` around the capture is load-bearing. This step runs under
+          # `bash -e`, so `out=$(...)` with a FAILING command aborts the script at
+          # the assignment — before `echo "$out"` ever runs. A genuinely failed
+          # publish therefore logged nothing but the preceding `whoami` output, and
+          # the real reason had to be reproduced by hand. That is how the 2026-08-04
+          # size-limit break (runs 31072628884, 31455368844) presented: a bare
+          # "exit code 1" with the actual error — 'File "…model_quantized.onnx"
+          # exceeds 10MB' — discarded. Capture the status, print the output, then decide.
+          set +e
           out=$(npx -y clawhub@0.23 --no-input skill publish . \
             --slug subgraph-registry \
             --version "$NEW_VER" 2>&1)
+          rc=$?
+          set -e
           echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::ClawHub publish exited $rc — see the CLI output above for the reason."
+            exit 1
+          fi
           if echo "$out" | grep -qiE "invalid value|rejected|unauthorized|forbidden|not permitted"; then
             echo "::error::ClawHub publish returned a rejection marker despite exit 0 — bump the clawhub CLI pin (server likely dropped this CLI version)."
             exit 1

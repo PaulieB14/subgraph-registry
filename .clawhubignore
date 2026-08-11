@@ -25,3 +25,14 @@ docs/
 # Packing it bloats the artifact and breaks server-side finalization (phantom versions).
 data/*.db
 data/*.db-*
+
+# The 22MB ONNX embedding model, fetched by the "Fetch ONNX embedding model" CI
+# step so semantic_search can be asserted offline. Same reasoning as the db: it
+# reaches users through npm, and the ClawHub skill is instruction-only.
+#
+# Until 2026-08-04 this was merely bloat. clawhub 0.23.2 added publish limits of
+# 10MB per file / 50MB per bundle, and because the workflow pins the CLI to the
+# floating `clawhub@0.23`, CI picked them up the moment they shipped and every
+# run since has failed on:
+#   File "data/models/Xenova/all-MiniLM-L6-v2/onnx/model_quantized.onnx" exceeds 10MB
+data/models/
