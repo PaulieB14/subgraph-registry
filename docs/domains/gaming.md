@@ -13,31 +13,31 @@ updated: 2026-08-11
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| Medieval Empires Staking | matic | staking | 0.70 | 496,293 |
-| kleros-display-gnosis | gnosis | general | 0.68 | 200,089 |
-| lotto-1 | bsc | staking | 0.68 | 58,465 |
-| conquest-defcon | gnosis | bridge | 0.65 | 62,479 |
-| qlwy | bsc | staking | 0.65 | 18,061 |
-| mana matic mainnet | matic | general | 0.64 | 928 |
-| conquest-2025_1 | gnosis | bridge | 0.64 | 63,027 |
-| mech-predict | gnosis | general | 0.63 | 143,589 |
-| lotto-0 | bsc | staking | 0.62 | 22,619 |
-| BetSwirl Polygon | matic | options | 0.61 | 72,558 |
-| BetSwirl Arbitrum One | arbitrum-one | options | 0.61 | 63,417 |
-| genie-launchpad-bsc | bsc | general | 0.59 | 83,970 |
-| Hats v1 Arbitrum | arbitrum-one | general | 0.59 | 10,605 |
-| R2R-MembershipPlanController | bsc | general | 0.59 | 23,930 |
+| Medieval Empires Staking | matic | staking | 0.70 | 499,105 |
+| kleros-display-gnosis | gnosis | general | 0.68 | 198,447 |
+| lotto-1 | bsc | staking | 0.68 | 57,803 |
+| conquest-defcon | gnosis | bridge | 0.65 | 62,737 |
+| qlwy | bsc | staking | 0.65 | 17,863 |
+| mana matic mainnet | matic | general | 0.64 | 985 |
+| conquest-2025_1 | gnosis | bridge | 0.64 | 63,277 |
+| mech-predict | gnosis | general | 0.63 | 144,197 |
+| lotto-0 | bsc | staking | 0.62 | 22,747 |
+| BetSwirl Polygon | matic | options | 0.61 | 72,665 |
+| BetSwirl Arbitrum One | arbitrum-one | options | 0.61 | 63,508 |
+| genie-launchpad-bsc | bsc | general | 0.59 | 84,273 |
+| Hats v1 Arbitrum | arbitrum-one | general | 0.59 | 10,678 |
+| R2R-MembershipPlanController | bsc | general | 0.59 | 24,169 |
 | Polymarket PnL | matic | general | 0.57 | 66 |
-| BetSwirl Base | base | options | 0.57 | 71,487 |
-| Ethereum Gateway V2 | mainnet | dex | 0.56 | 5,239 |
+| BetSwirl Base | base | options | 0.57 | 71,658 |
+| Ethereum Gateway V2 | mainnet | dex | 0.56 | 5,195 |
 | miaobsc | bsc | bridge | 0.56 | 156 |
-| BetSwirl Avalanche | avalanche | options | 0.56 | 13,600 |
-| kleros-display-mainnet | mainnet | general | 0.56 | 16,630 |
-| Request Payments Boba | boba | dex | 0.55 | 372,696 |
-| genie-launchpad-polygon | matic | general | 0.55 | 20,035 |
-| Acre Mainnet | mainnet | general | 0.55 | 1,063 |
-| BetSwirl BNB Chain | bsc | options | 0.55 | 63,585 |
-| genie-launchpad-base | base | general | 0.55 | 19,679 |
+| BetSwirl Avalanche | avalanche | options | 0.56 | 13,454 |
+| kleros-display-mainnet | mainnet | general | 0.56 | 16,829 |
+| Request Payments Boba | boba | dex | 0.55 | 374,248 |
+| genie-launchpad-polygon | matic | general | 0.55 | 20,112 |
+| Acre Mainnet | mainnet | general | 0.55 | 1,068 |
+| BetSwirl BNB Chain | bsc | options | 0.55 | 63,696 |
+| genie-launchpad-base | base | general | 0.55 | 19,752 |
 
 ## Query This Domain
 

@@ -13,31 +13,31 @@ updated: 2026-08-11
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v4-base-3 | defi | dex | 1.00 | 253,995,293 |
-| Aerodrome Base Full | defi | dex | 0.96 | 22,670,262 |
-| uniswap-v2-base | defi | dex | 0.96 | 44,510,771 |
-| UniV3-Base | defi | dex | 0.92 | 3,069,823 |
-| Aave V3 Base | defi | lending | 0.90 | 8,538,641 |
-| uniswap-v4-base | defi | dex | 0.89 | 4,512,470 |
-| Uni V3 Staker Base | defi | staking | 0.88 | 439,338 |
-| Uniswap V3 Base | defi | dex | 0.86 | 14,942,328 |
-| uniswap-v3-base | defi | dex | 0.86 | 957,915 |
-| CreatorBid | defi | name-service | 0.85 | 265,121 |
-| Request Payments Base | infrastructure | dex | 0.83 | 2,321,806 |
-| Thirdfy Base | defi | dex | 0.82 | 2,030,163 |
-| base-uniswap-v2 | defi | dex | 0.81 | 464,747 |
-| exchange v3 base | defi | dex | 0.81 | 847,194 |
-| Uniswap V3 Base | defi | dex | 0.79 | 1,134,663 |
-| Compound V3 Base | defi | lending | 0.79 | 4,078,504 |
-| odos-loyalty-base | unknown | general | 0.79 | 438,093 |
-| Compoundor Base | analytics | lending | 0.78 | 314,212 |
-| maverick-base | defi | dex | 0.77 | 344,462 |
-| Base Blocks | infrastructure | general | 0.77 | 866,581 |
-| Uniswap V3 Base | defi | dex | 0.77 | 464,436 |
-| v3-base | defi | dex | 0.76 | 600,128 |
-| tracker-v2-base | identity | bridge | 0.76 | 851,359 |
-| uniswap-v4-base-2 | defi | dex | 0.74 | 10,498 |
-| base-jiffyscan | infrastructure | staking | 0.73 | 46,398 |
+| uniswap-v4-base-3 | defi | dex | 1.00 | 254,879,725 |
+| Aerodrome Base Full | defi | dex | 0.96 | 22,757,791 |
+| uniswap-v2-base | defi | dex | 0.96 | 44,552,538 |
+| UniV3-Base | defi | dex | 0.92 | 3,076,329 |
+| Aave V3 Base | defi | lending | 0.89 | 8,497,279 |
+| uniswap-v4-base | defi | dex | 0.89 | 4,515,240 |
+| Uni V3 Staker Base | defi | staking | 0.88 | 440,573 |
+| Uniswap V3 Base | defi | dex | 0.86 | 15,010,458 |
+| uniswap-v3-base | defi | dex | 0.86 | 957,817 |
+| CreatorBid | defi | name-service | 0.85 | 266,016 |
+| Request Payments Base | infrastructure | dex | 0.83 | 2,318,290 |
+| Thirdfy Base | defi | dex | 0.82 | 2,016,764 |
+| base-uniswap-v2 | defi | dex | 0.81 | 466,874 |
+| exchange v3 base | defi | dex | 0.81 | 852,694 |
+| Uniswap V3 Base | defi | dex | 0.79 | 1,123,715 |
+| Compound V3 Base | defi | lending | 0.79 | 4,033,686 |
+| odos-loyalty-base | unknown | general | 0.79 | 433,120 |
+| Compoundor Base | analytics | lending | 0.78 | 316,528 |
+| maverick-base | defi | dex | 0.77 | 345,840 |
+| Base Blocks | infrastructure | general | 0.77 | 864,192 |
+| Uniswap V3 Base | defi | dex | 0.77 | 467,528 |
+| v3-base | defi | dex | 0.76 | 603,577 |
+| tracker-v2-base | identity | bridge | 0.76 | 855,613 |
+| uniswap-v4-base-2 | defi | dex | 0.74 | 10,710 |
+| base-jiffyscan | infrastructure | staking | 0.73 | 46,664 |
 
 ## Query This Network
 
