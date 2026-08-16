@@ -1,43 +1,43 @@
 ---
 domain: defi
-count: 7813
+count: 7830
 percentage: 51.1
-updated: 2026-08-11
+updated: 2026-08-16
 ---
 
 # Defi Subgraphs
 
-**7,813** subgraphs (51.1% of registry)
+**7,830** subgraphs (51.1% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| uniswap-v4-base-3 | base | dex | 1.00 | 254,879,725 |
-| uniswap-v2-ethereum | mainnet | dex | 0.99 | 67,748,234 |
-| uniswap-v4-bnb | bsc | dex | 0.98 | 50,123,077 |
-| Uniswap-V3 | mainnet | dex | 0.97 | 17,981,858 |
-| Aerodrome Base Full | base | dex | 0.96 | 22,757,791 |
-| uniswap-v2-base | base | dex | 0.96 | 44,552,538 |
-| uniswap-v3-bsc | bsc | dex | 0.96 | 32,225,981 |
-| Uniswap V2 | mainnet | dex | 0.94 | 7,076,145 |
-| uniswap-v3-arbitrum | arbitrum-one | dex | 0.93 | 22,030,262 |
-| Arbitrum Minimal | arbitrum-one | dex | 0.92 | 3,169,227 |
-| uniswap-v4-ethereum | mainnet | dex | 0.92 | 8,693,682 |
-| UniV3-Base | base | dex | 0.92 | 3,076,329 |
-| camelot-amm-v3 | arbitrum-one | dex | 0.91 | 1,950,132 |
-| Uniswap V3 Polygon | matic | dex | 0.91 | 1,898,364 |
-| forsage-x2-prod | bsc | general | 0.90 | 12,866,420 |
-| Aave V3 Base | base | lending | 0.89 | 8,497,279 |
-| QuickSwap V3 | matic | dex | 0.89 | 679,168 |
-| uniswap-v4-base | base | dex | 0.89 | 4,515,240 |
-| protocol-v3 | mainnet | lending | 0.89 | 5,407,889 |
-| Uni V3 Staker Base | base | staking | 0.88 | 440,573 |
-| Pancakeswap V3 BSC | bsc | dex | 0.88 | 2,952,374 |
-| Lido | mainnet | staking | 0.87 | 4,344,974 |
-| Enzyme Core | mainnet | staking | 0.86 | 2,595,193 |
-| uniswap-v3-matic | matic | dex | 0.86 | 22,293,096 |
-| Uniswap V3 Mainnet | mainnet | dex | 0.86 | 688,324 |
+| uniswap-v4-base-3 | base | dex | 1.00 | 248,029,343 |
+| uniswap-v2-ethereum | mainnet | dex | 0.99 | 65,442,086 |
+| uniswap-v4-bnb | bsc | dex | 0.98 | 48,594,283 |
+| Uniswap-V3 | mainnet | dex | 0.97 | 18,749,991 |
+| Aerodrome Base Full | base | dex | 0.96 | 22,279,241 |
+| uniswap-v2-base | base | dex | 0.96 | 42,122,814 |
+| uniswap-v3-bsc | bsc | dex | 0.96 | 31,031,239 |
+| Uniswap V2 | mainnet | dex | 0.94 | 6,430,618 |
+| uniswap-v3-arbitrum | arbitrum-one | dex | 0.93 | 20,091,162 |
+| uniswap-v4-ethereum | mainnet | dex | 0.92 | 8,455,416 |
+| Arbitrum Minimal | arbitrum-one | dex | 0.92 | 2,932,565 |
+| UniV3-Base | base | dex | 0.92 | 2,919,526 |
+| camelot-amm-v3 | arbitrum-one | dex | 0.91 | 1,974,348 |
+| Uniswap V3 Polygon | matic | dex | 0.90 | 1,629,365 |
+| forsage-x2-prod | bsc | general | 0.90 | 13,076,953 |
+| QuickSwap V3 | matic | dex | 0.89 | 686,652 |
+| Aave V3 Base | base | lending | 0.89 | 8,100,030 |
+| uniswap-v4-base | base | dex | 0.89 | 4,125,367 |
+| protocol-v3 | mainnet | lending | 0.89 | 4,935,552 |
+| Uni V3 Staker Base | base | staking | 0.88 | 439,210 |
+| Pancakeswap V3 BSC | bsc | dex | 0.88 | 3,074,424 |
+| Lido | mainnet | staking | 0.87 | 4,373,913 |
+| Enzyme Core | mainnet | staking | 0.86 | 2,495,201 |
+| uniswap-v3-matic | matic | dex | 0.86 | 21,722,215 |
+| Uniswap V3 Mainnet | mainnet | dex | 0.86 | 633,367 |
 
 ## Query This Domain
 
