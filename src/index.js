@@ -1641,6 +1641,14 @@ export const REST_ROUTES = [
     },
   },
   {
+    method: "post",
+    path: "/graphql",
+    summary: "payql compatibility — search results in subgraphMetadataSearch shape",
+    description:
+      "Answers a `subgraphMetadataSearch` query in The Graph network subgraph's shape, so payql (PAYQL_REGISTRY_URL) can use this registry as a free discovery source with no change on its side. Only the `text` and `first` variables are read; results come from the same index search_subgraphs uses.",
+    response: { type: "object", description: "{ data: { subgraphMetadataSearch: [...] } }" },
+  },
+  {
     method: "get",
     path: "/.well-known/subgraph/{id}.jsonld",
     summary: "JSON-LD manifest for a single subgraph (canonical location)",
