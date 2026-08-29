@@ -6,7 +6,7 @@
 
 Agent-friendly semantic classification of all subgraphs on [The Graph Network](https://thegraph.com).
 
-Pre-computed index of **14,700+ subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
+Pre-computed index of **15,330 subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
 
 > **What's new in 0.8.0** — three agent-discovery upgrades:
 > - **[Semantic search](#semantic-search)** via 384-dim embeddings (`semantic_search_subgraphs`)
@@ -100,14 +100,15 @@ Explore subgraphs by use case — each file lists the top 25 subgraphs ranked by
 
 | Domain | Count | File |
 |--------|-------|------|
-| [DeFi](docs/domains/defi.md) | 11,218 | Swaps, pools, lending, vaults, yield |
-| [NFTs](docs/domains/nfts.md) | 857 | Collections, marketplaces, sales |
-| [Infrastructure](docs/domains/infrastructure.md) | 581 | Indexers, oracles, registries |
-| [DAO](docs/domains/dao.md) | 429 | Governance, proposals, voting |
-| [Identity](docs/domains/identity.md) | 401 | ENS, name services, resolvers |
-| [Analytics](docs/domains/analytics.md) | 327 | Snapshots, metrics, historical data |
-| [Gaming](docs/domains/gaming.md) | 247 | Players, quests, items, worlds |
-| [Social](docs/domains/social.md) | 74 | Profiles, posts, follows |
+| [DeFi](docs/domains/defi.md) | 7,844 | Swaps, pools, lending, vaults, yield |
+| [NFTs](docs/domains/nfts.md) | 1,565 | Collections, marketplaces, sales |
+| Unclassified | 1,333 | Not confidently classified |
+| [Infrastructure](docs/domains/infrastructure.md) | 1,251 | Indexers, oracles, registries |
+| [Identity](docs/domains/identity.md) | 1,061 | ENS, name services, resolvers |
+| [Analytics](docs/domains/analytics.md) | 766 | Snapshots, metrics, historical data |
+| [DAO](docs/domains/dao.md) | 758 | Governance, proposals, voting |
+| [Gaming](docs/domains/gaming.md) | 585 | Players, quests, items, worlds |
+| [Social](docs/domains/social.md) | 167 | Profiles, posts, follows |
 
 Full index: [`docs/DOMAINS.md`](docs/DOMAINS.md)
 
@@ -117,13 +118,13 @@ Explore subgraphs by blockchain — each file lists the top 25 subgraphs on that
 
 | Network | Count | File |
 |---------|-------|------|
-| [Ethereum](docs/networks/mainnet.md) | 2,377 | Largest ecosystem |
-| [Base](docs/networks/base.md) | 1,728 | Fast-growing L2 |
-| [BSC](docs/networks/bsc.md) | 1,582 | BNB Chain |
-| [Arbitrum](docs/networks/arbitrum-one.md) | 1,376 | Leading L2 |
-| [Polygon](docs/networks/matic.md) | 1,266 | Polygon PoS |
-| [Optimism](docs/networks/optimism.md) | 568 | OP Stack L2 |
-| [Avalanche](docs/networks/avalanche.md) | 440 | C-Chain |
+| [Ethereum](docs/networks/mainnet.md) | 2,484 | Largest ecosystem |
+| [Base](docs/networks/base.md) | 1,841 | Fast-growing L2 |
+| [BSC](docs/networks/bsc.md) | 1,670 | BNB Chain |
+| [Arbitrum](docs/networks/arbitrum-one.md) | 1,437 | Leading L2 |
+| [Polygon](docs/networks/matic.md) | 1,304 | Polygon PoS |
+| [Optimism](docs/networks/optimism.md) | 580 | OP Stack L2 |
+| [Avalanche](docs/networks/avalanche.md) | 453 | C-Chain |
 
 Full index: [`docs/NETWORKS.md`](docs/NETWORKS.md)
 
@@ -131,16 +132,16 @@ Full index: [`docs/NETWORKS.md`](docs/NETWORKS.md)
 
 | Type | Count | Description |
 |------|-------|-------------|
-| DEX | 4,176 | Uniswap, Sushi, Curve, Balancer, PancakeSwap |
-| Lending | 1,424 | Aave, Compound, Morpho, Spark, Silo |
-| Staking | 867 | Lido, Rocket Pool, EigenLayer, Graph Network |
-| Bridge | 771 | Hop, Stargate, Across, Wormhole, LayerZero |
-| NFT Marketplace | 436 | OpenSea, Blur, Rarible, Foundation |
-| Governance | 416 | Snapshot, Tally, Compound Governor |
-| Yield Aggregator | 387 | Yearn, Beefy, Harvest, Convex |
-| Perpetuals | 266 | GMX, Gains, dYdX, Hyperliquid |
-| Name Service | 223 | ENS, Space ID, Unstoppable Domains |
-| Options | 179 | Premia, Dopex, Lyra, Hegic |
+| DEX | 4,411 | Uniswap, Sushi, Curve, Balancer, PancakeSwap |
+| Lending | 1,469 | Aave, Compound, Morpho, Spark, Silo |
+| Staking | 898 | Lido, Rocket Pool, EigenLayer, Graph Network |
+| Bridge | 836 | Hop, Stargate, Across, Wormhole, LayerZero |
+| NFT Marketplace | 450 | OpenSea, Blur, Rarible, Foundation |
+| Yield Aggregator | 425 | Yearn, Beefy, Harvest, Convex |
+| Governance | 425 | Snapshot, Tally, Compound Governor |
+| Perpetuals | 273 | GMX, Gains, dYdX, Hyperliquid |
+| Name Service | 227 | ENS, Space ID, Unstoppable Domains |
+| Options | 192 | Premia, Dopex, Lyra, Hegic |
 
 ---
 
