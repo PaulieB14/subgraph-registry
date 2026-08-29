@@ -159,6 +159,43 @@ All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the sub
 
 **Score tiers:** High (0.7+) = strong signal, real usage | Medium (0.3-0.7) = functional, some activity | Low (<0.3) = minimal signal or test deployment
 
+### The score measures traction, so it measures age
+
+All four inputs are cumulative — fees and curation accrue, volume needs 30 days
+to exist at all. A subgraph deployed last month therefore scores near zero no
+matter how good it is. Measured on the current corpus (served, non-denied):
+
+| Age | Count | Avg reliability |
+|-----|-------|-----------------|
+| < 30 days | 64 | 0.107 |
+| 30–90 days | 227 | 0.143 |
+| 90–365 days | 1,100 | 0.225 |
+| > 1 year | 4,034 | 0.313 |
+
+The newest subgraph anywhere in the registry's top 25 is **280 days old** — yet
+59 of those 64 sub-30-day subgraphs are already serving real query volume.
+
+Rather than reweight the score and trade a measurable signal for a guess,
+`search_subgraphs` returns young matches in a **separate `emerging` list**
+alongside an `emerging_caveat` explaining that a low score at that age is
+expected rather than damning. Every result also carries `age_days` and
+`maturity` (`new` < 30d, `emerging` < 90d, `established`). This matters most
+for new chains and new protocols, where no mature deployment *can* exist —
+searching "perpetual futures" surfaces years-old Ethereum and BSC deployments
+in the main list and the 40-day-old Monad perps subgraph under `emerging`.
+
+`semantic_search_subgraphs` ranks by cosine similarity rather than reliability,
+so it is already age-neutral — it carries the `maturity` labels but no
+`emerging` list, because a three-week-old subgraph can top it on merit.
+
+### Denied deployments
+
+Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, usually
+spam, duplicates or deprecations) are **excluded by default** from
+`search_subgraphs`, `semantic_search_subgraphs` and `recommend_subgraph`. Pass
+`include_denied: true` to the two search tools to see them; every result then
+carries `denied: true|false` so the choice stays visible.
+
 ---
 
 ## MCP Server

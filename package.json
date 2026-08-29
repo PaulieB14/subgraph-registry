@@ -1,6 +1,6 @@
 {
   "name": "subgraph-registry-mcp",
-  "version": "0.8.31",
+  "version": "0.9.0",
   "mcpName": "io.github.PaulieB14/subgraph-registry-mcp",
   "description": "MCP server for agent-friendly subgraph discovery on The Graph Network. 15,330 classified subgraphs with x402 query URLs ($0.01 USDC on Base, no API key required), reliability scoring, and protocol classification.",
   "type": "module",
@@ -17,7 +17,8 @@
   "scripts": {
     "start": "node src/index.js",
     "start:http": "node src/index.js --http",
-    "start:http-only": "node src/index.js --http-only"
+    "start:http-only": "node src/index.js --http-only",
+    "test": "node --test test/"
   },
   "keywords": [
     "mcp",

@@ -30,6 +30,21 @@ import { createHash } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Read from package.json rather than a literal. The hardcoded string had
+// drifted to "0.8.20" while the package shipped 0.8.31 — eleven releases of
+// every MCP client being told the wrong server version, which is the kind of
+// thing that only surfaces when someone is debugging something else.
+const PKG_VERSION = (() => {
+  try {
+    return JSON.parse(
+      readFileSync(join(__dirname, "..", "package.json"), "utf8"),
+    ).version;
+  } catch {
+    return "0.0.0";
+  }
+})();
+
 const DATA_DIR = join(__dirname, "..", "data");
 const DB_PATH = join(DATA_DIR, "registry.db");
 const OPENAPI_JSON_PATH = join(DATA_DIR, "openapi.json");
@@ -162,6 +177,84 @@ function getDb() {
   return db;
 }
 
+// ── Maturity / cold-start handling ─────────────────────────
+// reliability_score is built from four CUMULATIVE inputs (curation signal,
+// indexer stake, lifetime query fees, 30d volume — see _reliability_score in
+// python/classifier.py), so it measures accrued traction and therefore age.
+// Measured on the 2026-08-25 corpus, served and non-denied:
+//
+//   age      n      avg reliability
+//   <30d     64     0.107
+//   30-90d   227    0.143
+//   90-365d  1100   0.225
+//   >1y      4034   0.313
+//
+// The newest entry in the global top 25 is 280 days old. A good subgraph
+// deployed last month cannot rank, no matter how good it is — 59 of those 64
+// sub-30-day subgraphs are already serving real query volume.
+//
+// Rather than reweight the score (which would silently change every existing
+// caller's results and trade a measurable signal for a guess), surface the
+// young matches SEPARATELY and label them honestly, so the agent makes the
+// call. A label alone would not be enough: at 0.107 average, young subgraphs
+// are not in the ranked page to be labelled, so this needs its own lookup.
+const EMERGING_MAX_AGE_DAYS = 90;
+const NEW_MAX_AGE_DAYS = 30;
+const EMERGING_LIMIT = 3;
+
+// Shared so the main search and its emerging companion query select exactly
+// the same columns — they feed the same row mapper.
+const SEARCH_COLS = `id, display_name, description, auto_description, domain, protocol_type, network,
+           reliability_score, ipfs_hash, entity_count, canonical_entities,
+           powered_by_substreams, active_allocation_count, example_query, denied_at, created_at`;
+
+function ageDays(created_at) {
+  if (!created_at) return null;
+  return Math.max(0, Math.floor(Date.now() / 1000 - created_at) / 86400) | 0;
+}
+
+function maturityOf(created_at) {
+  const d = ageDays(created_at);
+  if (d === null) return "unknown";
+  if (d < NEW_MAX_AGE_DAYS) return "new";
+  if (d < EMERGING_MAX_AGE_DAYS) return "emerging";
+  return "established";
+}
+
+const EMERGING_CAVEAT =
+  "Recent deployments that matched your query but ranked below the main list " +
+  "because reliability_score is cumulative (curation signal, indexer stake, " +
+  "lifetime query fees, 30d volume) and so grows with age — the newest subgraph " +
+  "in the whole registry's top 25 is 280 days old. A low score here is expected " +
+  "at this age and is NOT evidence of a problem; these are unproven, not bad. " +
+  "Prefer `subgraphs` for production work. Consider these when the protocol is " +
+  "itself new (no mature deployment can exist), when you want the newest schema, " +
+  "or when the ranked list missed what you asked for.";
+
+// Young matches for the same filter, fetched separately because they cannot
+// compete on the main ORDER BY. Returns [] on any failure — this is an
+// enrichment, and it must never take down the search that already succeeded.
+function findEmerging(where, params, excludeIds, selectCols) {
+  try {
+    const cutoff = Math.floor(Date.now() / 1000) - EMERGING_MAX_AGE_DAYS * 86400;
+    const notIn = excludeIds.length
+      ? ` AND id NOT IN (${excludeIds.map(() => "?").join(",")})`
+      : "";
+    const sql = `
+      SELECT ${selectCols}
+      FROM subgraphs
+      ${where ? `${where} AND` : "WHERE"} created_at > ?${notIn}
+      ORDER BY reliability_score DESC
+      LIMIT ?
+    `;
+    return getDb()
+      .prepare(sql)
+      .all(...params, cutoff, ...excludeIds, EMERGING_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
 // ── Tool Implementations ───────────────────────────────────
 
 function searchSubgraphs({
@@ -172,6 +265,7 @@ function searchSubgraphs({
   entity = "",
   min_reliability = 0,
   include_unserved = false,
+  include_denied = false,
   limit = 20,
 } = {}) {
   const conditions = [];
@@ -181,6 +275,20 @@ function searchSubgraphs({
   // return "subgraph not found: no allocations" even though the ID is valid.
   if (!include_unserved) {
     conditions.push("active_allocation_count > 0");
+  }
+
+  // Default: hide curation-denied deployments (deniedAt > 0 on the network
+  // subgraph — denied indexing rewards, typically spam, duplicates or
+  // deprecations). classifier.py has persisted this since the denied_at
+  // column landed, explicitly "so agents can filter denied subgraphs", but
+  // nothing in this file ever read it, so the filter the crawler was feeding
+  // did not exist. The 0.5 reliability penalty already keeps denied entries
+  // out of the top of a ranked page — measured: 0 of the global top 20, and
+  // none in any domain's top 10 — so this changes few results today. It
+  // matters for the narrow queries where a denied fork IS the best textual
+  // match, and it makes the signal visible either way via `denied` below.
+  if (!include_denied) {
+    conditions.push("denied_at = 0");
   }
 
   if (domain) {
@@ -219,14 +327,15 @@ function searchSubgraphs({
   // Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)
   const fetchLimit = limit * 3;
   const sql = `
-    SELECT id, display_name, description, auto_description, domain, protocol_type, network,
-           reliability_score, ipfs_hash, entity_count, canonical_entities,
-           powered_by_substreams, active_allocation_count, example_query
+    SELECT ${SEARCH_COLS}
     FROM subgraphs
     ${where}
     ORDER BY reliability_score DESC
     LIMIT ?
   `;
+  // Snapshot the filter params BEFORE the LIMIT is appended — the emerging
+  // companion query reuses the same WHERE and must not inherit this LIMIT.
+  const filterParams = [...params];
   params.push(fetchLimit);
 
   const rows = getDb().prepare(sql).all(...params);
@@ -249,17 +358,54 @@ function searchSubgraphs({
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
+      // Curation-denied on the network subgraph. Only ever true when the
+      // caller passed include_denied — surfaced so that choice stays visible
+      // in the result rather than being silently carried.
+      denied: Boolean(r.denied_at),
       // Ready-to-run GraphQL generated from this subgraph's actual schema — so an
       // agent can POST it to query_url_x402 immediately, no get_subgraph_detail round-trip.
       example_query: r.example_query || null,
+      age_days: ageDays(r.created_at),
+      maturity: maturityOf(r.created_at),
       ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
   }
 
+  // Young matches that could not compete on the cumulative score. Same filter,
+  // separate lookup, clearly labelled — never blended into `subgraphs`, so a
+  // caller that ignores this field sees exactly what it saw before.
+  const emerging = findEmerging(
+    where,
+    filterParams,
+    results.map((x) => x.id),
+    SEARCH_COLS,
+  ).map((r) => ({
+    id: r.id,
+    display_name: r.display_name,
+    description: (r.description || r.auto_description || "").slice(0, 300),
+    domain: r.domain,
+    protocol_type: r.protocol_type,
+    network: r.network,
+    reliability_score: r.reliability_score,
+    ipfs_hash: r.ipfs_hash,
+    entity_count: r.entity_count,
+    canonical_entities: JSON.parse(r.canonical_entities),
+    powered_by_substreams: Boolean(r.powered_by_substreams),
+    active_allocation_count: r.active_allocation_count || 0,
+    denied: Boolean(r.denied_at),
+    example_query: r.example_query || null,
+    age_days: ageDays(r.created_at),
+    maturity: maturityOf(r.created_at),
+    ...buildQueryEndpoints(r.id),
+  }));
+
   return {
     total: results.length,
     subgraphs: results,
+    ...(emerging.length
+      ? { emerging, emerging_caveat: EMERGING_CAVEAT }
+      : {}),
     query_instructions: "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Each result includes a ready-to-run `example_query` generated from that subgraph's real schema — POST it to query_url_x402 as-is, or adapt the entity/fields. Use get_subgraph_detail for the full schema.",
   };
 }
@@ -295,7 +441,10 @@ function recommendSubgraph({ goal, chain = "" }) {
     .filter(([, kws]) => kws.some((k) => goalLower.includes(k)))
     .map(([t]) => t);
 
-  const conditions = ["active_allocation_count > 0"];
+  // recommend_subgraph exposes no include_* escape hatches — it answers "which
+  // one should I use", so a curation-denied deployment is never the right
+  // answer and the filter is unconditional here.
+  const conditions = ["active_allocation_count > 0", "denied_at = 0"];
   const params = [];
 
   if (chain) {
@@ -589,6 +738,7 @@ async function semanticSearchSubgraphs({
   limit = 10,
   min_score = 0.3,
   include_unserved = false,
+  include_denied = false,
   domain = "",
   network = "",
   protocol_type = "",
@@ -615,6 +765,9 @@ async function semanticSearchSubgraphs({
   if (!include_unserved) {
     conditions.push("active_allocation_count > 0");
   }
+  if (!include_denied) {
+    conditions.push("denied_at = 0");
+  }
   if (domain) {
     conditions.push("domain = ?");
     params.push(domain);
@@ -637,7 +790,7 @@ async function semanticSearchSubgraphs({
       `SELECT id, display_name, description, auto_description, domain,
               protocol_type, network, reliability_score, ipfs_hash,
               entity_count, canonical_entities, powered_by_substreams,
-              active_allocation_count, example_query, embedding
+              active_allocation_count, example_query, denied_at, created_at, embedding
        FROM subgraphs
        ${where}`,
     )
@@ -672,7 +825,15 @@ async function semanticSearchSubgraphs({
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
+      denied: Boolean(r.denied_at),
       example_query: r.example_query || null,
+      // No `emerging` companion list here: this tool ranks by cosine score,
+      // not reliability_score, so a three-week-old subgraph can and does take
+      // the top slot on merit. The cold-start bias is a property of the ranked
+      // search, not of semantic search — what this tool needs is the label, so
+      // a caller knows a strong match is also unproven.
+      age_days: ageDays(r.created_at),
+      maturity: maturityOf(r.created_at),
       semantic_score: Number(score.toFixed(4)),
       ...buildQueryEndpoints(r.id),
     });
@@ -828,7 +989,7 @@ const TOOLS = [
   {
     name: "search_subgraphs",
     description:
-      "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required).",
+      "Search and filter the classified subgraph registry (15,500+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required), plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -838,8 +999,18 @@ const TOOLS = [
         network: { type: "string", description: "Filter by chain: mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc." },
         protocol_type: { type: "string", description: "Filter by protocol type: dex, lending, bridge, staking, options, perpetuals, etc." },
         entity: { type: "string", description: "Filter by canonical entity: liquidity_pool, trade, token, position, vault, loan, etc." },
-        min_reliability: { type: "number", description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation." },
+        min_reliability: { type: "number", description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation. NOTE: all four inputs are cumulative, so this score rises with age — setting a floor here filters out good recent subgraphs along with bad ones." },
         limit: { type: "integer", description: "Max results to return (default: 20)", default: 20 },
+        include_unserved: {
+          type: "boolean",
+          description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
+          default: false,
+        },
+        include_denied: {
+          type: "boolean",
+          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
+          default: false,
+        },
       },
     },
   },
@@ -909,6 +1080,11 @@ const TOOLS = [
           description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
           default: false,
         },
+        include_denied: {
+          type: "boolean",
+          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
+          default: false,
+        },
         domain: {
           type: "string",
           description: "Pre-filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics)",
@@ -963,7 +1139,7 @@ const HANDLERS = {
 
 function createServer() {
   const server = new Server(
-    { name: "subgraph-registry", version: "0.8.20" },
+    { name: "subgraph-registry", version: PKG_VERSION },
     { capabilities: { tools: {} } }
   );
 
