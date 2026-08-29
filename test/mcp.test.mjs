@@ -267,3 +267,46 @@ test("semantic search labels maturity but ships no emerging list", async () => {
     assert.ok(["new", "emerging", "established", "unknown"].includes(s.maturity));
   }
 });
+
+test("testnets are excluded by default and flagged", async () => {
+  // 723 of 5,425 served subgraphs are testnets, whose text is near-identical
+  // to their mainnet twins' — how ENS Sepolia came to outrank ENS mainnet.
+  const d = await callTool("search_subgraphs", { query: "ens", limit: 10 });
+  for (const s of d.subgraphs) {
+    assert.equal(s.testnet, false, `${s.display_name} (${s.network}) is a testnet`);
+  }
+});
+
+test("an explicit testnet request is still honoured", async () => {
+  // The trap in defaulting the filter on: network:"sepolia" must not come
+  // back empty because a default silently contradicts the caller.
+  for (const n of ["sepolia", "base-sepolia"]) {
+    const d = await callTool("search_subgraphs", { network: n, limit: 3 });
+    assert.ok(d.subgraphs.length > 0, `network:"${n}" returned nothing`);
+    assert.ok(d.subgraphs.every((s) => s.testnet === true));
+  }
+});
+
+test("include_testnets opts back in", async () => {
+  const d = await callTool("search_subgraphs", { query: "uniswap", limit: 20, include_testnets: true });
+  for (const s of d.subgraphs) assert.equal(typeof s.testnet, "boolean");
+});
+
+test("a name match outranks an incidental description match", async () => {
+  // "ens" is a substring of "tokens", so ENS and four Uniswap subgraphs all
+  // scored one matched term and reliability handed Uniswap the top slots.
+  const d = await callTool("search_subgraphs", { query: "ens", limit: 3 });
+  assert.match(d.subgraphs[0].display_name, /ens/i);
+});
+
+test("schema stability distinguishes never-changed from unknown", async () => {
+  const s = await callTool("search_subgraphs", { query: "uniswap", limit: 1 });
+  const d = await callTool("get_schema_changes", { subgraph_id: s.subgraphs[0].id });
+  if (d.note) return; // schema_history absent in this snapshot
+  assert.equal(typeof d.never_changed, "boolean");
+  assert.ok(["first_seen", "last_change"].includes(d.stable_days_basis));
+  if (d.never_changed) {
+    assert.equal(d.total_changes, 0, "never_changed implies no real transitions");
+    assert.equal(d.stable_days_basis, "first_seen");
+  }
+});

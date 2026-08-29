@@ -222,6 +222,45 @@ function normalizeNetwork(name) {
   return NETWORK_ALIASES[k] || k;
 }
 
+// ── Testnets ───────────────────────────────────────────────
+// 723 of the 5,425 served, non-denied subgraphs (13.3%) are on testnets, and
+// they compete directly with production because a testnet deployment's text is
+// near-identical to its mainnet twin's — that is exactly how ENS Sepolia (58
+// queries/30d) came to outrank ENS mainnet (34.8M queries/30d).
+//
+// Detected from the network name rather than a new column, so it works on the
+// corpus already shipped. All 57 matching networks were checked by hand; the
+// six without an explicit -testnet/-sepolia/-goerli suffix (chapel, fuji,
+// holesky, holesky-beacon, mumbai, polygon-amoy) are the well-known BSC,
+// Avalanche, Ethereum and Polygon testnets.
+const TESTNET_MARKERS = [
+  "sepolia", "goerli", "testnet", "devnet", "chapel", "fuji",
+  "holesky", "mumbai", "amoy", "baobab", "rinkeby", "kovan",
+];
+
+function isTestnetNetwork(name) {
+  if (!name) return false;
+  const n = String(name).toLowerCase();
+  return TESTNET_MARKERS.some((m) => n.includes(m));
+}
+
+// SQL fragment excluding testnets. Static string — the markers are a constant
+// allowlist, never caller input, so there is nothing to bind or escape.
+const NOT_TESTNET_SQL = TESTNET_MARKERS.map(
+  (m) => `network NOT LIKE '%${m}%'`,
+).join(" AND ");
+
+// Whether to hide testnets for this call.
+//
+// The trap: a caller who explicitly asks for network:"sepolia" must not get an
+// empty result because a default filter silently contradicts their request.
+// An explicit testnet network always wins over the default exclusion.
+function shouldExcludeTestnets({ include_testnets, network }) {
+  if (include_testnets) return false;
+  if (network && isTestnetNetwork(normalizeNetwork(network))) return false;
+  return true;
+}
+
 // Tokenize a free-text query into searchable terms.
 //
 // The old inline version was `.filter((w) => w.length > 2)`, which silently
@@ -330,6 +369,7 @@ function searchSubgraphs({
   min_reliability = 0,
   include_unserved = false,
   include_denied = false,
+  include_testnets = false,
   limit = 20,
 } = {}) {
   const conditions = [];
@@ -353,6 +393,9 @@ function searchSubgraphs({
   // match, and it makes the signal visible either way via `denied` below.
   if (!include_denied) {
     conditions.push("denied_at = 0");
+  }
+  if (shouldExcludeTestnets({ include_testnets, network })) {
+    conditions.push(`(${NOT_TESTNET_SQL})`);
   }
 
   if (domain) {
@@ -386,13 +429,20 @@ function searchSubgraphs({
   //
   // Keep the OR (dropping to AND would kill recall on descriptions that
   // phrase things differently) and let matched_terms break the tie first.
+  //
+  // A hit in display_name is worth 3, a hit in the description 1. Counting
+  // them equally is not enough on short terms, where LIKE '%term%' matches
+  // half the corpus incidentally: searching "ens" scored ENS and four Uniswap
+  // subgraphs at 1 apiece — "tokens" contains "ens" — and reliability then
+  // handed the top slots to Uniswap. Weighting the name restores ENS to #1
+  // without narrowing what still gets found.
   const matchParams = [];
   let matchExpr = "0";
   if (query) {
     const words = queryTerms(query);
     if (words.length) {
       matchExpr = words
-        .map(() => "(CASE WHEN (display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END)")
+        .map(() => "((CASE WHEN display_name LIKE ? THEN 3 ELSE 0 END) + (CASE WHEN (description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END))")
         .join(" + ");
       words.forEach((w) => matchParams.push(`%${w}%`, `%${w}%`, `%${w}%`));
 
@@ -446,6 +496,8 @@ function searchSubgraphs({
       // caller passed include_denied — surfaced so that choice stays visible
       // in the result rather than being silently carried.
       denied: Boolean(r.denied_at),
+    testnet: isTestnetNetwork(r.network),
+      testnet: isTestnetNetwork(r.network),
       // Ready-to-run GraphQL generated from this subgraph's actual schema — so an
       // agent can POST it to query_url_x402 immediately, no get_subgraph_detail round-trip.
       example_query: r.example_query || null,
@@ -478,6 +530,7 @@ function searchSubgraphs({
     powered_by_substreams: Boolean(r.powered_by_substreams),
     active_allocation_count: r.active_allocation_count || 0,
     denied: Boolean(r.denied_at),
+    testnet: isTestnetNetwork(r.network),
     example_query: r.example_query || null,
     age_days: ageDays(r.created_at),
     maturity: maturityOf(r.created_at),
@@ -542,6 +595,9 @@ function recommendSubgraph({ goal, chain = "" }) {
   // one should I use", so a curation-denied deployment is never the right
   // answer and the filter is unconditional here.
   const conditions = ["active_allocation_count > 0", "denied_at = 0"];
+  if (shouldExcludeTestnets({ include_testnets: false, network: chain })) {
+    conditions.push(`(${NOT_TESTNET_SQL})`);
+  }
   const params = [];
 
   if (chain) {
@@ -566,7 +622,7 @@ function recommendSubgraph({ goal, chain = "" }) {
     const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
     scoreParts.push(
       words
-        .map(() => "(CASE WHEN (display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?) THEN 2 ELSE 0 END)")
+        .map(() => "((CASE WHEN display_name LIKE ? THEN 4 ELSE 0 END) + (CASE WHEN (description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END))")
         .join(" + "),
     );
     words.forEach((w) => scoreParams.push(`%${w}%`, `%${w}%`, `%${w}%`));
@@ -710,7 +766,34 @@ function getSubgraphDetail({ subgraph_id }) {
 // Stable, machine-readable manifest other crawlers and agents can index
 // without going through MCP. Served at /.well-known/subgraph/{id}.jsonld and
 // /subgraphs/{id}.jsonld (alias, same payload).
-const JSONLD_CONTEXT = "https://subgraph-registry.paulieb14.dev/context.jsonld";
+// Every JSON-LD document used to carry @context and @id under
+// subgraph-registry.paulieb14.dev, a hostname that has never resolved
+// (NXDOMAIN). A JSON-LD processor that dereferences the context gets nothing,
+// and the @id identified each subgraph by a URL that 404s — so the documents
+// the README calls "auto-discoverable" were undiscoverable by construction.
+//
+// Two changes. The context is inlined, because a context that must be fetched
+// is a dependency on a host we do not run. And @id now defaults to The Graph's
+// explorer, which is the canonical, resolving identifier for a subgraph and is
+// where we want an agent following the link to end up anyway.
+//
+// Set SUBGRAPH_REGISTRY_BASE_URL to serve these under your own origin (the
+// --http-only transport does exactly that).
+const PUBLIC_BASE_URL = (process.env.SUBGRAPH_REGISTRY_BASE_URL || "").replace(/\/+$/, "");
+const EXPLORER_BASE = "https://thegraph.com/explorer/subgraphs";
+
+function subgraphIri(id) {
+  return PUBLIC_BASE_URL ? `${PUBLIC_BASE_URL}/subgraphs/${id}` : `${EXPLORER_BASE}/${id}`;
+}
+
+const JSONLD_CONTEXT = {
+  "@vocab": "https://schema.org/",
+  id: "@id",
+  name: "https://schema.org/name",
+  description: "https://schema.org/description",
+  network: "https://schema.org/provider",
+  SubgraphDeployment: "https://schema.org/Dataset",
+};
 
 function buildJsonLdManifest(row) {
   if (!row) return null;
@@ -719,7 +802,7 @@ function buildJsonLdManifest(row) {
   return {
     "@context": JSONLD_CONTEXT,
     "@type": "SubgraphDeployment",
-    "@id": `https://subgraph-registry.paulieb14.dev/subgraphs/${row.id}`,
+    "@id": subgraphIri(row.id),
     id: row.id,
     ipfsHash: row.ipfs_hash,
     name: row.display_name,
@@ -855,6 +938,7 @@ async function semanticSearchSubgraphs({
   min_score = 0.3,
   include_unserved = false,
   include_denied = false,
+  include_testnets = false,
   domain = "",
   network = "",
   protocol_type = "",
@@ -883,6 +967,9 @@ async function semanticSearchSubgraphs({
   }
   if (!include_denied) {
     conditions.push("denied_at = 0");
+  }
+  if (shouldExcludeTestnets({ include_testnets, network })) {
+    conditions.push(`(${NOT_TESTNET_SQL})`);
   }
   if (domain) {
     conditions.push("domain = ?");
@@ -958,6 +1045,8 @@ async function semanticSearchSubgraphs({
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
       denied: Boolean(r.denied_at),
+    testnet: isTestnetNetwork(r.network),
+      testnet: isTestnetNetwork(r.network),
       example_query: r.example_query || null,
       // No `emerging` companion list here: this tool ranks by cosine score,
       // not reliability_score, so a three-week-old subgraph can and does take
@@ -1031,17 +1120,41 @@ function getSchemaChanges({ subgraph_id, since_timestamp = 0 }) {
     };
   }
 
+  // Baselines are excluded from `rows`, so "no rows" now means "never changed
+  // since we first saw it" rather than "no history". Those are very different
+  // claims to an agent deciding whether a schema is safe to depend on, and
+  // collapsing them to stable_days: null loses the distinction. Report the
+  // first sighting separately and measure stability from it, so a subgraph
+  // that has genuinely never changed reads as stable — which is the honest
+  // answer, and the one the old code accidentally gave everybody.
+  let first_seen_at = null;
+  try {
+    const fs = getDb()
+      .prepare(
+        "SELECT MIN(detected_at) AS t FROM schema_history WHERE subgraph_id = ?",
+      )
+      .get(subgraph_id);
+    first_seen_at = fs && fs.t != null ? fs.t : null;
+  } catch {
+    first_seen_at = null;
+  }
+
+  const never_changed = rows.length === 0;
   const last_changed_at = rows.length > 0 ? rows[0].detected_at : null;
+  const stable_since = last_changed_at !== null ? last_changed_at : first_seen_at;
   const stable_days =
-    last_changed_at !== null
-      ? Math.round(((now - last_changed_at) / 86400) * 10) / 10
+    stable_since !== null
+      ? Math.round(((now - stable_since) / 86400) * 10) / 10
       : null;
 
   return {
     subgraph_id,
     total_changes: rows.length,
+    never_changed,
+    first_seen_at,
     last_changed_at,
     stable_days,
+    stable_days_basis: never_changed ? "first_seen" : "last_change",
     changed_within_24h:
       last_changed_at !== null && now - last_changed_at < 86400,
     changed_within_7d:
@@ -1146,6 +1259,11 @@ const TOOLS = [
           description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
           default: false,
         },
+        include_testnets: {
+          type: "boolean",
+          description: "Include testnet deployments (sepolia, goerli, holesky, chapel, fuji, mumbai, amoy, *-testnet). Default false — a testnet twin's text is near-identical to its mainnet original, so it competes for the top slot without being the thing anyone wanted. Ignored when you explicitly request a testnet network, so network:\"sepolia\" still works. Each result carries testnet: true|false.",
+          default: false,
+        },
       },
     },
   },
@@ -1218,6 +1336,11 @@ const TOOLS = [
         include_denied: {
           type: "boolean",
           description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
+          default: false,
+        },
+        include_testnets: {
+          type: "boolean",
+          description: "Include testnet deployments (sepolia, goerli, holesky, chapel, fuji, mumbai, amoy, *-testnet). Default false — a testnet twin's text is near-identical to its mainnet original, so it competes for the top slot without being the thing anyone wanted. Ignored when you explicitly request a testnet network, so network:\"sepolia\" still works. Each result carries testnet: true|false.",
           default: false,
         },
         domain: {
@@ -1342,6 +1465,62 @@ function startHttpTransport(port) {
     res.json({ status: "ok", subgraphs: getDb().prepare("SELECT COUNT(*) as c FROM subgraphs").get().c });
   });
 
+  // ── payql compatibility shim ─────────────────────────────────────
+  // payql (npm `payql`, same author) advertises PAYQL_REGISTRY_URL as a "free
+  // discovery source (e.g. your own subgraph registry)" — but it POSTs the
+  // Graph network subgraph's GraphQL document and reads
+  // `data.subgraphMetadataSearch`, a shape this registry has never served. So
+  // pointing payql here returned zero hits and, because the response still
+  // parsed as JSON, it failed as an empty success rather than an error. The
+  // two projects were built to compose and the seam between them was dead.
+  //
+  // Serve that shape. No GraphQL engine needed: the only input that varies is
+  // the `text` variable, and the result set is what search_subgraphs already
+  // computes. Answering in the incumbent's vocabulary means payql works
+  // against this registry with no change on its side.
+  //
+  // Token amounts are returned as wei-scale strings because payql divides them
+  // by 1e18 (weiToGRT); handing back plain GRT would under-report by 1e18.
+  app.post("/graphql", express.json({ limit: "256kb" }), (req, res) => {
+    try {
+      const text = String(req.body?.variables?.text ?? "");
+      const first = Math.max(1, Math.min(Number(req.body?.variables?.first) || 10, 50));
+      // payql sends a prefix tsquery ("uniswap:* | v3:*"); strip the fulltext
+      // operators back to plain words before handing them to LIKE matching.
+      const plain = text.replace(/:\*/g, " ").replace(/[|&()]/g, " ").trim();
+      const { subgraphs = [] } = searchSubgraphs({ query: plain, limit: first });
+      res.json({
+        data: {
+          subgraphMetadataSearch: subgraphs.map((s) => ({
+            displayName: s.display_name,
+            description: s.description,
+            categories: s.domain ? [s.domain] : [],
+            subgraphs: [
+              {
+                id: s.id,
+                active: true,
+                currentSignalledTokens: null,
+                currentVersion: {
+                  subgraphDeployment: {
+                    ipfsHash: s.ipfs_hash,
+                    stakedTokens: null,
+                    signalledTokens: null,
+                    queryFeesAmount: null,
+                  },
+                },
+              },
+            ],
+          })),
+        },
+      });
+    } catch (err) {
+      // Answer in GraphQL's error shape so a client that only knows GraphQL
+      // sees a failure instead of an empty success — the exact trap this
+      // route exists to close.
+      res.status(500).json({ errors: [{ message: String(err?.message || err) }] });
+    }
+  });
+
   // ── OpenAPI 3.1 spec (auto-generated at release time) ────────────
   // scripts/gen-openapi.js inventories the TOOLS array + the REST
   // routes below and writes data/openapi.json. We serve the file
@@ -1401,7 +1580,7 @@ function startHttpTransport(port) {
       generatedAt: new Date().toISOString(),
       count: rows.length,
       subgraphs: rows.map((r) => ({
-        "@id": `https://subgraph-registry.paulieb14.dev/subgraphs/${r.id}`,
+        "@id": subgraphIri(r.id),
         id: r.id,
         name: r.display_name,
         network: r.network,

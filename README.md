@@ -204,8 +204,36 @@ Three tools rank, and each ranks differently on purpose:
   as a *ranking bonus*, never a filter. As a filter, one bad keyword collapsed
   the candidate pool to nothing.
 
+A term matching a subgraph's **name** counts for more than one matching its
+description — `%ens%` also matches "tok**ens**", so equal weighting handed a
+search for `ens` to four Uniswap subgraphs.
+
 Chain names are aliased, so `ethereum`, `arbitrum`, `polygon` and `bnb` resolve
 to the corpus values `mainnet`, `arbitrum-one`, `matic` and `bsc`.
+
+### Testnets
+
+723 of the 5,425 served subgraphs are on testnets, and their text is nearly
+identical to their mainnet twins', so they compete for the top slot. They are
+**excluded by default** and every result carries `testnet: true|false`. Pass
+`include_testnets: true` to see them — and an explicit request for a testnet
+network (`network: "sepolia"`) always wins over the default, so that still
+returns exactly what you asked for.
+
+## Using the registry from payql
+
+[`payql`](https://www.npmjs.com/package/payql) can use this registry as its
+free discovery source instead of paying for a network-subgraph query. Run the
+registry's HTTP transport and point payql at it:
+
+```bash
+npx subgraph-registry-mcp --http-only          # serves :3848
+PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql
+```
+
+`POST /graphql` answers in the Graph network subgraph's `subgraphMetadataSearch`
+shape, which is what payql already parses — so this needs no change on payql's
+side, and discovery becomes free and locally-ranked.
 
 ### Denied deployments
 
