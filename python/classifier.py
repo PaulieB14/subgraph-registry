@@ -196,8 +196,55 @@ CANONICAL_ENTITIES = {
 
 # ── Schema Parsing ───────────────────────────────────────────
 
-ENTITY_RE = re.compile(r"type\s+(\w+)\s+@entity[^{]*\{([^}]*)\}", re.DOTALL)
-FIELD_RE = re.compile(r"(\w+)\s*:")
+# `implements` clauses sit between the type name and @entity, so requiring
+# @entity immediately after the name skipped every interface-implementing
+# entity in the corpus.
+ENTITY_RE = re.compile(
+    r"type\s+(\w+)\s+(?:implements\s+[\w\s&]+\s+)?@entity[^{]*\{([^}]*)\}", re.DOTALL
+)
+
+# Field names are declared at the START of a line. The old pattern was a bare
+# `(\w+)\s*:`, which also matched the argument inside a directive — so every
+# `@derivedFrom(field: "pair")` contributed a phantom field literally named
+# `field`, and it landed in generated queries as a selection no schema has.
+FIELD_RE = re.compile(r"^\s*(\w+)\s*:", re.MULTILINE)
+
+
+# Tokens that appear where a field name would, but name a directive argument
+# rather than a field on the entity.
+_NON_FIELD_TOKENS = {"field", "fields", "derivedFrom", "entity"}
+
+
+def graphql_collection_name(entity_name: str) -> str:
+    """Plural query field graph-node generates for an entity type.
+
+    graph-node lower-cases the first character and pluralises with proper
+    English inflection, so `UniswapFactory` is queried as `uniswapFactories`.
+    This used to be `name[0].lower() + name[1:] + "s"`, whose own comment
+    called that "good enough to read and adapt" — which was true while
+    example_query was documentation, and stopped being true once the README
+    started telling agents to POST it as-is after paying $0.01. The flagship
+    uniswap-v2-ethereum (60.1M queries/30d) shipped `uniswapFactorys`.
+    """
+    if not entity_name:
+        return entity_name
+    head = entity_name[0].lower() + entity_name[1:]
+    lower = head.lower()
+    # consonant + y -> ies  (Factory -> factories, but Day -> days)
+    if lower.endswith("y") and len(head) > 1 and head[-2].lower() not in "aeiou":
+        return head[:-1] + "ies"
+    # Already plural — leave it alone. inflector (which graph-node uses) is
+    # idempotent, and entity names like Users, PoolMetrics, ContractAddresses
+    # and SupportedTokens are common in the corpus. Naive sibilant handling
+    # turned those into userses / poolMetricses / contractAddresseses.
+    # A true singular ending in -s does so as -ss, -us or -is.
+    if lower.endswith("s") and not lower.endswith(("ss", "us", "is")):
+        return head
+    # sibilants take -es  (Address -> addresses, Status -> statuses,
+    # Index -> indexes, Batch -> batches)
+    if lower.endswith(("s", "x", "z", "ch", "sh")):
+        return head + "es"
+    return head + "s"
 
 
 @dataclass
@@ -626,12 +673,7 @@ def _generate_example_query(entities: list[SchemaEntity], canonical: list[dict])
     top = candidates[0]
     field_set = set(top.fields)
 
-    # GraphQL collection name is the pluralized lowercased entity name. The
-    # actual subgraph likely uses the same convention (camelCase + 's') but
-    # there are edge cases (e.g. Index -> indexes vs indices) we'd need to
-    # introspect to handle perfectly. For a starter query that's "good
-    # enough to read and adapt," this is fine.
-    collection = top.name[0].lower() + top.name[1:] + "s"
+    collection = graphql_collection_name(top.name)
 
     # Always include id — every subgraph entity has it.
     selected_fields: list[str] = ["id"]
@@ -644,8 +686,22 @@ def _generate_example_query(entities: list[SchemaEntity], canonical: list[dict])
             continue
         if f.endswith("Id") or f.endswith("_ref") or f == "internalRef":
             continue
+        # Directive arguments are not fields. FIELD_RE used to capture the
+        # `field` in @derivedFrom(field: "x"), which then shipped as a
+        # selection no schema has — 1,376 rows in the corpus before this.
+        # The regex is fixed, but this stays as the belt to its braces: a
+        # parser bug must not become a query an agent pays to run.
+        if f in _NON_FIELD_TOKENS:
+            continue
         extras.append(f)
     selected_fields.extend(extras[:5])
+
+    # Emit nothing rather than something unrunnable. `example_query` is
+    # advertised as ready-to-run against the paid x402 gateway, so a bad guess
+    # costs the caller $0.01 and reads as The Graph being broken. A null tells
+    # the agent to fetch the schema instead, which is recoverable.
+    if len(selected_fields) < 2:
+        return None
 
     # orderBy: pick a timestamp field if present, else a volume metric, else
     # nothing (let the gateway use default ordering).

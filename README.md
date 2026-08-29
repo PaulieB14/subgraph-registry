@@ -188,6 +188,25 @@ in the main list and the 40-day-old Monad perps subgraph under `emerging`.
 so it is already age-neutral — it carries the `maturity` labels but no
 `emerging` list, because a three-week-old subgraph can top it on merit.
 
+### Ranking
+
+Three tools rank, and each ranks differently on purpose:
+
+- **`search_subgraphs`** — orders by how many of your query terms matched, then
+  by reliability. OR-ing the terms and ordering on reliability alone meant a
+  popular subgraph matching one incidental word beat a precise match on all
+  three, so being *more* specific returned worse answers. Version tokens
+  (`v2`, `v3`, `v4`) are kept rather than dropped as too short.
+- **`semantic_search_subgraphs`** — orders by `semantic_score × (0.5 + 0.5 ×
+  reliability)`. Pure cosine put testnets first, since their text is nearly
+  identical to mainnet's. The 0.5 floor keeps new subgraphs competitive.
+- **`recommend_subgraph`** — infers domain and protocol type from the goal, but
+  as a *ranking bonus*, never a filter. As a filter, one bad keyword collapsed
+  the candidate pool to nothing.
+
+Chain names are aliased, so `ethereum`, `arbitrum`, `polygon` and `bnb` resolve
+to the corpus values `mainnet`, `arbitrum-one`, `matic` and `bsc`.
+
 ### Denied deployments
 
 Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, usually

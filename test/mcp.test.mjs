@@ -172,6 +172,90 @@ test("emerging respects the caller's filters", async () => {
   }
 });
 
+// ── Ranking regressions ──────────────────────────────────────────────────
+// Each of these is a real query that returned a confidently wrong answer on
+// 0.9.0. They assert identity of the top hit, not score, because the scores
+// are corpus-dependent and the identity is the thing a user notices.
+
+test("more specific queries do not get worse answers", async () => {
+  // 0.9.0: top 4 was uniswap-v3-arbitrum, Arbitrum Minimal, camelot-amm-v3,
+  // Graph TAP Arbitrum One — not one Aave subgraph — while bare "aave" was
+  // correct. OR-ed terms ranked by reliability let one incidental word win.
+  const d = await callTool("search_subgraphs", { query: "aave lending arbitrum", limit: 4 });
+  const names = d.subgraphs.map((s) => s.display_name.toLowerCase());
+  assert.ok(
+    names.some((n) => n.includes("aave")),
+    `no Aave subgraph in top 4: ${names.join(", ")}`,
+  );
+});
+
+test("version tokens are not silently dropped", async () => {
+  // "v3" is two characters, and the old tokenizer filtered w.length > 2, so
+  // "uniswap v3" was byte-identical to "uniswap".
+  const d = await callTool("search_subgraphs", { query: "uniswap v3", limit: 5 });
+  const names = d.subgraphs.map((s) => s.display_name.toLowerCase());
+  assert.ok(
+    names.some((n) => n.includes("v3") || n.includes("v-3")),
+    `no v3 subgraph in top 5: ${names.join(", ")}`,
+  );
+});
+
+test("common chain names resolve to corpus chain ids", async () => {
+  // ~45% of the corpus lives under mainnet/bsc/arbitrum-one/matic, and
+  // SKILL.md documented "ethereum, arbitrum, base" — two of which matched 0.
+  for (const [alias, canonical] of [
+    ["ethereum", "mainnet"],
+    ["arbitrum", "arbitrum-one"],
+    ["polygon", "matic"],
+    ["bnb", "bsc"],
+  ]) {
+    const d = await callTool("search_subgraphs", { network: alias, limit: 3 });
+    assert.ok(d.subgraphs.length > 0, `network:"${alias}" returned nothing`);
+    for (const s of d.subgraphs) {
+      assert.equal(s.network, canonical, `${alias} should resolve to ${canonical}`);
+    }
+  }
+});
+
+test("a chain filter that matches nothing is not silently empty", async () => {
+  // 0.9.0: recommend_subgraph(goal, chain:"arbitrum") -> total_matches 0.
+  const d = await callTool("recommend_subgraph", {
+    goal: "find DEX trades on Arbitrum",
+    chain: "arbitrum",
+  });
+  assert.ok(d.total_matches > 0, "chain alias still yields no matches");
+  for (const r of d.recommendations || []) {
+    assert.equal(r.network, "arbitrum-one");
+  }
+});
+
+test("goal inference does not fire on substrings of ordinary words", async () => {
+  // "reputation" contains "put" -> inferred protocol_type ["options"] and the
+  // top hit was the Polygon Optimistic Oracle.
+  const d = await callTool("recommend_subgraph", {
+    goal: "reputation scores for onchain agents",
+  });
+  assert.ok(
+    !(d.inferred_protocol_type || []).includes("options"),
+    `still inferring options: ${JSON.stringify(d.inferred_protocol_type)}`,
+  );
+});
+
+test("semantic search prefers the production deployment over its testnet", async () => {
+  // 0.9.0 ranked ENS Sepolia (58 queries/30d, reliability 0.2463) above ENS
+  // mainnet (34.8M queries/30d, reliability 0.9775) on a 0.0105 cosine margin.
+  const d = await callTool("semantic_search_subgraphs", {
+    query: "ENS domain name registrations",
+    limit: 4,
+  });
+  if (d.error || !d.subgraphs?.length) return; // model unavailable
+  const top = d.subgraphs[0];
+  assert.ok(
+    !/sepolia|goerli|testnet/i.test(`${top.display_name} ${top.network}`),
+    `testnet ranked first: ${top.display_name} (${top.network})`,
+  );
+});
+
 test("semantic search labels maturity but ships no emerging list", async () => {
   const d = await callTool("semantic_search_subgraphs", {
     query: "perpetual futures trading",

@@ -65,7 +65,7 @@ const GITHUB_DB_URL =
 //   3. Paste the new hash here and bump package.json version
 //   4. Update SKILL.md "Verifying the registry" section
 const EXPECTED_DB_SHA256 =
-  "ec7bb54f72379c0d4921b0c34c1c666c46e44c82f334efda440aeb2db09fa2d0";
+  "425b7a5bde8f61d8ae2f26ea6e201ffd3308c3328a0547fb0d29530222eba0d2";
 // Skip-verification escape hatch (set to "1" only if you're rebuilding the DB
 // locally and know what you're doing — never set in agent-runtime defaults).
 const SKIP_VERIFY = process.env.SUBGRAPH_REGISTRY_SKIP_VERIFY === "1";
@@ -175,6 +175,70 @@ function getDb() {
     db = new Database(DB_PATH, { readonly: true });
   }
   return db;
+}
+
+// ── Network aliases ────────────────────────────────────────
+// The corpus stores graph-node's chain IDs (`mainnet`, `arbitrum-one`,
+// `matic`), but every human and every model says "ethereum", "arbitrum",
+// "polygon" — and so does our own auto_description, which prints the pretty
+// name from classifier.py NETWORK_NAMES. So an agent reads "Ethereum" in a
+// description, passes network:"ethereum" back, and gets zero results with no
+// error. SKILL.md made it worse by documenting `ethereum, arbitrum, base` as
+// the example values; two of those three matched nothing.
+// mainnet/bsc/arbitrum-one/matic alone are ~45% of the corpus.
+const NETWORK_ALIASES = {
+  ethereum: "mainnet",
+  eth: "mainnet",
+  "ethereum-mainnet": "mainnet",
+  arbitrum: "arbitrum-one",
+  "arbitrum one": "arbitrum-one",
+  arb: "arbitrum-one",
+  polygon: "matic",
+  "polygon-pos": "matic",
+  bnb: "bsc",
+  "bnb-chain": "bsc",
+  "binance-smart-chain": "bsc",
+  binance: "bsc",
+  op: "optimism",
+  "optimism-mainnet": "optimism",
+  avax: "avalanche",
+  "avalanche-c-chain": "avalanche",
+  xdai: "gnosis",
+  zksync: "zksync-era",
+  "zksync era": "zksync-era",
+  blast: "blast-mainnet",
+  "polygon-zk": "polygon-zkevm",
+  near: "near-mainnet",
+  mode: "mode-mainnet",
+  sei: "sei-mainnet",
+  ftm: "fantom",
+};
+
+// Normalize a caller-supplied chain name to the value stored in the corpus.
+// Unknown values pass through untouched so a legitimate new chain still works.
+function normalizeNetwork(name) {
+  if (!name || typeof name !== "string") return name;
+  const k = name.trim().toLowerCase();
+  return NETWORK_ALIASES[k] || k;
+}
+
+// Tokenize a free-text query into searchable terms.
+//
+// The old inline version was `.filter((w) => w.length > 2)`, which silently
+// dropped every protocol version token — "v2", "v3", "v4" are all two chars.
+// That made "uniswap v3" byte-identical to "uniswap", so the single most
+// natural way to disambiguate the largest protocol family in the corpus did
+// nothing at all. Keep the length floor for noise words, but let version
+// tokens through.
+const VERSION_TOKEN_RE = /^v\d+$/;
+
+function queryTerms(query) {
+  return query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2 || VERSION_TOKEN_RE.test(w))
+    .slice(0, 5);
 }
 
 // ── Maturity / cold-start handling ─────────────────────────
@@ -297,7 +361,7 @@ function searchSubgraphs({
   }
   if (network) {
     conditions.push("network = ?");
-    params.push(network);
+    params.push(normalizeNetwork(network));
   }
   if (protocol_type) {
     conditions.push("protocol_type = ?");
@@ -311,9 +375,27 @@ function searchSubgraphs({
     conditions.push("reliability_score >= ?");
     params.push(min_reliability);
   }
+  // Terms are OR'd for recall, then RANKED by how many of them matched.
+  //
+  // Before this, a multi-word query OR'd its terms and ordered the result by
+  // reliability alone, so a high-reliability subgraph matching ONE incidental
+  // word beat a lower-reliability one matching all three. The effect was that
+  // being more specific made the answer worse: "aave lending arbitrum"
+  // returned uniswap-v3-arbitrum, Arbitrum Minimal, camelot-amm-v3 and Graph
+  // TAP — not one Aave subgraph — while the bare query "aave" was correct.
+  //
+  // Keep the OR (dropping to AND would kill recall on descriptions that
+  // phrase things differently) and let matched_terms break the tie first.
+  const matchParams = [];
+  let matchExpr = "0";
   if (query) {
-    const words = query.trim().split(/\s+/).filter((w) => w.length > 2).slice(0, 5);
+    const words = queryTerms(query);
     if (words.length) {
+      matchExpr = words
+        .map(() => "(CASE WHEN (display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END)")
+        .join(" + ");
+      words.forEach((w) => matchParams.push(`%${w}%`, `%${w}%`, `%${w}%`));
+
       const wordConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
       words.forEach((w) => params.push(`%${w}%`, `%${w}%`, `%${w}%`));
       conditions.push(`(${wordConds.join(" OR ")})`);
@@ -327,18 +409,20 @@ function searchSubgraphs({
   // Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)
   const fetchLimit = limit * 3;
   const sql = `
-    SELECT ${SEARCH_COLS}
+    SELECT ${SEARCH_COLS}, (${matchExpr}) AS matched_terms
     FROM subgraphs
     ${where}
-    ORDER BY reliability_score DESC
+    ORDER BY matched_terms DESC, reliability_score DESC
     LIMIT ?
   `;
   // Snapshot the filter params BEFORE the LIMIT is appended — the emerging
   // companion query reuses the same WHERE and must not inherit this LIMIT.
   const filterParams = [...params];
-  params.push(fetchLimit);
 
-  const rows = getDb().prepare(sql).all(...params);
+  // Positional binding order: the SELECT-clause scoring expression is bound
+  // before the WHERE clause, so matchParams must lead. filterParams stays
+  // WHERE-only, which is what the emerging companion query needs.
+  const rows = getDb().prepare(sql).all(...matchParams, ...filterParams, fetchLimit);
   // Dedup by IPFS hash — keep highest reliability per deployment
   const seenIpfs = new Set();
   const results = [];
@@ -427,18 +511,31 @@ function recommendSubgraph({ goal, chain = "" }) {
     lending: ["lend", "borrow", "loan", "collateral", "aave", "compound"],
     bridge: ["bridge", "cross-chain"],
     staking: ["stake", "validator", "delegation"],
-    options: ["option", "call", "put", "strike"],
+    // "call", "put" and "strike" are gone. They are ordinary English words —
+    // "reputation" contains "put", so the goal "reputation scores for onchain
+    // agents" inferred protocol_type ["options"] and returned the Polygon
+    // Optimistic Oracle. "option" alone is specific enough to keep.
+    options: ["option", "derivatives contract"],
     perpetuals: ["perp", "perpetual", "leverage", "margin"],
     governance: ["governance", "vote", "proposal"],
     "name-service": ["ens", "name service", "domain name"],
     "nft-marketplace": ["nft market", "opensea", "blur"],
   };
 
+  // Match on word boundaries, not bare substrings. Boundaries alone would not
+  // have saved "reputation"/"put" if "put" had stayed in the list — hence the
+  // removals above and the demotion from filter to bonus below — but they do
+  // stop "smart contract" inferring nfts via "art", and "start"/"chart"/
+  // "party" doing the same.
+  const hitsGoal = (kws) =>
+    kws.some((k) =>
+      new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(goalLower),
+    );
   const domains = Object.entries(domainMap)
-    .filter(([, kws]) => kws.some((k) => goalLower.includes(k)))
+    .filter(([, kws]) => hitsGoal(kws))
     .map(([d]) => d);
   const ptypes = Object.entries(typeMap)
-    .filter(([, kws]) => kws.some((k) => goalLower.includes(k)))
+    .filter(([, kws]) => hitsGoal(kws))
     .map(([t]) => t);
 
   // recommend_subgraph exposes no include_* escape hatches — it answers "which
@@ -449,37 +546,56 @@ function recommendSubgraph({ goal, chain = "" }) {
 
   if (chain) {
     conditions.push("network = ?");
-    params.push(chain);
+    params.push(normalizeNetwork(chain));
+  }
+  // The inferred domain/protocol_type used to go into the WHERE clause, so a
+  // single bad substring collapsed the candidate pool instead of merely
+  // mis-ordering it: "tokens" contains "ens" and cut 5,479 candidates to 78
+  // with ENS on top, and chain:"arbitrum" returned total_matches 0 with no
+  // error at all. Inference is a guess about intent; a guess belongs in the
+  // ORDER BY, where being wrong costs a few positions, not every result.
+  //
+  // The text terms now ALWAYS constrain (they used to be skipped entirely
+  // whenever anything was inferred), so the pool stays tied to what was
+  // actually asked.
+  const scoreParts = [];
+  const scoreParams = [];
+
+  const words = queryTerms(goalLower);
+  if (words.length) {
+    const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
+    scoreParts.push(
+      words
+        .map(() => "(CASE WHEN (display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?) THEN 2 ELSE 0 END)")
+        .join(" + "),
+    );
+    words.forEach((w) => scoreParams.push(`%${w}%`, `%${w}%`, `%${w}%`));
+    words.forEach((w) => params.push(`%${w}%`, `%${w}%`, `%${w}%`));
+    conditions.push(`(${textConds.join(" OR ")})`);
   }
   if (domains.length) {
-    conditions.push(`domain IN (${domains.map(() => "?").join(",")})`);
-    params.push(...domains);
+    scoreParts.push(`(CASE WHEN domain IN (${domains.map(() => "?").join(",")}) THEN 1 ELSE 0 END)`);
+    scoreParams.push(...domains);
   }
   if (ptypes.length) {
-    conditions.push(`protocol_type IN (${ptypes.map(() => "?").join(",")})`);
-    params.push(...ptypes);
+    scoreParts.push(`(CASE WHEN protocol_type IN (${ptypes.map(() => "?").join(",")}) THEN 1 ELSE 0 END)`);
+    scoreParams.push(...ptypes);
   }
 
-  if (!domains.length && !ptypes.length) {
-    const words = goalLower.split(/\s+/).filter((w) => w.length > 2).slice(0, 5);
-    if (words.length) {
-      const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ?)");
-      words.forEach((w) => params.push(`%${w}%`, `%${w}%`));
-      conditions.push(`(${textConds.join(" OR ")})`);
-    }
-  }
-
+  const goalScore = scoreParts.length ? scoreParts.join(" + ") : "0";
   const where = `WHERE ${conditions.join(" AND ")}`;
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
-           reliability_score, ipfs_hash, canonical_entities, active_allocation_count, example_query
+           reliability_score, ipfs_hash, canonical_entities, active_allocation_count, example_query,
+           (${goalScore}) AS goal_score
     FROM subgraphs
     ${where}
-    ORDER BY reliability_score DESC
+    ORDER BY goal_score DESC, reliability_score DESC
     LIMIT 15
   `;
 
-  const rows = getDb().prepare(sql).all(...params);
+  // SELECT-clause params bind before WHERE-clause params.
+  const rows = getDb().prepare(sql).all(...scoreParams, ...params);
   // De-dup first so we batch the stability lookup over the trimmed set.
   const seenIpfs = new Set();
   const keep = [];
@@ -774,7 +890,7 @@ async function semanticSearchSubgraphs({
   }
   if (network) {
     conditions.push("network = ?");
-    params.push(network);
+    params.push(normalizeNetwork(network));
   }
   if (protocol_type) {
     conditions.push("protocol_type = ?");
@@ -806,7 +922,23 @@ async function semanticSearchSubgraphs({
     if (score < min_score) continue;
     scored.push({ row: r, score });
   }
-  scored.sort((a, b) => b.score - a.score);
+  // Rank on similarity WEIGHTED by reliability, not similarity alone.
+  //
+  // Pure cosine made this the only tool in the package that ignored the
+  // registry's own quality signal, and testnets win on pure cosine because
+  // their text is near-identical to mainnet's. Observed: "ENS domain name
+  // registrations" put ENS Sepolia (58 queries/30d, reliability 0.2463) above
+  // ENS mainnet (34.8M queries/30d, reliability 0.9775) on a cosine margin of
+  // 0.0105 — a rounding error deciding between a toy and the real thing.
+  //
+  // The 0.5 floor is deliberate: reliability is itself age-biased (see the
+  // maturity block above), so a multiplier that ran to 0 would re-bury every
+  // new subgraph and undo the emerging work. At 0.5 + 0.5*r a brand-new
+  // subgraph keeps half its similarity and can still outrank an established
+  // one it genuinely beats on meaning, while a 0.01 cosine tie resolves
+  // toward the subgraph that is actually serving traffic.
+  const effective = (s) => s.score * (0.5 + 0.5 * (s.row.reliability_score || 0));
+  scored.sort((a, b) => effective(b) - effective(a));
 
   const results = [];
   for (const { row: r, score } of scored) {
@@ -887,6 +1019,7 @@ function getSchemaChanges({ subgraph_id, since_timestamp = 0 }) {
         `SELECT fingerprint, prev_fingerprint, detected_at, ipfs_hash
          FROM schema_history
          WHERE subgraph_id = ? AND detected_at >= ?
+           AND prev_fingerprint IS NOT NULL
          ORDER BY detected_at DESC`,
       )
       .all(subgraph_id, since);
@@ -932,7 +1065,8 @@ function getSchemaStabilityFor(id) {
     const r = getDb()
       .prepare(
         "SELECT MAX(detected_at) AS schema_changed_at " +
-          "FROM schema_history WHERE subgraph_id = ?",
+          "FROM schema_history WHERE subgraph_id = ? " +
+          "AND prev_fingerprint IS NOT NULL",
       )
       .get(id);
     if (!r || r.schema_changed_at == null) {
@@ -958,6 +1092,7 @@ function getSchemaStabilityBatch(ids) {
         `SELECT subgraph_id, MAX(detected_at) AS schema_changed_at
          FROM schema_history
          WHERE subgraph_id IN (${placeholders})
+           AND prev_fingerprint IS NOT NULL
          GROUP BY subgraph_id`,
       )
       .all(...ids);

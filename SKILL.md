@@ -11,7 +11,7 @@ Agent-friendly discovery of 15,330 classified subgraphs on The Graph Network. Se
 
 ## Tools
 
-- **search_subgraphs** — Filter by domain (defi, nfts, dao, gaming), network (ethereum, arbitrum, base), protocol type (dex, lending, bridge), entity type, or keyword. Returns `age_days` + `maturity` per result, and a separate `emerging` list of recent matches that the (cumulative, therefore age-biased) reliability score buries — read `emerging_caveat` before recommending one
+- **search_subgraphs** — Filter by domain (defi, nfts, dao, gaming), network (ethereum, arbitrum, base — aliases resolve to mainnet, arbitrum-one, etc.), protocol type (dex, lending, bridge), entity type, or keyword. Returns `age_days` + `maturity` per result, and a separate `emerging` list of recent matches that the (cumulative, therefore age-biased) reliability score buries — read `emerging_caveat` before recommending one
 - **recommend_subgraph** — Natural language goal like "find DEX trades on Arbitrum" returns the best matching subgraphs
 - **get_subgraph_detail** — Full classification, entities, reliability score, x402 + legacy query URLs, and step-by-step query instructions for both paths
 - **list_registry_stats** — Registry overview with available domains, networks, and protocol types
@@ -39,7 +39,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.9.0
+npx subgraph-registry-mcp@0.9.1
 ```
 
 ## Network & Data Behavior
@@ -52,10 +52,10 @@ npx subgraph-registry-mcp@0.9.0
 
 ## Verifying the registry
 
-The npm package version `0.9.0` ships with this expected hash:
+The npm package version `0.9.1` ships with this expected hash:
 
 ```
-SHA-256(registry.db) = ec7bb54f72379c0d4921b0c34c1c666c46e44c82f334efda440aeb2db09fa2d0
+SHA-256(registry.db) = 425b7a5bde8f61d8ae2f26ea6e201ffd3308c3328a0547fb0d29530222eba0d2
 ```
 
 This hash is hard-coded in `src/index.js` (`EXPECTED_DB_SHA256`). On every run,
