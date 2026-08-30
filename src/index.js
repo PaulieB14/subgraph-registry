@@ -256,6 +256,27 @@ function normalizeNetwork(name) {
   return NETWORK_ALIASES[k] || k;
 }
 
+// Networks the corpus actually contains, so a chain word in a goal can be told
+// apart from a protocol that happens to share a chain's name. Built once from
+// the DB rather than hardcoded, so a new chain in a re-crawl works immediately.
+let _knownNetworks = null;
+const KNOWN_NETWORKS = {
+  has(name) {
+    if (!name) return false;
+    if (_knownNetworks === null) {
+      try {
+        _knownNetworks = new Set(
+          getDb().prepare("SELECT DISTINCT network FROM subgraphs WHERE network IS NOT NULL")
+            .all().map((r) => r.network),
+        );
+      } catch {
+        _knownNetworks = new Set();
+      }
+    }
+    return _knownNetworks.has(name);
+  },
+};
+
 // ── Testnets ───────────────────────────────────────────────
 // 723 of the 5,425 served, non-denied subgraphs (13.3%) are on testnets, and
 // they compete directly with production because a testnet deployment's text is
@@ -305,12 +326,26 @@ function shouldExcludeTestnets({ include_testnets, network }) {
 // tokens through.
 const VERSION_TOKEN_RE = /^v\d+$/;
 
+// Function words carry no signal about WHICH subgraph is wanted, and because
+// matching is substring-based they actively mislead: "reputation scores for
+// onchain agents" scored forsage-x2-prod above agent0, because "for" is inside
+// "forsage" and a display-name hit is worth 4 while agent0's two real matches
+// ("reputation", "agents", in the description) were worth 1 each. Dropping them
+// costs nothing — no one distinguishes two subgraphs by the word "the".
+const STOPWORDS = new Set([
+  "the", "and", "for", "with", "from", "that", "this", "are", "was", "were",
+  "get", "all", "any", "how", "what", "which", "who", "into", "onto", "over",
+  "per", "via", "out", "its", "their", "your", "our", "his", "her",
+  "show", "give", "find", "list", "want", "need", "using", "use", "used",
+  "data", "info", "about", "some", "more", "most", "have", "has", "had",
+]);
+
 function queryTerms(query) {
   return query
     .trim()
     .toLowerCase()
     .split(/\s+/)
-    .filter((w) => w.length > 2 || VERSION_TOKEN_RE.test(w))
+    .filter((w) => (w.length > 2 || VERSION_TOKEN_RE.test(w)) && !STOPWORDS.has(w))
     .slice(0, 5);
 }
 
@@ -662,8 +697,40 @@ function recommendSubgraph({ goal, chain = "" }) {
   // actually asked.
   const scoreParts = [];
   const scoreParams = [];
+  let inferredChain = null;
 
-  const words = queryTerms(goalLower);
+  // A chain named in the goal is a chain, not part of a protocol's name.
+  //
+  // "lido staking on ethereum" scored Lido Ethereum (2,644 queries/30d) above
+  // Lido (4,692,414) because "ethereum" matched Lido Ethereum's DISPLAY NAME
+  // for +4, and the ordering is lexicographic — goal_score first, reliability
+  // only as a tie-break — so a 0.88-vs-0.63 reliability gap and a 1,775x volume
+  // gap never got a vote. The subgraph won for having the chain in its title.
+  //
+  // The chain already has its own column and its own normalizer. Pull chain
+  // words out of the scoring terms and use them the way the `chain` parameter
+  // is used, so "on ethereum" narrows the network instead of flattering any
+  // subgraph that happens to be called something-Ethereum.
+  const allWords = queryTerms(goalLower);
+  const chainWords = [];
+  const words = [];
+  for (const w of allWords) {
+    const canonical = normalizeNetwork(w);
+    // Only treat it as a chain if it resolves to a network the corpus has —
+    // otherwise a protocol genuinely called "Base" or "Mode" would vanish.
+    if (canonical !== w || KNOWN_NETWORKS.has(canonical)) chainWords.push(canonical);
+    else words.push(w);
+  }
+  // An explicit `chain` argument always wins over one inferred from prose.
+  if (!chain && chainWords.length === 1) {
+    conditions.push("network = ?");
+    params.push(chainWords[0]);
+    inferredChain = chainWords[0];
+  } else if (chainWords.length) {
+    // Ambiguous or already-specified: keep them as weak text signal only.
+    words.push(...chainWords);
+  }
+
   if (words.length) {
     const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
     scoreParts.push(
@@ -694,11 +761,43 @@ function recommendSubgraph({ goal, chain = "" }) {
     FROM subgraphs
     ${where}
     ORDER BY goal_score DESC, reliability_score DESC
-    LIMIT 15
+    LIMIT 60
   `;
 
   // SELECT-clause params bind before WHERE-clause params.
-  const rows = getDb().prepare(sql).all(...scoreParams, ...params);
+  let rows = getDb().prepare(sql).all(...scoreParams, ...params);
+
+  // Re-rank on WORD boundaries, which SQL LIKE cannot express.
+  //
+  // The SQL score treats any substring of the display name as a name hit, so
+  // "scores" scored scoresquare-base at 4 and "for" scored forsage-x2-prod at
+  // 4, both beating agent0's two genuine description matches at 1 apiece. A
+  // term that appears as a whole word in the name is a real signal; a term that
+  // merely happens to be a prefix of a longer word is not, and was outranking
+  // it 4 to 1.
+  //
+  // Done here rather than in SQL because expressing "\bterm\b" in LIKE needs
+  // half a dozen OR-ed patterns per word for space, hyphen and underscore
+  // delimiters. The SQL score stays as the recall net (LIMIT 60); this decides
+  // the order of what it caught.
+  if (words.length) {
+    const bounded = words.map((w) => new RegExp("(^|[^a-z0-9])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)", "i"));
+    const rescore = (r) => {
+      const name = r.display_name || "";
+      const text = `${r.description || ""} ${r.auto_description || ""}`;
+      let score = 0;
+      bounded.forEach((re, i) => {
+        if (re.test(name)) score += 6;              // whole word in the name
+        else if (name.toLowerCase().includes(words[i])) score += 1;  // incidental substring
+        if (re.test(text)) score += 2;              // whole word in the description
+      });
+      return score;
+    };
+    rows = rows
+      .map((r) => ({ r, s: rescore(r) }))
+      .sort((a, b) => b.s - a.s || (b.r.reliability_score || 0) - (a.r.reliability_score || 0))
+      .map((x) => x.r);
+  }
   // De-dup first so we batch the stability lookup over the trimmed set.
   const seenIpfs = new Set();
   const keep = [];
@@ -745,6 +844,9 @@ function recommendSubgraph({ goal, chain = "" }) {
     goal,
     chain_filter: chain || null,
     inferred_domain: domains.length ? domains : null,
+    // Surfaced so a caller can see that "on ethereum" in their goal became a
+    // network filter, and correct it if that was not what they meant.
+    inferred_chain: inferredChain,
     inferred_protocol_type: ptypes.length ? ptypes : null,
     total_matches: recommendations.length,
     recommendations,

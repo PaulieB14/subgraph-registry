@@ -398,3 +398,35 @@ test("get_subgraph_detail does not tell you to edit a placeholder that is gone",
   assert.ok(!blob.includes("[api-key]"), "still references the retired [api-key] path placeholder");
   assert.ok(!blob.includes("api_key_legacy"), "the keyed route is not legacy; it is the common case");
 });
+
+test("search and recommend agree on which Lido is the real one", async () => {
+  // The 0.9.6 test only asserted query_volume_30d was PRESENT, not that the
+  // tools agreed on an answer — so search returned Lido (4.7M queries) while
+  // recommend returned Lido Ethereum (2,644) for the same intent, and the test
+  // passed. Asserting a field exists is not asserting it is used.
+  const s = (await callTool("search_subgraphs", { query: "lido", network: "mainnet", limit: 1 })).subgraphs[0];
+  const r = (await callTool("recommend_subgraph", { goal: "lido staking on ethereum" })).recommendations?.[0];
+  assert.equal(s.id, "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ");
+  assert.equal(r?.id, s.id,
+    `search picked ${s.display_name} but recommend picked ${r?.display_name}`);
+});
+
+test("a chain named in the goal filters, it does not flatter a display name", async () => {
+  // "on ethereum" used to give any subgraph called something-Ethereum +4 on a
+  // display-name match, which is how a 2,644-query fork beat a 4.7M-query
+  // protocol. The chain has its own column; it should narrow, not score.
+  const d = await callTool("recommend_subgraph", { goal: "lido staking on ethereum" });
+  assert.equal(d.inferred_chain, "mainnet", "should read 'ethereum' as the chain");
+  for (const r of d.recommendations || []) {
+    assert.equal(r.network, "mainnet", `${r.display_name} is on ${r.network}`);
+  }
+});
+
+test("stopwords and partial words do not count as name matches", async () => {
+  // "for" matched forsage-x2-prod and "scores" matched scoresquare-base, both
+  // as display-name substrings worth more than a real description match.
+  const d = await callTool("recommend_subgraph", { goal: "reputation scores for onchain agents" });
+  const names = (d.recommendations || []).map((r) => r.display_name.toLowerCase());
+  assert.ok(!names.includes("forsage-x2-prod"), "matched the stopword 'for' inside 'forsage'");
+  assert.ok(!names.includes("scoresquare-base"), "matched 'scores' inside 'scoresquare'");
+});
