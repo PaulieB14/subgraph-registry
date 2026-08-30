@@ -310,3 +310,66 @@ test("schema stability distinguishes never-changed from unknown", async () => {
     assert.equal(d.stable_days_basis, "first_seen");
   }
 });
+
+// ── Golden ranking cases ─────────────────────────────────────────────────
+// From a live agent session on 2026-08-30 that used this registry as a
+// discovery layer in front of The Graph's official subgraph MCP. Each of
+// these is a name where the official keyword search returns a plausible wrong
+// answer, and where get_deployment_30day_query_counts returned 0 so query
+// volume could not break the tie. The ids are the ones that session confirmed
+// by loading the schema from the Graph gateway.
+
+test("lido resolves to real Lido, not a fork or an Aave market", async () => {
+  const d = await callTool("search_subgraphs", { query: "lido", network: "mainnet", limit: 3 });
+  const top = d.subgraphs[0];
+  assert.equal(top.id, "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ",
+    `top hit was ${top.display_name} (${top.id})`);
+  // "Protocol V3 Lido" is an Aave market, not staking; bp-lido-user-txns and
+  // lido-copy are the other false friends the official search surfaces.
+  for (const bad of ["bp-lido-user-txns", "lido-copy"]) {
+    assert.ok(!d.subgraphs.some(s => s.display_name.toLowerCase() === bad),
+      `false friend ranked: ${bad}`);
+  }
+});
+
+test("snapshot resolves to Snapshot.org mainnet, not a per-chain deployment", async () => {
+  const d = await callTool("search_subgraphs", { query: "snapshot", network: "mainnet", limit: 3 });
+  const top = d.subgraphs[0];
+  assert.equal(top.display_name.toLowerCase(), "snapshot",
+    `top hit was ${top.display_name}`);
+  assert.ok(top.query_volume_30d > 1_000_000,
+    `expected the high-volume mainnet deployment, got ${top.query_volume_30d}`);
+  assert.ok(!d.subgraphs.some(s => s.display_name === "protocol_snapshots_mainnet"),
+    "protocol_snapshots_mainnet is a false friend and must not rank");
+});
+
+test("x402 on base resolves to the x402 Base subgraph", async () => {
+  const d = await callTool("search_subgraphs", { query: "x402", network: "base", limit: 3 });
+  assert.equal(d.subgraphs[0].id, "Cb56epg3EvQ6JRpPfknbkM54QxpzTvLa7mwKNQQfUyoj",
+    `top hit was ${d.subgraphs[0].display_name}`);
+});
+
+test("every hit carries the volume needed to break a tie", async () => {
+  // The official MCP's 30-day count tool was observed returning 0 for
+  // deployments that plainly serve traffic, so this number is the only way a
+  // caller can tell a protocol from its copies.
+  const d = await callTool("search_subgraphs", { query: "lido", limit: 5 });
+  for (const s of d.subgraphs) {
+    assert.ok("query_volume_30d" in s, `${s.display_name} has no query_volume_30d`);
+    assert.ok("id" in s && "ipfs_hash" in s, `${s.display_name} missing id/ipfs_hash`);
+  }
+});
+
+test("neither query route is presented as the recommended one", async () => {
+  // x402 used to be labelled RECOMMENDED, which sent agents that already hold
+  // a Studio key down a payment path — and some hosts forbid /api/x402
+  // outright. Both routes, caller picks.
+  const d = await callTool("search_subgraphs", { query: "uniswap", limit: 1 });
+  const s = d.subgraphs[0];
+  assert.ok(s.payment_options?.api_key && s.payment_options?.x402, "both routes must be offered");
+  assert.ok(!s.query_url.includes("[api-key]"),
+    "query_url must use the Bearer form, not the retired path placeholder");
+  assert.match(s.query_url, /^https:\/\/gateway\.thegraph\.com\/api\/subgraphs\/id\//);
+  assert.ok(!/recommended/i.test(d.query_instructions.split(".")[0]),
+    "the first sentence must not push one route");
+});

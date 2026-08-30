@@ -5,7 +5,7 @@ openapi: "3.1.0"
 info:
   title: "Subgraph Registry"
   description: "Agent-friendly subgraph discovery on The Graph Network. 14,700+ classified subgraphs with semantic search, reliability scoring, schema-evolution tracking, and x402 query URLs ($0.01 USDC on Base, no API key)."
-  version: "0.9.4"
+  version: "0.9.5"
   license:
     name: "MIT"
   contact:
@@ -19,7 +19,7 @@ paths:
     post:
       operationId: "tool_search_subgraphs"
       summary: "Search and filter the classified subgraph registry (15,000+ subgraphs)."
-      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required), plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
+      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL. Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
       tags:
         - "mcp-tools"
       requestBody:
@@ -81,7 +81,7 @@ paths:
     post:
       operationId: "tool_recommend_subgraph"
       summary: "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best…"
-      description: "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Each result includes query_url_x402 (preferred — POST GraphQL, pay $0.01 USDC on Base per query, no API key) and a legacy query_url for Studio-key flows."
+      description: "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Discovery only — it returns ids and starter queries, it does not execute GraphQL. Each result carries both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer <STUDIO_API_KEY>) or an x402 URL ($0.01 USDC on Base, no key)."
       tags:
         - "mcp-tools"
       requestBody:

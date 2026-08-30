@@ -90,8 +90,42 @@ const X402_PRICING = {
 
 function buildQueryEndpoints(subgraphId) {
   return {
-    query_url: `https://gateway.thegraph.com/api/[api-key]/subgraphs/id/${subgraphId}`,
+    // The keyed gateway URL. This used to carry `[api-key]` as a path segment,
+    // a form the gateway no longer uses — an agent that string-replaced the
+    // placeholder was building a URL that has not been correct for a while.
+    // The current form takes the key in a header:
+    //   POST https://gateway.thegraph.com/api/subgraphs/id/<ID>
+    //   Authorization: Bearer <STUDIO_KEY>
+    // Verified: without the header this returns HTTP 200 carrying a GraphQL
+    // error body, `auth error: missing authorization header` — GraphQL signals
+    // auth in the body, so do not treat 200 as success without reading it.
+    query_url: `https://gateway.thegraph.com/api/subgraphs/id/${subgraphId}`,
     query_url_x402: `${X402_GATEWAY_BASE}/subgraphs/id/${subgraphId}`,
+
+    // Both routes, stated side by side, because which one is right depends
+    // entirely on what the caller already has. An agent embedded in a product
+    // with a Studio key should use its key; a headless agent with a funded
+    // wallet and no way to mint a key should use x402. Neither is "the
+    // recommended one" — the previous wording put x402 first and labelled it
+    // RECOMMENDED, which sent key-holding agents down a payment path they had
+    // no reason to take, and which some hosts forbid outright.
+    payment_options: {
+      api_key: {
+        url: `https://gateway.thegraph.com/api/subgraphs/id/${subgraphId}`,
+        method: "POST",
+        auth_header: "Authorization: Bearer <STUDIO_API_KEY>",
+        get_a_key: "https://thegraph.com/studio/apikeys/",
+        cost: "included in your Studio plan (100K free queries/month)",
+        use_when: "you already have, or can obtain, a Graph Studio API key",
+      },
+      x402: {
+        url: `${X402_GATEWAY_BASE}/subgraphs/id/${subgraphId}`,
+        method: "POST",
+        cost: "$0.01 USDC on Base per query",
+        flow: "gateway returns HTTP 402 with a payment manifest; an x402 client (@graphprotocol/client-x402, x402-fetch) signs and retries automatically",
+        use_when: "you have a funded wallet and no API key, and no human to mint one",
+      },
+    },
     pricing: X402_PRICING,
   };
 }
@@ -309,7 +343,8 @@ const EMERGING_LIMIT = 3;
 // the same columns — they feed the same row mapper.
 const SEARCH_COLS = `id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
-           powered_by_substreams, active_allocation_count, example_query, denied_at, created_at`;
+           powered_by_substreams, active_allocation_count, example_query, denied_at, created_at,
+           query_volume_30d`;
 
 function ageDays(created_at) {
   if (!created_at) return null;
@@ -487,6 +522,12 @@ function searchSubgraphs({
       protocol_type: r.protocol_type,
       network: r.network,
       reliability_score: r.reliability_score,
+    // The registry has this number and the official Graph MCP's
+    // get_deployment_30day_query_counts was observed returning 0 for
+    // deployments that plainly serve traffic, so it could not break ties
+    // between a real protocol and its forks. Surfacing it here is what lets a
+    // caller tell Lido (4.7M queries/30d) from lido-copy.
+    query_volume_30d: r.query_volume_30d ?? null,
       ipfs_hash: r.ipfs_hash,
       entity_count: r.entity_count,
       canonical_entities: JSON.parse(r.canonical_entities),
@@ -496,7 +537,6 @@ function searchSubgraphs({
       // caller passed include_denied — surfaced so that choice stays visible
       // in the result rather than being silently carried.
       denied: Boolean(r.denied_at),
-    testnet: isTestnetNetwork(r.network),
       testnet: isTestnetNetwork(r.network),
       // Ready-to-run GraphQL generated from this subgraph's actual schema — so an
       // agent can POST it to query_url_x402 immediately, no get_subgraph_detail round-trip.
@@ -524,6 +564,12 @@ function searchSubgraphs({
     protocol_type: r.protocol_type,
     network: r.network,
     reliability_score: r.reliability_score,
+    // The registry has this number and the official Graph MCP's
+    // get_deployment_30day_query_counts was observed returning 0 for
+    // deployments that plainly serve traffic, so it could not break ties
+    // between a real protocol and its forks. Surfacing it here is what lets a
+    // caller tell Lido (4.7M queries/30d) from lido-copy.
+    query_volume_30d: r.query_volume_30d ?? null,
     ipfs_hash: r.ipfs_hash,
     entity_count: r.entity_count,
     canonical_entities: JSON.parse(r.canonical_entities),
@@ -543,7 +589,7 @@ function searchSubgraphs({
     ...(emerging.length
       ? { emerging, emerging_caveat: EMERGING_CAVEAT }
       : {}),
-    query_instructions: "Two ways to query: (a) RECOMMENDED — POST GraphQL to query_url_x402 and pay $0.01 USDC on Base per query via x402 (no API key required; gateway returns HTTP 402 with a payment manifest, use an x402 client like @graphprotocol/client-x402 to sign and retry). (b) LEGACY — replace [api-key] in query_url with a Graph API key from https://thegraph.com/studio/apikeys/. Each result includes a ready-to-run `example_query` generated from that subgraph's real schema — POST it to query_url_x402 as-is, or adapt the entity/fields. Use get_subgraph_detail for the full schema.",
+    query_instructions: "This registry does DISCOVERY, not execution — it hands you the subgraph id and a ready-to-run `example_query`, and you run the query with whatever Graph client you already have. Two equally valid routes, pick by what you have: (a) API KEY — POST to `query_url` with header `Authorization: Bearer <STUDIO_API_KEY>` (get one at https://thegraph.com/studio/apikeys/, 100K free queries/month). Note the gateway returns HTTP 200 with a GraphQL error body when the header is missing, so read the body. (b) x402 — POST to `query_url_x402` and pay $0.01 USDC on Base per query, no key and no signup; the gateway answers 402 with a payment manifest and an x402 client signs and retries. Use (a) if you hold a key, (b) if you are headless with a funded wallet. If your client already has an official Graph MCP or gateway connector, just pass it the `id` from this result and ignore both URLs. See `payment_options` for the full shape of each.",
   };
 }
 
@@ -678,6 +724,12 @@ function recommendSubgraph({ goal, chain = "" }) {
       protocol_type: r.protocol_type,
       network: r.network,
       reliability_score: r.reliability_score,
+    // The registry has this number and the official Graph MCP's
+    // get_deployment_30day_query_counts was observed returning 0 for
+    // deployments that plainly serve traffic, so it could not break ties
+    // between a real protocol and its forks. Surfacing it here is what lets a
+    // caller tell Lido (4.7M queries/30d) from lido-copy.
+    query_volume_30d: r.query_volume_30d ?? null,
       ipfs_hash: r.ipfs_hash,
       canonical_entities: JSON.parse(r.canonical_entities),
       active_allocation_count: r.active_allocation_count || 0,
@@ -742,7 +794,11 @@ function getSubgraphDetail({ subgraph_id }) {
   const exampleQuery = result.example_query || FALLBACK_EXAMPLE;
 
   result.query_instructions = {
-    recommended: "x402",
+    // No single recommendation: see payment_options on each result. Callers
+    // hold either a Studio key or a wallet, rarely both, and the registry has
+    // no way to know which — so it states both and lets the caller choose.
+    recommended: null,
+    routes: ["api_key", "x402"],
     x402: {
       url: endpoints.query_url_x402,
       payment: endpoints.pricing,
@@ -1039,13 +1095,18 @@ async function semanticSearchSubgraphs({
       protocol_type: r.protocol_type,
       network: r.network,
       reliability_score: r.reliability_score,
+    // The registry has this number and the official Graph MCP's
+    // get_deployment_30day_query_counts was observed returning 0 for
+    // deployments that plainly serve traffic, so it could not break ties
+    // between a real protocol and its forks. Surfacing it here is what lets a
+    // caller tell Lido (4.7M queries/30d) from lido-copy.
+    query_volume_30d: r.query_volume_30d ?? null,
       ipfs_hash: r.ipfs_hash,
       entity_count: r.entity_count,
       canonical_entities: JSON.parse(r.canonical_entities),
       powered_by_substreams: Boolean(r.powered_by_substreams),
       active_allocation_count: r.active_allocation_count || 0,
       denied: Boolean(r.denied_at),
-    testnet: isTestnetNetwork(r.network),
       testnet: isTestnetNetwork(r.network),
       example_query: r.example_query || null,
       // No `emerging` companion list here: this tool ranks by cosine score,
@@ -1067,7 +1128,7 @@ async function semanticSearchSubgraphs({
     model: "sentence-transformers/all-MiniLM-L6-v2",
     subgraphs: results,
     query_instructions:
-      "Each result includes query_url_x402 (pay $0.01 USDC on Base, no API key) and a legacy query_url. semantic_score is cosine similarity in [0,1]; values >0.5 are typically strong matches.",
+      "Each result includes both query routes in `payment_options` — a keyed gateway URL (Authorization: Bearer <STUDIO_API_KEY>) and an x402 URL ($0.01 USDC on Base, no key). Use whichever your client already has. semantic_score is cosine similarity in [0,1]; values >0.5 are typically strong matches.",
   };
 }
 
@@ -1237,7 +1298,7 @@ const TOOLS = [
   {
     name: "search_subgraphs",
     description:
-      "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Each result includes query_url_x402 (POST GraphQL and pay $0.01 USDC on Base per query — no API key needed) and a legacy query_url (Studio API key required), plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user.",
+      "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL. Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -1270,7 +1331,7 @@ const TOOLS = [
   {
     name: "recommend_subgraph",
     description:
-      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Each result includes query_url_x402 (preferred — POST GraphQL, pay $0.01 USDC on Base per query, no API key) and a legacy query_url for Studio-key flows.",
+      "Given a natural-language goal like 'find DEX trades on Arbitrum' or 'get lending liquidation data', returns the best matching subgraphs with reliability scores. Automatically infers domain and protocol type from the goal. Discovery only — it returns ids and starter queries, it does not execute GraphQL. Each result carries both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer <STUDIO_API_KEY>) or an x402 URL ($0.01 USDC on Base, no key).",
     inputSchema: {
       type: "object",
       additionalProperties: false,
