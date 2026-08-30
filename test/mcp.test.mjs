@@ -430,3 +430,62 @@ test("stopwords and partial words do not count as name matches", async () => {
   assert.ok(!names.includes("forsage-x2-prod"), "matched the stopword 'for' inside 'forsage'");
   assert.ok(!names.includes("scoresquare-base"), "matched 'scores' inside 'scoresquare'");
 });
+
+// ── The chain argument must not poison the ranking ───────────────────────
+// From a 44-case outside eval of 0.9.8. Passing `chain` alongside a goal that
+// also says "on <chain>" ranked a vol-2 subgraph over a 4.7M one, because the
+// chain word fell back into text scoring in its CANONICAL form and then
+// matched any display name containing "mainnet". Four protocols, one bug —
+// the eval's top-priority finding, and Lido alone would not have caught it.
+
+const CHAIN_ARG_CASES = [
+  ["lido staking on ethereum", "ethereum", "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ", "Clearpool staking mainnet"],
+  ["lido staking on ethereum", "mainnet", "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ", "Clearpool staking mainnet"],
+  ["snapshot voting on ethereum", "ethereum", "4YgtogVaqoM8CErHWDK8mKQ825BcVdKB8vBYmb4avAQo", "Mainnet Voting V2"],
+  ["ens name lookups on ethereum", "ethereum", "5XqPmWe6gjyrJtFn9cLy237i4cWw2j9HcUJEXsP5qGtH", "seer-outcome-tokens-mainnet"],
+  ["eigenlayer restaking on ethereum", "ethereum", "68g9WSC4QTUJmMpuSbgLNENrcYha4mPmXhWGCoupM7kB", "Uni V3 Staker Mainnet"],
+];
+
+for (const [goal, chain, wantId, previousWrongAnswer] of CHAIN_ARG_CASES) {
+  test(`chain arg does not hijack ranking: "${goal}" + chain=${chain}`, async () => {
+    const d = await callTool("recommend_subgraph", { goal, chain });
+    const top = (d.recommendations || [])[0];
+    assert.equal(top?.id, wantId,
+      `got ${top?.display_name} (previously ${previousWrongAnswer})`);
+    // A caller who passed a chain used to get inferred_chain: null, which reads
+    // as "your argument was ignored".
+    assert.ok(d.inferred_chain, "inferred_chain must report the chain in effect");
+  });
+}
+
+test("passing chain is never worse than omitting it", async () => {
+  // The property behind all five cases above: an explicit chain is routing
+  // information. It can narrow the result set; it must not change which
+  // protocol wins inside that set.
+  for (const goal of ["lido staking on ethereum", "snapshot voting on ethereum"]) {
+    const without = (await callTool("recommend_subgraph", { goal })).recommendations?.[0];
+    const with_ = (await callTool("recommend_subgraph", { goal, chain: "ethereum" })).recommendations?.[0];
+    assert.equal(with_?.id, without?.id,
+      `"${goal}": omitting chain gives ${without?.display_name}, passing it gives ${with_?.display_name}`);
+  }
+});
+
+test("search and recommend agree on the reputation paraphrase", async () => {
+  // recommend banned scoresquare-base; search did not, because the
+  // word-boundary re-rank had been applied to one tool only. Two tools
+  // disagreeing is the bug, independent of which answer is right.
+  const s = (await callTool("search_subgraphs", { query: "reputation scores for onchain agents", limit: 3 })).subgraphs;
+  const r = (await callTool("recommend_subgraph", { goal: "reputation scores for onchain agents" })).recommendations || [];
+  assert.ok(!s.some((x) => x.display_name === "scoresquare-base"),
+    "search still ranks scoresquare-base, which recommend forbids");
+  assert.equal(s[0]?.id, r[0]?.id, `search says ${s[0]?.display_name}, recommend says ${r[0]?.display_name}`);
+});
+
+test("ens top 3 are ENS-family, not high-reliability strangers", async () => {
+  // "ens" is a substring of "tokens", so conditional-tokens-gc (2.8M queries)
+  // and gardens-gnosis rode reliability into the top 3 on a substring match.
+  const d = await callTool("search_subgraphs", { query: "ens", limit: 3 });
+  for (const bad of ["conditional-tokens-gc", "gardens-gnosis", "cypher-tokens"]) {
+    assert.ok(!d.subgraphs.some((s) => s.display_name === bad), `${bad} is not ENS`);
+  }
+});

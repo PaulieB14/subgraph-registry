@@ -349,6 +349,40 @@ function queryTerms(query) {
     .slice(0, 5);
 }
 
+// Re-rank candidates on WORD boundaries, which SQL LIKE cannot express.
+//
+// The SQL score treats any substring of a display name as a name hit, so
+// "scores" scored scoresquare-base at full name weight and "for" scored
+// forsage-x2-prod, both beating genuine description matches. A term that
+// appears as a whole word is a real signal; a term that is merely a prefix of
+// a longer word is not.
+//
+// Shared by search_subgraphs and recommend_subgraph. It lived only in
+// recommend, which is why `search_subgraphs("reputation scores for onchain
+// agents")` still returned scoresquare-base at #1 while recommend did not —
+// two tools disagreeing because a fix was applied to one of them.
+function boundaryRerank(rows, words) {
+  if (!words.length) return rows;
+  const res = words.map(
+    (w) => new RegExp("(^|[^a-z0-9])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)", "i"),
+  );
+  const score = (r) => {
+    const name = r.display_name || "";
+    const text = `${r.description || ""} ${r.auto_description || ""}`;
+    let out = 0;
+    res.forEach((re, i) => {
+      if (re.test(name)) out += 6;
+      else if (name.toLowerCase().includes(words[i])) out += 1;
+      if (re.test(text)) out += 2;
+    });
+    return out;
+  };
+  return rows
+    .map((r) => ({ r, s: score(r) }))
+    .sort((a, b) => b.s - a.s || (b.r.reliability_score || 0) - (a.r.reliability_score || 0))
+    .map((x) => x.r);
+}
+
 // ── Maturity / cold-start handling ─────────────────────────
 // reliability_score is built from four CUMULATIVE inputs (curation signal,
 // indexer stake, lifetime query fees, 30d volume — see _reliability_score in
@@ -542,7 +576,10 @@ function searchSubgraphs({
   // Positional binding order: the SELECT-clause scoring expression is bound
   // before the WHERE clause, so matchParams must lead. filterParams stays
   // WHERE-only, which is what the emerging companion query needs.
-  const rows = getDb().prepare(sql).all(...matchParams, ...filterParams, fetchLimit);
+  const rows = boundaryRerank(
+    getDb().prepare(sql).all(...matchParams, ...filterParams, fetchLimit),
+    query ? queryTerms(query) : [],
+  );
   // Dedup by IPFS hash — keep highest reliability per deployment
   const seenIpfs = new Set();
   const results = [];
@@ -721,15 +758,27 @@ function recommendSubgraph({ goal, chain = "" }) {
     if (canonical !== w || KNOWN_NETWORKS.has(canonical)) chainWords.push(canonical);
     else words.push(w);
   }
-  // An explicit `chain` argument always wins over one inferred from prose.
-  if (!chain && chainWords.length === 1) {
+  // A chain word NEVER becomes a scoring term. The first version of this fell
+  // back to `words.push(...chainWords)` whenever it could not use them as a
+  // filter — and because chainWords hold the CANONICAL form, "on ethereum"
+  // re-entered scoring as the token "mainnet" and scored +6 against any
+  // display name containing it. Passing chain:"ethereum" with a goal ending
+  // "on ethereum" therefore ranked Clearpool staking mainnet (vol 2) over Lido
+  // (4,692,414), Mainnet Voting V2 over Snapshot, seer-outcome-tokens-mainnet
+  // (vol 1) over ENS (34,835,842), and dropped EigenLayer out of the top 5
+  // entirely. It made the explicit chain argument actively worse than omitting
+  // it, which is the opposite of what an argument is for.
+  //
+  // Chain words are routing information. They filter, or they are discarded.
+  const explicitChain = chain ? normalizeNetwork(chain) : null;
+  if (!explicitChain && chainWords.length === 1) {
     conditions.push("network = ?");
     params.push(chainWords[0]);
-    inferredChain = chainWords[0];
-  } else if (chainWords.length) {
-    // Ambiguous or already-specified: keep them as weak text signal only.
-    words.push(...chainWords);
   }
+  // Report the chain actually in effect, whether it came from the argument or
+  // the prose — a caller passing chain used to get inferred_chain: null, which
+  // read as "your chain was ignored".
+  inferredChain = explicitChain || (chainWords.length === 1 ? chainWords[0] : null);
 
   if (words.length) {
     const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
@@ -767,37 +816,8 @@ function recommendSubgraph({ goal, chain = "" }) {
   // SELECT-clause params bind before WHERE-clause params.
   let rows = getDb().prepare(sql).all(...scoreParams, ...params);
 
-  // Re-rank on WORD boundaries, which SQL LIKE cannot express.
-  //
-  // The SQL score treats any substring of the display name as a name hit, so
-  // "scores" scored scoresquare-base at 4 and "for" scored forsage-x2-prod at
-  // 4, both beating agent0's two genuine description matches at 1 apiece. A
-  // term that appears as a whole word in the name is a real signal; a term that
-  // merely happens to be a prefix of a longer word is not, and was outranking
-  // it 4 to 1.
-  //
-  // Done here rather than in SQL because expressing "\bterm\b" in LIKE needs
-  // half a dozen OR-ed patterns per word for space, hyphen and underscore
-  // delimiters. The SQL score stays as the recall net (LIMIT 60); this decides
-  // the order of what it caught.
-  if (words.length) {
-    const bounded = words.map((w) => new RegExp("(^|[^a-z0-9])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)", "i"));
-    const rescore = (r) => {
-      const name = r.display_name || "";
-      const text = `${r.description || ""} ${r.auto_description || ""}`;
-      let score = 0;
-      bounded.forEach((re, i) => {
-        if (re.test(name)) score += 6;              // whole word in the name
-        else if (name.toLowerCase().includes(words[i])) score += 1;  // incidental substring
-        if (re.test(text)) score += 2;              // whole word in the description
-      });
-      return score;
-    };
-    rows = rows
-      .map((r) => ({ r, s: rescore(r) }))
-      .sort((a, b) => b.s - a.s || (b.r.reliability_score || 0) - (a.r.reliability_score || 0))
-      .map((x) => x.r);
-  }
+  rows = boundaryRerank(rows, words);
+
   // De-dup first so we batch the stability lookup over the trimmed set.
   const seenIpfs = new Set();
   const keep = [];
