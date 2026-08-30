@@ -689,6 +689,7 @@ function recommendSubgraph({ goal, chain = "" }) {
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, canonical_entities, active_allocation_count, example_query,
+           query_volume_30d,
            (${goalScore}) AS goal_score
     FROM subgraphs
     ${where}
@@ -806,9 +807,13 @@ function getSubgraphDetail({ subgraph_id }) {
       client_libraries: ["@graphprotocol/client-x402", "x402-fetch"],
       example_query: exampleQuery,
     },
-    api_key_legacy: {
+    // Not "legacy" — this is the route most callers should take, and the one
+    // some MCP hosts allow exclusively. The old text also told you to replace
+    // an `[api-key]` placeholder that no longer exists in the URL.
+    api_key: {
       url: endpoints.query_url,
-      flow: "Get an API key from https://thegraph.com/studio/apikeys/, replace [api-key] in the url, then POST GraphQL.",
+      flow: "Get a key at https://thegraph.com/studio/apikeys/ (100K free queries/month), then POST GraphQL to url with header `Authorization: Bearer <STUDIO_API_KEY>`. The key goes in the header, not the path. A missing header returns HTTP 200 with a GraphQL error body, so read the body rather than trusting the status.",
+      example_query: exampleQuery,
     },
     schema_hint: result.example_query
       ? "example_query above was generated from this subgraph's actual schema. Adapt the entity name + field selection as needed."
@@ -1049,7 +1054,8 @@ async function semanticSearchSubgraphs({
       `SELECT id, display_name, description, auto_description, domain,
               protocol_type, network, reliability_score, ipfs_hash,
               entity_count, canonical_entities, powered_by_substreams,
-              active_allocation_count, example_query, denied_at, created_at, embedding
+              active_allocation_count, example_query, denied_at, created_at,
+              query_volume_30d, embedding
        FROM subgraphs
        ${where}`,
     )

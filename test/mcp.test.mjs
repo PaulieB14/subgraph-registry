@@ -373,3 +373,28 @@ test("neither query route is presented as the recommended one", async () => {
   assert.ok(!/recommended/i.test(d.query_instructions.split(".")[0]),
     "the first sentence must not push one route");
 });
+
+test("query_volume_30d is present on every tool that returns subgraphs", async () => {
+  // 0.9.5 added the field to the result mappers but not to the SELECT lists in
+  // recommend_subgraph and semantic_search_subgraphs, so both returned null
+  // forever — silently, because `r.query_volume_30d ?? null` cannot tell a
+  // missing column from a null value. Volume is the tie-breaker that separates
+  // a protocol from its forks, so a null here is a wrong answer, not a gap.
+  const s = (await callTool("search_subgraphs", { query: "lido", limit: 1 })).subgraphs[0];
+  assert.ok(s.query_volume_30d > 0, "search_subgraphs lost the volume");
+
+  const r = (await callTool("recommend_subgraph", { goal: "lido staking on ethereum" })).recommendations?.[0];
+  if (r) assert.notEqual(r.query_volume_30d, null, "recommend_subgraph returns null volume");
+
+  const m = (await callTool("semantic_search_subgraphs", { query: "liquid staking derivatives", limit: 1 })).subgraphs?.[0];
+  if (m) assert.notEqual(m.query_volume_30d, null, "semantic_search returns null volume");
+});
+
+test("get_subgraph_detail does not tell you to edit a placeholder that is gone", async () => {
+  const d = await callTool("get_subgraph_detail", {
+    subgraph_id: "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ",
+  });
+  const blob = JSON.stringify(d);
+  assert.ok(!blob.includes("[api-key]"), "still references the retired [api-key] path placeholder");
+  assert.ok(!blob.includes("api_key_legacy"), "the keyed route is not legacy; it is the common case");
+});
