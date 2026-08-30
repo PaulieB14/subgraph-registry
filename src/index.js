@@ -24,7 +24,7 @@ import Database from "better-sqlite3";
 import express from "express";
 import { fileURLToPath, pathToFileURL } from "url";
 import { basename, dirname, join } from "path";
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from "fs";
 import { get as httpsGet } from "https";
 import { createHash } from "crypto";
 
@@ -1856,10 +1856,37 @@ export { TOOLS };
 // the MCP server or open the SQLite file. Use pathToFileURL so the
 // comparison works on Windows where process.argv[1] uses backslashes
 // while import.meta.url is forward-slashed.
+// Whether this file was RUN, as opposed to imported (scripts/gen-openapi.js
+// imports it for TOOLS[] and must not spawn a server).
+//
+// This has to compare real paths. npm installs a bin as a symlink —
+// node_modules/.bin/subgraph-registry-mcp -> ../subgraph-registry-mcp/src/index.js
+// — and Node sets import.meta.url to the RESOLVED target while argv[1] keeps
+// the symlink. So the old comparison was:
+//
+//   pathToFileURL(argv[1]) = file:///…/node_modules/.bin/subgraph-registry-mcp
+//   import.meta.url        = file:///…/subgraph-registry-mcp/src/index.js
+//   basename(argv[1])      = "subgraph-registry-mcp"   (not "index.js")
+//
+// Both branches false, so main() never ran: the process exited 0, instantly,
+// silently, and every MCP host reported "Connection closed" with 0 tools. It
+// worked in local testing only because `node src/index.js` satisfies the
+// basename fallback — which is exactly why no test caught it. The package has
+// never once started over npx.
+//
+// realpathSync collapses the symlink on both sides, so npx, `npm i -g`, a
+// direct path and a symlinked directory all agree. Note the URL comparison was
+// already unreliable on its own: on macOS a /var path resolves to /private/var,
+// so even a direct run failed that branch and survived on the basename check.
 const _isMain =
   process.argv[1] !== undefined &&
-  (pathToFileURL(process.argv[1]).href === import.meta.url ||
-    basename(process.argv[1]) === "index.js");
+  (() => {
+    try {
+      return realpathSync(process.argv[1]) === realpathSync(__filename);
+    } catch {
+      return false;
+    }
+  })();
 
 if (_isMain) {
   main().catch((err) => {

@@ -51,6 +51,15 @@ jobs:
       - name: Syntax-check OpenAPI generator
         run: node --check scripts/gen-openapi.js
 
+      - name: Smoke-test the installed bin (the one that was broken)
+        # npm pack -> install -> drive node_modules/.bin/ through a real MCP
+        # handshake. The unit suite runs `node src/index.js`, which satisfied
+        # the old entrypoint check while npm's bin SYMLINK satisfied neither
+        # branch — so the server exited 0 without starting and every npx launch
+        # died silently, through six releases, with a green build. Testing the
+        # source path cannot catch a bug in how the package is launched.
+        run: node scripts/smoke-bin.mjs
+
       - name: Verify the shipped DB matches every hash that claims to describe it
         # Three places assert this hash: the constant the runtime checks against,
         # SKILL.md (which agents read to pin a version), and the file itself. If
