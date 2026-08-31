@@ -1,13 +1,13 @@
 ---
 name: subgraph-registry-mcp
-description: Discover and filter 15,330 The Graph subgraphs by domain, network, protocol type, or natural language goal. Each result includes an x402 query URL — $0.01 USDC on Base per call, no API key required.
+description: Discover and filter 15,333 The Graph subgraphs by domain, network, protocol type, or natural language goal. Each result includes an x402 query URL — $0.01 USDC on Base per call, no API key required.
 metadata:
   {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
 ---
 
 # Subgraph Registry
 
-Agent-friendly discovery of 15,330 classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language goal — get reliability-scored results with **x402-ready query URLs**. Agents can go from question → answer without ever touching a Studio API key.
+Agent-friendly discovery of 15,333 classified subgraphs on The Graph Network. Search by domain, network, protocol type, or natural language goal — get reliability-scored results with **x402-ready query URLs**. Agents can go from question → answer without ever touching a Studio API key.
 
 ## Tools
 
@@ -39,7 +39,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.9.9
+npx subgraph-registry-mcp@0.9.10
 ```
 
 ## Network & Data Behavior
@@ -52,10 +52,10 @@ npx subgraph-registry-mcp@0.9.9
 
 ## Verifying the registry
 
-The npm package version `0.9.9` ships with this expected hash:
+The npm package version `0.9.10` ships with this expected hash:
 
 ```
-SHA-256(registry.db) = 425b7a5bde8f61d8ae2f26ea6e201ffd3308c3328a0547fb0d29530222eba0d2
+SHA-256(registry.db) = bd5b718622ef21f97e073808b30c56b5bd3637888be374eb858c95a6dbe7ab6a
 ```
 
 This hash is hard-coded in `src/index.js` (`EXPECTED_DB_SHA256`). On every run,

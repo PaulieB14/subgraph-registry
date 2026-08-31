@@ -2,7 +2,7 @@
 network: sepolia
 count: 564
 percentage: 3.7
-updated: 2026-08-26
+updated: 2026-08-31
 ---
 
 # Sepolia Subgraphs
@@ -13,27 +13,28 @@ updated: 2026-08-26
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Request Payments Sepolia | infrastructure | dex | 0.80 | 4,549,431 |
-| LIS_NEW_STAGE | identity | general | 0.69 | 816,359 |
-| amoy-root-subgraph | infrastructure | staking | 0.69 | 698,842 |
-| LIS_AAVE_DEV | identity | lending | 0.68 | 742,732 |
-| Nox Protocol Indexer - Ethereum Sepolia | defi | dex | 0.64 | 239,796 |
-| boost-sepolia | dao | general | 0.61 | 44,424 |
-| Agent0 | infrastructure | name-service | 0.56 | 31,952 |
-| uniswap-v4-sepolia | defi | dex | 0.56 | 14,448 |
-| sepolia-ddocs-comments | social | general | 0.54 | 386,715 |
-| CCTP Sepolia | infrastructure | dex | 0.51 | 85,657 |
-| finathlon | defi | options | 0.48 | 4,853 |
+| Request Payments Sepolia | infrastructure | dex | 0.81 | 5,133,894 |
+| LIS_NEW_STAGE | identity | general | 0.70 | 880,674 |
+| amoy-root-subgraph | infrastructure | staking | 0.69 | 752,510 |
+| LIS_AAVE_DEV | identity | lending | 0.68 | 816,355 |
+| Nox Protocol Indexer - Ethereum Sepolia | defi | dex | 0.65 | 264,882 |
+| boost-sepolia | dao | general | 0.61 | 39,674 |
+| uniswap-v4-sepolia | defi | dex | 0.58 | 53,282 |
+| Agent0 | infrastructure | name-service | 0.56 | 33,510 |
+| sepolia-ddocs-comments | social | general | 0.54 | 415,870 |
+| CCTP Sepolia | infrastructure | dex | 0.51 | 79,333 |
+| finathlon | defi | options | 0.49 | 11,313 |
+| unlock-protocol-sepolia | nfts | general | 0.48 | 53,932 |
+| child-contract-sepolia-6 | identity | general | 0.45 | 1 |
 | hook-art-sepolia | nfts | general | 0.44 | 3 |
-| child-contract-sepolia-6 | identity | general | 0.44 | — |
 | genesis-expedition-sepolia | infrastructure | general | 0.43 | 2 |
-| unlock-protocol-sepolia | nfts | general | 0.42 | 1,866 |
 | veascan-outbox-sepolia | infrastructure | bridge | 0.40 | 588 |
-| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.39 | 18,219 |
-| ensSepolia | identity | name-service | 0.39 | 7,853 |
-| dex223-v1-sepolia | defi | dex | 0.37 | 67,314 |
-| dex223-subgraph-revenue-sepolia | defi | dex | 0.35 | 67,245 |
-| Balancer CoW AMM Sepolia | defi | dex | 0.34 | 28,041 |
+| geotest | unknown | bridge | 0.40 | 61,663 |
+| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.39 | 20,264 |
+| ensSepolia | identity | name-service | 0.39 | 8,247 |
+| dex223-v1-sepolia | defi | dex | 0.37 | 61,854 |
+| dex223-subgraph-revenue-sepolia | defi | dex | 0.35 | 61,873 |
+| Balancer CoW AMM Sepolia | defi | dex | 0.34 | 30,297 |
 | unifiedid-child
 
 
@@ -41,9 +42,8 @@ updated: 2026-08-26
 
 
  | identity | name-service | 0.32 | 2 |
-| fc3-sms-develop | nfts | general | 0.31 | 1 |
-| uniswap-v3-sepolia | defi | dex | 0.31 | 12,204 |
-| centra | dao | governance | 0.31 | 5 |
+| centra | dao | governance | 0.31 | 8 |
+| uniswap-v3-sepolia | defi | dex | 0.31 | 14,519 |
 
 ## Query This Network
 
