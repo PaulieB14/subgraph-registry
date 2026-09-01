@@ -39,7 +39,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.9.10
+npx subgraph-registry-mcp@0.9.11
 ```
 
 ## Network & Data Behavior
@@ -52,10 +52,10 @@ npx subgraph-registry-mcp@0.9.10
 
 ## Verifying the registry
 
-The npm package version `0.9.10` ships with this expected hash:
+The npm package version `0.9.11` ships with this expected hash:
 
 ```
-SHA-256(registry.db) = bd5b718622ef21f97e073808b30c56b5bd3637888be374eb858c95a6dbe7ab6a
+SHA-256(registry.db) = c17f5fc2fabaad9abbb3234177e2b7d63648d40fc97598e191278a757a3cf8e8
 ```
 
 This hash is hard-coded in `src/index.js` (`EXPECTED_DB_SHA256`). On every run,
