@@ -5,7 +5,7 @@ openapi: "3.1.0"
 info:
   title: "Subgraph Registry"
   description: "Agent-friendly subgraph discovery on The Graph Network. 15,330 classified subgraphs with semantic search, reliability scoring, 30-day query volume and schema-evolution tracking. Discovery only: returns subgraph ids and starter queries, which you run with a Graph Studio API key (Authorization: Bearer) or over x402 ($0.01 USDC on Base, no key)."
-  version: "0.9.12"
+  version: "0.9.13"
   license:
     name: "MIT"
   contact:
@@ -19,7 +19,7 @@ paths:
     post:
       operationId: "tool_search_subgraphs"
       summary: "Search and filter the classified subgraph registry (15,000+ subgraphs)."
-      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL. Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
+      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
       tags:
         - "mcp-tools"
       requestBody:
@@ -177,8 +177,8 @@ paths:
   "/mcp/tools/semantic_search_subgraphs":
     post:
       operationId: "tool_semantic_search_subgraphs"
-      summary: "Semantic vector search over the subgraph registry."
-      description: "Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model architecture used at crawl time; the runtime uses an INT8-quantized ONNX build so absolute scores can drift ~0.01-0.03 from the float32 reference but top-K rankings are stable) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Supports the same domain/network/protocol_type/min_reliability pre-filters as search_subgraphs (applied as SQL WHERE before cosine scoring for performance). Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match)."
+      summary: "Discovery only — this tool does not execute GraphQL and never introspects a schema."
+      description: "Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Semantic vector search over the subgraph registry. Embeds the query string with sentence-transformers/all-MiniLM-L6-v2 (the same model architecture used at crawl time; the runtime uses an INT8-quantized ONNX build so absolute scores can drift ~0.01-0.03 from the float32 reference but top-K rankings are stable) and ranks subgraphs by cosine similarity against the precomputed 384-dim embedding of each subgraph's description + entities + protocol metadata. Prefer this over search_subgraphs when the goal is fuzzy, paraphrased, or describes a use-case rather than a literal protocol/entity name. Supports the same domain/network/protocol_type/min_reliability pre-filters as search_subgraphs (applied as SQL WHERE before cosine scoring for performance). Returns the same shape as search_subgraphs plus a `semantic_score` in [0,1] (>0.5 is typically a strong match)."
       tags:
         - "mcp-tools"
       requestBody:
@@ -265,6 +265,402 @@ paths:
                   default: 0
               required:
                 - "subgraph_id"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/execute_query":
+    post:
+      operationId: "tool_execute_query"
+      summary: "Opt-in: POST a GraphQL query to The Graph gateway for a discovered subgraph."
+      description: "Opt-in: POST a GraphQL query to The Graph gateway for a discovered subgraph. Discovery tools (search_subgraphs, recommend_subgraph, semantic_search_subgraphs, get_subgraph_detail) NEVER execute queries — call this tool only when the user/caller wants data fetched. Accepts id (subgraph id), subgraph_id, deployment_id (0x… 32-byte), or ipfs_hash (Qm…), plus query and optional variables. Replaces official execute_query_by_subgraph_id / execute_query_by_deployment_id / execute_query_by_ipfs_hash. When THE_GRAPH_STUDIO_API_KEY is set, POSTs to gateway.thegraph.com with Authorization: Bearer. If no key, returns {error: credentials_required, query_url, query_url_x402, hint} immediately — does not hang, does not auto-pay x402. Gateway often returns HTTP 200 with a GraphQL error body when auth is missing; http_status and errors are surfaced honestly."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                id:
+                  type: "string"
+                  description: "Subgraph id (e.g. 5zvR82…). Also accepts an IPFS hash or 0x deployment id — it is classified by shape."
+                subgraph_id:
+                  type: "string"
+                  description: "Official-MCP alias of id. Subgraph id for the current deployment."
+                deployment_id:
+                  type: "string"
+                  description: "32-byte deployment id (0x + 64 hex). Queries gateway deployments/id/…"
+                ipfs_hash:
+                  type: "string"
+                  description: "Manifest IPFS hash (Qm…). Queries gateway deployments/id/…, matching official subgraph-MCP."
+                query:
+                  type: "string"
+                  description: "GraphQL query document to POST to the gateway"
+                variables:
+                  type: "object"
+                  description: "Optional GraphQL variables object"
+                  additionalProperties: true
+              required:
+                - "query"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/execute_query_by_subgraph_id":
+    post:
+      operationId: "tool_execute_query_by_subgraph_id"
+      summary: "Alias of execute_query for the official subgraph-MCP name."
+      description: "Alias of execute_query for the official subgraph-MCP name. Pass subgraph_id + query. Prefer execute_query, which also accepts deployment_id and ipfs_hash. Opt-in; discovery tools never execute."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                subgraph_id:
+                  type: "string"
+                  description: "Subgraph ID (e.g. 5zvR82…)"
+                query:
+                  type: "string"
+                  description: "GraphQL query document"
+                variables:
+                  type: "object"
+                  additionalProperties: true
+                  description: "Optional GraphQL variables"
+              required:
+                - "subgraph_id"
+                - "query"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/execute_query_by_deployment_id":
+    post:
+      operationId: "tool_execute_query_by_deployment_id"
+      summary: "Alias of execute_query for the official subgraph-MCP name."
+      description: "Alias of execute_query for the official subgraph-MCP name. Pass deployment_id (0x + 64 hex) + query. Opt-in; discovery tools never execute."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                deployment_id:
+                  type: "string"
+                  description: "32-byte deployment id (0x…)"
+                query:
+                  type: "string"
+                  description: "GraphQL query document"
+                variables:
+                  type: "object"
+                  additionalProperties: true
+                  description: "Optional GraphQL variables"
+              required:
+                - "deployment_id"
+                - "query"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/execute_query_by_ipfs_hash":
+    post:
+      operationId: "tool_execute_query_by_ipfs_hash"
+      summary: "Alias of execute_query for the official subgraph-MCP name."
+      description: "Alias of execute_query for the official subgraph-MCP name. Pass ipfs_hash (Qm…) + query. Opt-in; discovery tools never execute."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                ipfs_hash:
+                  type: "string"
+                  description: "Manifest IPFS hash (Qm…)"
+                query:
+                  type: "string"
+                  description: "GraphQL query document"
+                variables:
+                  type: "object"
+                  additionalProperties: true
+                  description: "Optional GraphQL variables"
+              required:
+                - "ipfs_hash"
+                - "query"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_schema":
+    post:
+      operationId: "tool_get_schema"
+      summary: "Opt-in: return the GraphQL schema for a subgraph."
+      description: "Opt-in: return the GraphQL schema for a subgraph. Discovery tools never introspect. Accepts id / subgraph_id / deployment_id / ipfs_hash. Always returns registry_schema from the local index when the subgraph is in the corpus (entities, example_query, fingerprint, stability) with no network call. When THE_GRAPH_STUDIO_API_KEY is set, also POSTs a __schema introspection to the gateway. If no key, live introspection is omitted and a credentials_required block includes query_url and query_url_x402 so the caller can introspect themselves. Replaces official get_schema_by_subgraph_id / get_schema_by_deployment_id / get_schema_by_ipfs_hash."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                id:
+                  type: "string"
+                  description: "Subgraph id (e.g. 5zvR82…). Also accepts an IPFS hash or 0x deployment id — it is classified by shape."
+                subgraph_id:
+                  type: "string"
+                  description: "Official-MCP alias of id. Subgraph id for the current deployment."
+                deployment_id:
+                  type: "string"
+                  description: "32-byte deployment id (0x + 64 hex). Queries gateway deployments/id/…"
+                ipfs_hash:
+                  type: "string"
+                  description: "Manifest IPFS hash (Qm…). Queries gateway deployments/id/…, matching official subgraph-MCP."
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_schema_by_subgraph_id":
+    post:
+      operationId: "tool_get_schema_by_subgraph_id"
+      summary: "Alias of get_schema for the official subgraph-MCP name."
+      description: "Alias of get_schema for the official subgraph-MCP name. Pass subgraph_id. Returns local registry_schema without a network call; live __schema introspection only if THE_GRAPH_STUDIO_API_KEY is set. Opt-in; discovery tools never introspect."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                subgraph_id:
+                  type: "string"
+                  description: "Subgraph ID (e.g. 5zvR82…)"
+              required:
+                - "subgraph_id"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_schema_by_deployment_id":
+    post:
+      operationId: "tool_get_schema_by_deployment_id"
+      summary: "Alias of get_schema for the official subgraph-MCP name."
+      description: "Alias of get_schema for the official subgraph-MCP name. Pass deployment_id (0x + 64 hex). Live introspection needs THE_GRAPH_STUDIO_API_KEY — deployment ids are not stored in the local corpus. Opt-in."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                deployment_id:
+                  type: "string"
+                  description: "32-byte deployment id (0x…)"
+              required:
+                - "deployment_id"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_schema_by_ipfs_hash":
+    post:
+      operationId: "tool_get_schema_by_ipfs_hash"
+      summary: "Alias of get_schema for the official subgraph-MCP name."
+      description: "Alias of get_schema for the official subgraph-MCP name. Pass ipfs_hash (Qm…). Local registry_schema when the hash is in the corpus. Opt-in; discovery tools never introspect."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                ipfs_hash:
+                  type: "string"
+                  description: "Manifest IPFS hash (Qm…)"
+              required:
+                - "ipfs_hash"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_top_subgraph_deployments":
+    post:
+      operationId: "tool_get_top_subgraph_deployments"
+      summary: "Find subgraphs whose crawled manifest indexes a given contract on a given chain."
+      description: "Find subgraphs whose crawled manifest indexes a given contract on a given chain. Official subgraph-MCP name, better ranking: reliability_score then real query_volume_30d, not query fees and not the official 0-count oracle. contract_addresses come from subgraph.yaml dataSources/templates at crawl time — coverage is high for EVM subgraphs, empty for most substreams-powered ones. Does not query the gateway. Default 3 results, matching official."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                contract_address:
+                  type: "string"
+                  description: "EVM contract address (0x-prefixed 40 hex)"
+                chain:
+                  type: "string"
+                  description: "Official subgraph-MCP uses graph-node ids here (`mainnet`, not `ethereum`). We accept both; aliases resolve (ethereum→mainnet, arbitrum→arbitrum-one, polygon→matic)."
+                limit:
+                  type: "integer"
+                  description: "Max results (default 3, max 20)"
+                  default: 3
+              required:
+                - "contract_address"
+                - "chain"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/get_deployment_30day_query_counts":
+    post:
+      operationId: "tool_get_deployment_30day_query_counts"
+      summary: "Return 30-day query volume for one or more deployments from the local registry."
+      description: "Return 30-day query volume for one or more deployments from the local registry. Official subgraph-MCP name; unlike official, these numbers are real (the official tool has been observed returning 0 for ENS, Lido, Uniswap). Pass ipfs_hashes (Qm…) and/or ids. Does not query the gateway. Unknown hashes return query_volume_30d: null with error not_in_registry rather than a fake 0."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                ipfs_hashes:
+                  type: "array"
+                  items:
+                    type: "string"
+                  description: "Manifest IPFS hashes (Qm…), the official subgraph-MCP input"
+                ids:
+                  type: "array"
+                  items:
+                    type: "string"
+                  description: "Subgraph ids to look up"
+                ipfs_hash:
+                  type: "string"
+                  description: "Single IPFS hash convenience field"
+                id:
+                  type: "string"
+                  description: "Single subgraph id convenience field"
       responses:
         "200":
           description: "Tool result (JSON-encoded)"

@@ -81,6 +81,25 @@ before(async () => {
 
 after(() => proc?.kill());
 
+const EXPECTED_TOOLS = [
+  "execute_query",
+  "execute_query_by_deployment_id",
+  "execute_query_by_ipfs_hash",
+  "execute_query_by_subgraph_id",
+  "get_deployment_30day_query_counts",
+  "get_schema",
+  "get_schema_by_deployment_id",
+  "get_schema_by_ipfs_hash",
+  "get_schema_by_subgraph_id",
+  "get_schema_changes",
+  "get_subgraph_detail",
+  "get_top_subgraph_deployments",
+  "list_registry_stats",
+  "recommend_subgraph",
+  "search_subgraphs",
+  "semantic_search_subgraphs",
+];
+
 test("reports the real package version, not a hardcoded literal", async () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
   const res = await send("initialize", {
@@ -94,14 +113,7 @@ test("reports the real package version, not a hardcoded literal", async () => {
 test("exposes the documented tool set", async () => {
   const res = await send("tools/list", {});
   const names = res.result.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, [
-    "get_schema_changes",
-    "get_subgraph_detail",
-    "list_registry_stats",
-    "recommend_subgraph",
-    "search_subgraphs",
-    "semantic_search_subgraphs",
-  ]);
+  assert.deepEqual(names, EXPECTED_TOOLS);
 });
 
 test("search excludes curation-denied deployments by default", async () => {
@@ -488,4 +500,136 @@ test("ens top 3 are ENS-family, not high-reliability strangers", async () => {
   for (const bad of ["conditional-tokens-gc", "gardens-gnosis", "cypher-tokens"]) {
     assert.ok(!d.subgraphs.some((s) => s.display_name === bad), `${bad} is not ENS`);
   }
+});
+
+// ── Opt-in execute / schema / contract / volume ─────────────────────────
+// Search stays discovery. execute_query is a separate tool. No live paid query.
+
+
+
+
+test("discovery tools still describe themselves as discovery and do not execute", async () => {
+  const res = await send("tools/list", {});
+  const byName = Object.fromEntries(res.result.tools.map((t) => [t.name, t]));
+  for (const name of ["search_subgraphs", "recommend_subgraph", "semantic_search_subgraphs"]) {
+    assert.match(byName[name].description, /discovery only/i, `${name} lost its discovery-only wording`);
+    assert.match(byName[name].description, /does not execute/i, `${name} must not claim to execute`);
+  }
+  assert.match(byName.execute_query.description, /opt-in/i);
+  assert.match(byName.execute_query.description, /never execute/i);
+  assert.match(byName.execute_query.description, /POST/i);
+  assert.match(byName.get_schema.description, /opt-in/i);
+});
+
+test("search still does not query the gateway", async () => {
+  const d = await callTool("search_subgraphs", { query: "lido", limit: 1 });
+  assert.equal(d.subgraphs[0].http_status, undefined, "search must not carry a gateway http_status");
+  assert.ok(!("data" in d && d.data && d.data._mock), "search must not POST GraphQL");
+  assert.match(d.query_instructions, /DISCOVERY/i);
+  assert.match(d.query_instructions, /execute_query/);
+  assert.match(d.query_instructions, /never POSTs GraphQL/i);
+});
+
+test("execute_query missing query fails", async () => {
+  const d = await callTool("execute_query", { id: "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ" });
+  assert.equal(d.error, "query is required and must be a GraphQL string");
+});
+
+test("execute_query missing id fails", async () => {
+  const d = await callTool("execute_query", { query: "{ _meta { block { number } } }" });
+  assert.match(String(d.error), /id, subgraph_id, deployment_id or ipfs_hash is required/);
+});
+
+test("execute_query without a Studio key returns credentials_required and does not hang", async () => {
+  const started = Date.now();
+  const d = await callTool("execute_query", {
+    id: "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ",
+    query: "{ _meta { block { number } } }",
+  });
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed < 5_000, `execute_query without a key hung (${elapsed}ms)`);
+  assert.equal(d.error, "credentials_required");
+  assert.match(d.query_url, /gateway\.thegraph\.com\/api\/subgraphs\/id\//);
+  assert.match(d.query_url_x402, /\/api\/x402\/subgraphs\/id\//);
+  assert.ok(d.hint, "hint must tell the caller how to run it themselves");
+  assert.equal(d.http_status, undefined, "must not hit the network without a key");
+});
+
+test("execute_query_by_ipfs_hash without a key points at deployments/id", async () => {
+  const d = await callTool("execute_query_by_ipfs_hash", {
+    ipfs_hash: "QmTZ8ejXJxRo7vDBS4uwqBeGoxLSWbhaA7oXa1RvxunLy7",
+    query: "{ _meta { block { number } } }",
+  });
+  assert.equal(d.error, "credentials_required");
+  assert.match(d.query_url, /\/deployments\/id\/QmTZ8/);
+  assert.match(d.query_url_x402, /\/x402\/deployments\/id\/QmTZ8/);
+});
+
+test("get_schema without a key still returns the local registry schema", async () => {
+  const d = await callTool("get_schema", {
+    id: "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ",
+  });
+  assert.ok(d.registry_schema, "local schema cache must be returned without a key");
+  assert.equal(d.registry_schema.id, "Sxx812XgeKyzQPaBpR5YZWmGV5fZuBaPdh7DFhzSwiQ");
+  assert.ok(d.registry_schema.all_entities, "all_entities must be present from the corpus");
+  assert.equal(d.live_introspection, null);
+  assert.equal(d.live_introspection_error.error, "credentials_required");
+  assert.ok(d.live_introspection_error.query_url_x402);
+  assert.equal(d.http_status, undefined, "must not hit the gateway without a key");
+});
+
+test("get_schema_by_deployment_id without a key is credentials_required (not in corpus)", async () => {
+  const d = await callTool("get_schema_by_deployment_id", {
+    deployment_id: "0xc5b4d246cf890b0b468e005224622d4c85a8b723cc0b8fa7db6d1a93ddd2e5de",
+  });
+  assert.equal(d.error, "credentials_required");
+  assert.equal(d.registry_schema, null);
+  assert.match(d.query_url, /\/deployments\/id\/0xc5b4d246/);
+});
+
+test("get_deployment_30day_query_counts returns real registry volume, not official 0s", async () => {
+  const s = (await callTool("search_subgraphs", { query: "lido", network: "mainnet", limit: 1 })).subgraphs[0];
+  const d = await callTool("get_deployment_30day_query_counts", {
+    ipfs_hashes: [s.ipfs_hash],
+  });
+  assert.equal(d.source, "registry");
+  assert.equal(d.deployments[0].query_volume_30d, s.query_volume_30d);
+  assert.ok(d.deployments[0].query_volume_30d > 1_000_000, "Lido volume must not be the official 0");
+});
+
+test("get_deployment_30day_query_counts does not fake a 0 for unknown hashes", async () => {
+  const d = await callTool("get_deployment_30day_query_counts", {
+    ipfs_hashes: ["QmThisHashIsNotInTheRegistryXXXXXXXXXXXXXXXXXXX"],
+  });
+  assert.equal(d.deployments[0].error, "not_in_registry");
+  assert.equal(d.deployments[0].query_volume_30d, null);
+});
+
+test("get_top_subgraph_deployments requires contract_address and chain", async () => {
+  const a = await callTool("get_top_subgraph_deployments", { chain: "mainnet" });
+  assert.match(String(a.error), /contract_address/);
+  const b = await callTool("get_top_subgraph_deployments", {
+    contract_address: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+  });
+  assert.match(String(b.error), /chain is required/);
+});
+
+test("get_top_subgraph_deployments finds Uniswap V3 factory on ethereum", async () => {
+  // Uniswap V3 factory. Ranked from crawled contract_addresses, not a live
+  // network-subgraph query, and not the official 0-count oracle.
+  const d = await callTool("get_top_subgraph_deployments", {
+    contract_address: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+    chain: "ethereum",
+  });
+  assert.equal(d.source, "registry");
+  assert.equal(d.chain, "mainnet");
+  if (d.total === 0) {
+    assert.match(d.caveat, /not a live network-subgraph lookup/);
+    return;
+  }
+  assert.ok(d.deployments[0].id);
+  assert.ok("query_volume_30d" in d.deployments[0]);
+  assert.ok(d.deployments[0].query_url);
+  const addrs = d.deployments[0].matched_contracts.map((c) => c.address.toLowerCase());
+  assert.ok(addrs.includes("0x1f98431c8ad98523631ae4a59f267346ea31f984"));
 });
