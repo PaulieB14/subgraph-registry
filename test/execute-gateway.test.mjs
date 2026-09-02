@@ -153,3 +153,22 @@ test("real identifiers in all three forms still resolve", async () => {
       `${JSON.stringify(args)} was rejected: ${r.error}`);
   }
 });
+
+test("a keyed server advertises the full surface, with honest wording", async () => {
+  // The mirror of the keyless assertion in mcp.test.mjs. This suite spawns the
+  // server WITH a key, so the credentialed tools must appear here — and must
+  // still tell the model that discovery never executes.
+  const res = await send("tools/list", {});
+  const byName = Object.fromEntries(res.result.tools.map((t) => [t.name, t]));
+  for (const keyed of [
+    "execute_query", "execute_query_by_subgraph_id", "execute_query_by_deployment_id",
+    "execute_query_by_ipfs_hash", "get_schema", "get_schema_by_subgraph_id",
+    "get_schema_by_deployment_id", "get_schema_by_ipfs_hash",
+  ]) {
+    assert.ok(byName[keyed], `${keyed} missing from a keyed server`);
+  }
+  assert.match(byName.execute_query.description, /opt-in/i);
+  assert.match(byName.execute_query.description, /never execute/i);
+  assert.match(byName.execute_query.description, /POST/i);
+  assert.match(byName.get_schema.description, /opt-in/i);
+});

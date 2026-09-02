@@ -89,16 +89,12 @@ before(async () => {
 
 after(() => proc?.kill());
 
-const EXPECTED_TOOLS = [
-  "execute_query",
-  "execute_query_by_deployment_id",
-  "execute_query_by_ipfs_hash",
-  "execute_query_by_subgraph_id",
+// This suite runs credential-free (see the spawn above), so tools/list here is
+// exactly what a public discovery deployment serves: the eight tools that work
+// without a Studio key. The eight credentialed ones are asserted in
+// execute-gateway.test.mjs, which runs with a key.
+const EXPECTED_KEYLESS_TOOLS = [
   "get_deployment_30day_query_counts",
-  "get_schema",
-  "get_schema_by_deployment_id",
-  "get_schema_by_ipfs_hash",
-  "get_schema_by_subgraph_id",
   "get_schema_changes",
   "get_subgraph_detail",
   "get_top_subgraph_deployments",
@@ -106,6 +102,17 @@ const EXPECTED_TOOLS = [
   "recommend_subgraph",
   "search_subgraphs",
   "semantic_search_subgraphs",
+];
+
+const KEYED_ONLY_TOOLS = [
+  "execute_query",
+  "execute_query_by_deployment_id",
+  "execute_query_by_ipfs_hash",
+  "execute_query_by_subgraph_id",
+  "get_schema",
+  "get_schema_by_deployment_id",
+  "get_schema_by_ipfs_hash",
+  "get_schema_by_subgraph_id",
 ];
 
 test("reports the real package version, not a hardcoded literal", async () => {
@@ -118,10 +125,13 @@ test("reports the real package version, not a hardcoded literal", async () => {
   assert.equal(res.result.serverInfo.version, pkg.version);
 });
 
-test("exposes the documented tool set", async () => {
+test("a keyless server exposes exactly the tools that work without a key", async () => {
   const res = await send("tools/list", {});
   const names = res.result.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, EXPECTED_TOOLS);
+  assert.deepEqual(names, EXPECTED_KEYLESS_TOOLS);
+  for (const keyed of KEYED_ONLY_TOOLS) {
+    assert.ok(!names.includes(keyed), `${keyed} advertised with no key to run it`);
+  }
 });
 
 test("search excludes curation-denied deployments by default", async () => {
@@ -523,10 +533,11 @@ test("discovery tools still describe themselves as discovery and do not execute"
     assert.match(byName[name].description, /discovery only/i, `${name} lost its discovery-only wording`);
     assert.match(byName[name].description, /does not execute/i, `${name} must not claim to execute`);
   }
-  assert.match(byName.execute_query.description, /opt-in/i);
-  assert.match(byName.execute_query.description, /never execute/i);
-  assert.match(byName.execute_query.description, /POST/i);
-  assert.match(byName.get_schema.description, /opt-in/i);
+  // execute_query and get_schema are not advertised here — this server has no
+  // key. Their wording is asserted in execute-gateway.test.mjs, which does.
+  for (const keyed of ["execute_query", "get_schema"]) {
+    assert.ok(!byName[keyed], `${keyed} should not be listed by a keyless server`);
+  }
 });
 
 test("search still does not query the gateway", async () => {
@@ -687,4 +698,25 @@ test("an auth-shaped word in a normal error is not reported as an auth failure",
   assert.ok(!re.test("authority is required"), "matches 'authority'");
   assert.ok(re.test("missing authorization header"), "should match a real auth error");
   assert.ok(re.test("API key not found"), "should match a real auth error");
+});
+
+test("a keyless server advertises only what it can actually do", async () => {
+  // This suite runs credential-free, so it sees exactly what a public
+  // discovery deployment would serve. Advertising execute_query without a key
+  // sells ~2,000 tokens of context for a tool that can only answer
+  // credentials_required, and invites the model to spend a call finding out.
+  const names = (await send("tools/list", {})).result.tools.map((t) => t.name);
+  for (const keyed of ["execute_query", "get_schema", "execute_query_by_subgraph_id"]) {
+    assert.ok(!names.includes(keyed), `${keyed} advertised without a key to run it`);
+  }
+  // The keyless tools that DO work must stay — get_deployment_30day_query_counts
+  // in particular answers from the local corpus, where the official MCP
+  // returns 0.
+  for (const usable of [
+    "search_subgraphs", "recommend_subgraph", "semantic_search_subgraphs",
+    "get_subgraph_detail", "get_schema_changes", "list_registry_stats",
+    "get_top_subgraph_deployments", "get_deployment_30day_query_counts",
+  ]) {
+    assert.ok(names.includes(usable), `${usable} should be available without a key`);
+  }
 });

@@ -1938,6 +1938,37 @@ const IDENTIFIER_PROPS = {
 
 // ── MCP Server ─────────────────────────────────────────────
 
+// Tools that cannot work without a Studio API key. Every one of them returns
+// credentials_required when none is set.
+const KEYED_TOOLS = new Set([
+  "execute_query", "execute_query_by_subgraph_id", "execute_query_by_deployment_id",
+  "execute_query_by_ipfs_hash", "get_schema", "get_schema_by_subgraph_id",
+  "get_schema_by_deployment_id", "get_schema_by_ipfs_hash",
+]);
+
+// Advertise only what this process can actually do.
+//
+// A tool list is not free: it is injected into the model's context on every
+// conversation. The full 16 cost ~4,200 tokens against ~2,200 for discovery
+// alone, and without a key ten of them can only ever answer
+// credentials_required — so a keyless server was charging every client 2,000
+// tokens for capability it does not have, and inviting the model to spend a
+// call discovering that.
+//
+// This matters most for the deployment where it is least visible: a public
+// discovery endpoint runs keyless by design, precisely so there is no
+// credential for an unauthenticated caller to spend.
+//
+// The discovery tools still return query_url and query_url_x402 on every hit,
+// so a caller loses no ability to run its own query — only the pretence that
+// this server would run it for them. Set SUBGRAPH_REGISTRY_LIST_ALL_TOOLS=1 to
+// advertise everything regardless.
+function listableTools() {
+  if (process.env.SUBGRAPH_REGISTRY_LIST_ALL_TOOLS === "1") return TOOLS;
+  if (studioApiKey()) return TOOLS;
+  return TOOLS.filter((t) => !KEYED_TOOLS.has(t.name));
+}
+
 const TOOLS = [
   {
     name: "search_subgraphs",
@@ -2279,7 +2310,7 @@ function createServer() {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: TOOLS,
+    tools: listableTools(),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
