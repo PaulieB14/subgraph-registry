@@ -1430,6 +1430,9 @@ function getSchemaStabilityBatch(ids) {
 
 const KEYED_GATEWAY_BASE = "https://gateway.thegraph.com/api";
 const GATEWAY_TIMEOUT_MS = 20_000;
+// Ceiling on a single gateway response handed back through a tool result.
+// Override with GATEWAY_MAX_BODY_BYTES if you genuinely want more.
+const MAX_GATEWAY_BODY = Number(process.env.GATEWAY_MAX_BODY_BYTES ?? 1_000_000);
 const DEPLOYMENT_ID_RE = /^0x[0-9a-fA-F]{64}$/;
 const IPFS_HASH_RE = /^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|bafy[a-z0-9]{20,})$/i;
 // Subgraph ids are base58 (no 0, O, I or l). Without this the classifier
@@ -1589,6 +1592,23 @@ async function postGateway({ url, key, query, variables }) {
       signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     });
     const text = await res.text();
+    // Cap what a single tool call can return. The body was read and spread
+    // into the result unbounded, so one broad query ("give me every entity")
+    // could bury the caller's whole context window in one response — the
+    // caller pays for that in tokens and cannot undo it.
+    if (text.length > MAX_GATEWAY_BODY) {
+      return {
+        http_status: res.status,
+        body: {
+          error: "response_too_large",
+          bytes: text.length,
+          limit: MAX_GATEWAY_BODY,
+          hint: "Narrow the query — add `first:`, select fewer fields, or paginate. The gateway returned more than this tool will hand back in one piece.",
+          preview: text.slice(0, 1000),
+        },
+        network_error: null,
+      };
+    }
     let body;
     try {
       body = JSON.parse(text);
@@ -1614,7 +1634,13 @@ function gatewayResultShape(posted, target) {
   const authError = Boolean(
     errors &&
       errors.some((e) =>
-        /auth|authorization|api[- ]?key|missing authorization/i.test(String(e?.message || e)),
+        // Anchored on whole words. The first alternative used to be a bare
+        // `auth`, which matches "author", "authority" and "authored" — so a
+        // subgraph with an `author` field returning a normal field error was
+        // reported to the caller as an authentication failure, sending them
+        // to go fix a key that was never the problem.
+        /\b(unauthorized|unauthenticated|authorization|authentication|api[- ]?key|missing authorization)\b/i
+          .test(String(e?.message || e)),
       ),
   );
   const out = {
@@ -2442,9 +2468,32 @@ function startHttpTransport(port) {
     });
   });
 
-  app.listen(port, () => {
-    console.error(`SSE transport listening on http://localhost:${port}/sse`);
-    console.error(`Well-known manifest at http://localhost:${port}/.well-known/subgraph/{id}.jsonld`);
+  // Bind loopback unless told otherwise.
+  //
+  // This used to be `app.listen(port, cb)` with no host, which binds ALL
+  // interfaces — while the very next line printed "localhost". Verified:
+  // the log said localhost:3903 and lsof said *:3903. That gap is the whole
+  // problem, because since v0.9.13 the process can hold a Studio API key, and
+  // /sse and /messages have no authentication. Anyone on the LAN could open a
+  // session and spend the operator's Graph quota, with the startup message
+  // reassuring them it was local-only.
+  //
+  // Discovery over HTTP is still fine to expose deliberately — set
+  // MCP_HTTP_HOST=0.0.0.0 — but that is now a decision rather than a default,
+  // and the log reports what was actually bound.
+  const host = process.env.MCP_HTTP_HOST || "127.0.0.1";
+  app.listen(port, host, () => {
+    const shown = host === "0.0.0.0" || host === "::" ? `<this-host>:${port}` : `${host}:${port}`;
+    console.error(`SSE transport listening on http://${shown}/sse (bound to ${host})`);
+    console.error(`Well-known manifest at http://${shown}/.well-known/subgraph/{id}.jsonld`);
+    if (host !== "127.0.0.1" && host !== "localhost" && studioApiKey()) {
+      console.error(
+        "WARNING: bound to a non-loopback interface with a Studio API key set. " +
+        "/sse and /messages are unauthenticated, so anyone who can reach this port " +
+        "can execute queries billed to that key. Put it behind a proxy that authenticates, " +
+        "or unset the key to serve discovery only.",
+      );
+    }
   });
 }
 

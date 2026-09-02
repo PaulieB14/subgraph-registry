@@ -46,9 +46,17 @@ async function callTool(name, args) {
 }
 
 before(async () => {
+  // Explicitly credential-free. This inherited process.env, so on any machine
+  // with THE_GRAPH_STUDIO_API_KEY set — the maintainer's laptop, or CI once a
+  // key is added — the assertions that prove the opt-in gate works would have
+  // been exercising the KEYED branch instead, and could have fired real
+  // billable gateway calls from a unit test. A test whose meaning depends on
+  // the developer's shell is not a test.
+  const { THE_GRAPH_STUDIO_API_KEY, GRAPH_STUDIO_API_KEY, GATEWAY_API_KEY, ...cleanEnv } = process.env;
   proc = spawn("node", [join(ROOT, "src", "index.js")], {
     cwd: ROOT,
     stdio: ["pipe", "pipe", "pipe"],
+    env: cleanEnv,
   });
   proc.stdout.on("data", (d) => {
     buf += d.toString();
@@ -632,4 +640,51 @@ test("get_top_subgraph_deployments finds Uniswap V3 factory on ethereum", async 
   assert.ok(d.deployments[0].query_url);
   const addrs = d.deployments[0].matched_contracts.map((c) => c.address.toLowerCase());
   assert.ok(addrs.includes("0x1f98431c8ad98523631ae4a59f267346ea31f984"));
+});
+
+
+// ── Post-merge hardening (v0.9.14) ───────────────────────────────────────
+
+test("no credentials means no execution, whatever the shell says", async () => {
+  // The central safety claim of the opt-in design. This suite now strips the
+  // key from the child's environment, so this assertion is finally about the
+  // code rather than about whoever ran it.
+  const r = await callTool("execute_query", {
+    id: "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV",
+    query: "{ _meta { block { number } } }",
+  });
+  assert.equal(r.error, "credentials_required");
+  assert.ok(r.query_url && r.query_url_x402, "must still hand back both routes");
+  assert.ok(!r.data, "must not have called the gateway");
+});
+
+test("discovery tools never execute, and say so", async () => {
+  // The split is the product promise. If a discovery tool ever grew an
+  // execution path, nothing else in this suite would notice.
+  for (const [tool, args] of [
+    ["search_subgraphs", { query: "uniswap", limit: 1 }],
+    ["recommend_subgraph", { goal: "find DEX trades on Arbitrum" }],
+    ["semantic_search_subgraphs", { query: "liquid staking", limit: 1 }],
+  ]) {
+    const d = await callTool(tool, args);
+    const blob = JSON.stringify(d);
+    assert.ok(!blob.includes('"_mock"'), `${tool} reached the gateway`);
+    assert.ok(!blob.includes("http_status"), `${tool} returned a gateway response shape`);
+  }
+});
+
+test("an auth-shaped word in a normal error is not reported as an auth failure", async () => {
+  // The detector was /auth|.../ — a bare "auth" that matches "author" and
+  // "authority", so a subgraph with an author field returning an ordinary
+  // field error told the caller to go fix a key that was never the problem.
+  const s = await import("node:fs").then((fs) =>
+    fs.readFileSync(join(ROOT, "src", "index.js"), "utf8"),
+  );
+  const m = s.match(/\/\\b\(unauthorized\|[^/]+\/i/);
+  assert.ok(m, "expected a word-anchored auth detector");
+  const re = new RegExp(m[0].slice(1, -2), "i");
+  assert.ok(!re.test('Cannot query field "author" on type Post'), "matches 'author'");
+  assert.ok(!re.test("authority is required"), "matches 'authority'");
+  assert.ok(re.test("missing authorization header"), "should match a real auth error");
+  assert.ok(re.test("API key not found"), "should match a real auth error");
 });
