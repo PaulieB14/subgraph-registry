@@ -115,3 +115,41 @@ test("get_schema_by_subgraph_id with a key returns local cache plus live introsp
   assert.equal(d.http_status, 200);
   assert.ok(d.live_introspection);
 });
+
+// ── Identifier validation ────────────────────────────────────────────────
+// The gateway base is a literal, so a caller could never redirect a request to
+// another HOST. But the id was interpolated into the path with only a trim, so
+// it could walk that path while carrying the caller's Studio bearer token:
+//   "../../evil"       -> https://gateway.thegraph.com/api/evil
+//   "x/../../../admin" -> https://gateway.thegraph.com/api/admin
+// And naming deployment_id or ipfs_hash explicitly skipped classification
+// entirely, so the check that did exist for `id` could be sidestepped.
+
+test("a crafted identifier cannot walk the gateway path", async () => {
+  for (const args of [
+    { id: "../../evil" },
+    { id: "x/../../../admin" },
+    { id: "a?b=c#d" },
+    { id: "https://evil.com/x" },
+    { deployment_id: "../../admin" },
+    { ipfs_hash: "../../admin" },
+  ]) {
+    const r = await callTool("execute_query", { ...args, query: "{ _meta { block { number } } }" });
+    assert.ok(r.error, `${JSON.stringify(args)} was accepted`);
+    assert.ok(!r.data, `${JSON.stringify(args)} reached the gateway`);
+  }
+});
+
+test("real identifiers in all three forms still resolve", async () => {
+  // The validation must not be so strict that it rejects the things the tool
+  // exists to accept.
+  for (const args of [
+    { id: "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV" },
+    { deployment_id: "0x" + "a".repeat(64) },
+    { ipfs_hash: "QmTZ8ejXJxRo7vDBS4uwqBeGoxLSWbhaA7oXa1RvxunLy7" },
+  ]) {
+    const r = await callTool("execute_query", { ...args, query: "{ _meta { block { number } } }" });
+    assert.ok(!r.error || r.error === "credentials_required",
+      `${JSON.stringify(args)} was rejected: ${r.error}`);
+  }
+});

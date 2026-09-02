@@ -1432,6 +1432,17 @@ const KEYED_GATEWAY_BASE = "https://gateway.thegraph.com/api";
 const GATEWAY_TIMEOUT_MS = 20_000;
 const DEPLOYMENT_ID_RE = /^0x[0-9a-fA-F]{64}$/;
 const IPFS_HASH_RE = /^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|bafy[a-z0-9]{20,})$/i;
+// Subgraph ids are base58 (no 0, O, I or l). Without this the classifier
+// treated ANY leftover string as a subgraph id and interpolated it straight
+// into the gateway URL, so an id could walk the path while carrying the
+// caller's Studio key:
+//   "../../evil"       -> https://gateway.thegraph.com/api/evil
+//   "x/../../../admin" -> https://gateway.thegraph.com/api/admin
+//   "a?b=c#d"          -> query string injected into the path
+// The host could never be changed — the base is a literal — so this was never
+// arbitrary-host SSRF. But sending a user's bearer token to a path they chose
+// is a degree of freedom with no upside, and it costs one regex to remove.
+const SUBGRAPH_ID_RE = /^[1-9A-HJ-NP-Za-km-z]{20,60}$/;
 const CONTRACT_ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
 
 function studioApiKey() {
@@ -1449,7 +1460,8 @@ function classifyIdentifier(value) {
   if (!v) return null;
   if (DEPLOYMENT_ID_RE.test(v)) return { kind: "deployment_id", id: v };
   if (IPFS_HASH_RE.test(v)) return { kind: "ipfs_hash", id: v };
-  return { kind: "subgraph_id", id: v };
+  if (SUBGRAPH_ID_RE.test(v)) return { kind: "subgraph_id", id: v };
+  return null;   // not an identifier we know how to address
 }
 
 // Official subgraph-MCP uses subgraphs/id for a subgraph id and
@@ -1467,16 +1479,32 @@ function resolveQueryTarget(args = {}) {
       ? String(args.id).trim()
       : "";
 
+  // Every branch validates. The explicit deployment_id / ipfs_hash arguments
+  // used to be trusted as given and skipped classifyIdentifier altogether, so
+  // the format check that existed for `id` could be sidestepped by naming a
+  // different parameter.
   let kind;
   let id;
   if (deployment_id) {
+    if (!DEPLOYMENT_ID_RE.test(deployment_id)) {
+      return { error: "deployment_id must be 0x followed by 64 hex characters", got: deployment_id.slice(0, 80) };
+    }
     kind = "deployment_id";
     id = deployment_id;
   } else if (ipfs_hash) {
+    if (!IPFS_HASH_RE.test(ipfs_hash)) {
+      return { error: "ipfs_hash must be a Qm… or bafy… CID", got: ipfs_hash.slice(0, 80) };
+    }
     kind = "ipfs_hash";
     id = ipfs_hash;
   } else if (subgraph_id) {
     const classified = classifyIdentifier(subgraph_id);
+    if (!classified) {
+      return {
+        error: "not a valid identifier: expected a base58 subgraph id, a 0x… deployment id, or a Qm…/bafy… IPFS hash",
+        got: subgraph_id.slice(0, 80),
+      };
+    }
     kind = classified.kind;
     id = classified.id;
   } else {
