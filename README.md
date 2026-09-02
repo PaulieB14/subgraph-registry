@@ -250,15 +250,28 @@ carries `denied: true|false` so the choice stays visible.
 
 The registry is available as an MCP server with **dual transport** — stdio for local clients and SSE/HTTP for remote agents.
 
+Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-mcp) (hosted SSE `https://subgraphs.mcp.thegraph.com/sse`), **better discovery**. Schema, execute, contract-lookup and 30-day counts use the **official tool names** so an agent can swap connectors. Search stays on our names (`search_subgraphs`, `recommend_subgraph`, `semantic_search_subgraphs`) because they already beat official `search_subgraphs_by_keyword` (reliability, real `query_volume_30d`, network).
+
+Official workflow says ALWAYS call `get_deployment_30day_query_counts` before selecting. **Skip that extra round-trip here** — every search/recommend hit already carries `query_volume_30d`. The counts tool still exists under the official name and reads those same registry figures. Official counts have been observed returning 0 for ENS, Lido and Uniswap; we do not copy those zeros.
+
+
 > The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx subgraph-registry-mcp` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
 
-**6 tools:**
-- **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword
+**Discovery tools (never execute GraphQL, never introspect live schemas):**
+- **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword. Ranked by matched terms, reliability and real `query_volume_30d`.
 - **recommend_subgraph** — natural language goal to best subgraphs (includes `schema_stable_days`)
-- **get_subgraph_detail** — full classification for a specific subgraph (includes `schema_changed_at`)
-- **list_registry_stats** — registry overview (domains, networks, counts)
 - **semantic_search_subgraphs** — vector-similarity search over precomputed embeddings (sentence-transformers/all-MiniLM-L6-v2, 384-dim). Use for fuzzy/paraphrased goals where literal keyword match would miss.
+- **get_subgraph_detail** — full classification for a specific subgraph (includes `schema_changed_at` and crawled `contract_addresses`)
+- **list_registry_stats** — registry overview (domains, networks, counts)
 - **get_schema_changes** — chronological schema-fingerprint history for a subgraph (one row per detected change). Helps agents prefer mature subgraphs whose data contract has been stable.
+
+**Opt-in query / schema (caller must invoke; search never auto-queries). Official names for connector swap-in:**
+- **execute_query_by_subgraph_id** / **execute_query_by_deployment_id** / **execute_query_by_ipfs_hash** — POST GraphQL to The Graph gateway. Same routing as official (`subgraphs/id` vs `deployments/id`). Requires `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`). Without a key, returns `{error: credentials_required, query_url, query_url_x402, hint}` immediately — no hang, no x402 auto-pay. Convenience superset: **execute_query** accepts `id` OR `deployment_id` OR `ipfs_hash`.
+- **get_schema_by_subgraph_id** / **get_schema_by_deployment_id** / **get_schema_by_ipfs_hash** — local `registry_schema` (entities, example_query, fingerprint) with no network when the subgraph is in the corpus; live `__schema` introspection only when a Studio key is set. Convenience superset: **get_schema**.
+- **get_top_subgraph_deployments(contract_address, chain)** — official name. Official `chain` is graph-node ids (`mainnet`, not `ethereum`); we accept both. Top 3 from crawled manifests, ranked by reliability then real 30-day volume (not official query-fees / 0-count oracle). Substreams-powered subgraphs often have no dataSources addresses — that gap is reported, not faked.
+- **get_deployment_30day_query_counts** — official name, `ipfs_hashes` in. Real registry `query_volume_30d`. Unknown hashes return `not_in_registry` rather than a fake 0. Usually unnecessary: the same number is already on every search hit.
+
+Set `THE_GRAPH_STUDIO_API_KEY` in the MCP host env to enable execute/live-schema. No private key is bundled. The keyed gateway often returns HTTP 200 with a GraphQL error body when auth is missing — `execute_query` surfaces `http_status` and `errors` honestly.
 
 ### Install
 
@@ -271,7 +284,10 @@ claude mcp add subgraph-registry -- npx subgraph-registry-mcp
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["subgraph-registry-mcp"]
+      "args": ["subgraph-registry-mcp"],
+      "env": {
+        "THE_GRAPH_STUDIO_API_KEY": "your-studio-key"
+      }
     }
   }
 }
