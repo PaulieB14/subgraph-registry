@@ -2,7 +2,7 @@
 network: mainnet
 count: 2482
 percentage: 16.2
-updated: 2026-09-01
+updated: 2026-09-06
 ---
 
 # Ethereum Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-09-01
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v2-ethereum | defi | dex | 0.99 | 60,573,456 |
-| ENS | identity | name-service | 0.98 | 39,654,592 |
-| Uniswap-V3 | defi | dex | 0.98 | 23,360,604 |
-| Uniswap V2 | defi | dex | 0.95 | 16,789,029 |
-| uniswap-v4-ethereum | defi | dex | 0.92 | 8,997,220 |
-| snapshot | dao | governance | 0.90 | 1,891,446 |
-| protocol-v3 | defi | lending | 0.89 | 4,547,892 |
-| Lido | defi | staking | 0.88 | 4,982,167 |
-| Enzyme Core | defi | staking | 0.87 | 2,955,523 |
-| Uniswap V3 Mainnet | defi | dex | 0.86 | 985,126 |
-| Balancer V2 | defi | dex | 0.85 | 1,673,841 |
-| Uni V3 Staker Mainnet | defi | staking | 0.84 | 304,744 |
-| Polygon Root Subgraph | infrastructure | staking | 0.84 | 1,134,833 |
-| etherfi-v2-main | nfts | staking | 0.83 | 893,821 |
-| Exchange | defi | dex | 0.83 | 1,401,883 |
-| Request Payments Mainnet | infrastructure | dex | 0.83 | 2,147,143 |
-| inverse-governance-subgraph | dao | governance | 0.83 | 2,152,892 |
-| sofa ethereum opt | defi | lending | 0.83 | 2,980,420 |
-| Ethereum Blocks | analytics | dex | 0.83 | 2,433,866 |
-| exchange-v3-eth | defi | dex | 0.80 | 972,180 |
-| onyx_graph | dao | governance | 0.80 | 2,167,968 |
-| LIS_mainnet | defi | general | 0.79 | 2,415,481 |
-| Graph Network Ethereum | infrastructure | staking | 0.79 | 672,920 |
-| Curve Finance Ethereum | defi | dex | 0.78 | 302,777 |
-| Uniswap V3 Ethereum | defi | dex | 0.78 | 20,989 |
+| uniswap-v2-ethereum | defi | dex | 0.99 | 61,726,808 |
+| ENS | identity | name-service | 0.98 | 42,354,774 |
+| Uniswap-V3 | defi | dex | 0.98 | 26,206,788 |
+| Uniswap V2 | defi | dex | 0.94 | 6,013,349 |
+| uniswap-v4-ethereum | defi | dex | 0.92 | 9,206,273 |
+| snapshot | dao | governance | 0.90 | 1,961,146 |
+| protocol-v3 | defi | lending | 0.89 | 4,685,307 |
+| Lido | defi | staking | 0.88 | 5,057,833 |
+| Enzyme Core | defi | staking | 0.87 | 3,216,427 |
+| Uniswap V3 Mainnet | defi | dex | 0.85 | 487,334 |
+| Balancer V2 | defi | dex | 0.85 | 1,768,955 |
+| Polygon Root Subgraph | infrastructure | staking | 0.84 | 1,273,491 |
+| Uni V3 Staker Mainnet | defi | staking | 0.84 | 332,901 |
+| Exchange | defi | dex | 0.84 | 1,768,473 |
+| etherfi-v2-main | nfts | staking | 0.84 | 941,359 |
+| Request Payments Mainnet | infrastructure | dex | 0.83 | 2,554,312 |
+| inverse-governance-subgraph | dao | governance | 0.83 | 2,307,536 |
+| sofa ethereum opt | defi | lending | 0.83 | 3,177,697 |
+| Ethereum Blocks | analytics | dex | 0.83 | 2,510,344 |
+| exchange-v3-eth | defi | dex | 0.80 | 1,099,062 |
+| onyx_graph | dao | governance | 0.80 | 2,319,304 |
+| LIS_mainnet | defi | general | 0.80 | 2,597,514 |
+| Graph Network Ethereum | infrastructure | staking | 0.79 | 724,182 |
+| TellerV2 Mainnet | defi | lending | 0.78 | 471,438 |
+| Curve Finance Ethereum | defi | dex | 0.78 | 308,810 |
 
 ## Query This Network
 
