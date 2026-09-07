@@ -13,18 +13,35 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
+// metadataBase resolves every RELATIVE metadata URL, including the generated
+// opengraph-image. It previously pointed at graphadvocate.com, which is a
+// different site — so the card image would have been requested from a host that
+// does not serve it. Prefer whatever Vercel says this deployment is, so preview
+// builds get their own working card instead of pointing at production.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://x402-watch.vercel.app");
+
 export const metadata: Metadata = {
   title: "x402 Watch",
   description:
     "Live tracker of x402 micropayments to The Graph on Base — agent counts, growth, and per-agent leaderboards.",
-  metadataBase: new URL("https://graphadvocate.com"),
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
   openGraph: {
     title: "x402 Watch",
     description:
       "Live x402 micropayments on Base, with ERC-8004 agent attribution.",
     type: "website",
+    url: "/",
+    siteName: "x402 Watch",
   },
   twitter: {
+    // summary_large_image promises X an image. Until app/opengraph-image.tsx
+    // existed this card declared one and never supplied it, so X fell back to a
+    // bare text preview — worse than declaring "summary".
     card: "summary_large_image",
     title: "x402 Watch",
     description: "Live x402 micropayments on Base.",
