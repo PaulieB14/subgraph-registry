@@ -37,6 +37,7 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: "x402 Watch",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "x402 Watch — live agent payments to The Graph on Base" }],
   },
   twitter: {
     // summary_large_image promises X an image. Until app/opengraph-image.tsx
@@ -45,6 +46,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "x402 Watch",
     description: "Live x402 micropayments on Base.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "x402 Watch — live agent payments to The Graph on Base" }],
   },
 };
 

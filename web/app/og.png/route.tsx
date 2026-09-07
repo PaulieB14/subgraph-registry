@@ -1,9 +1,12 @@
 import { ImageResponse } from "next/og";
 import { fetchDaily, fetchLifetimeTotals } from "@/lib/subgraph";
 
-export const alt = "x402 Watch — live agent payments to The Graph on Base";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+// Served as an explicit route rather than Next's opengraph-image file
+// convention. That convention appends a cache-busting hash as a BARE query key
+// ("/opengraph-image?3e3659d3a1a117e1" — a key with no "="), and some social
+// crawlers refuse to fetch a URL with a malformed query string. A plain
+// "/og.png" removes that variable entirely.
+const size = { width: 1200, height: 630 };
 
 // The card is generated per request so a share posted during a spike shows the
 // spike. It must never be the reason a share fails, so every number is fetched
@@ -16,7 +19,7 @@ function compactUsd(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
-export default async function Image() {
+export async function GET() {
   let totalUsdc: number | null = null;
   let totalPayments: number | null = null;
   let today: number | null = null;
