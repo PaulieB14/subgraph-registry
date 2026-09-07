@@ -342,6 +342,40 @@ const STOPWORDS = new Set([
   "data", "info", "about", "some", "more", "most", "have", "has", "had",
 ]);
 
+// Tokens that describe a CATEGORY rather than a protocol. They are real words a
+// caller means, so they cannot be dropped like stopwords — but on their own they
+// select the wrong thing, because the corpus is full of subgraphs whose names
+// happen to contain them.
+//
+// Measured on the live corpus: "rocket pool" put Venus Core Pool, Thena BSC
+// Weighted Pool, "pool factory" and Linked Pool BSC above Rocket Pool itself, on
+// the strength of "pool" alone plus reliability. "Blur NFT marketplace" returned
+// Heroes Nft Marketplace at #1 and never surfaced Blur. "Safe / Gnosis Safe"
+// returned HOPR Nodes, which merely has "Safe" in its description.
+//
+// So a noise token may CONTRIBUTE to a score, but it may never be the only
+// reason a row is in the candidate set.
+const NOISE_TOKENS = new Set([
+  "pool", "pools", "volume", "volumes", "floor", "safe", "bridge", "token",
+  "tokens", "market", "markets", "marketplace", "price", "prices", "history",
+  "protocol", "protocols", "network", "chain", "dex", "nft", "nfts", "swap",
+  "swaps", "stake", "staking", "staked", "lending", "lend", "borrow",
+  "liquidity", "yield", "vault", "vaults", "tvl", "stats", "analytics",
+  "activity", "subgraph", "subgraphs", "top", "highest", "largest", "biggest",
+  "best", "total", "current", "latest", "recent",
+]);
+
+// "highest volume", "most queried", "top TVL" — the caller is asking for scale,
+// so 30d query volume becomes a ranking signal rather than a tie-break.
+const VOLUME_INTENT_RE =
+  /\b(volume|tvl|highest|most|largest|biggest|top|busiest|popular|liquidity)\b/;
+
+// A chain word is routing information when it follows a preposition ("on base",
+// "in ethereum"). Without one it may simply be part of a protocol's name —
+// "Gnosis Safe" is a product, not a request for the Gnosis chain, and treating
+// it as a filter returned HOPR Nodes on gnosis instead of Safe.
+const CHAIN_PREP_RE = /\b(on|in|at|for|across)\s+$/;
+
 function queryTerms(query) {
   return query
     .trim()
@@ -363,7 +397,7 @@ function queryTerms(query) {
 // recommend, which is why `search_subgraphs("reputation scores for onchain
 // agents")` still returned scoresquare-base at #1 while recommend did not —
 // two tools disagreeing because a fix was applied to one of them.
-function boundaryRerank(rows, words) {
+function boundaryRerank(rows, words, tieBreak = null, phrases = []) {
   if (!words.length) return rows;
   const res = words.map(
     (w) => new RegExp("(^|[^a-z0-9])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)", "i"),
@@ -372,6 +406,15 @@ function boundaryRerank(rows, words) {
     const name = r.display_name || "";
     const text = `${r.description || ""} ${r.auto_description || ""}`;
     let out = 0;
+    // A whole-phrase name hit outranks any accumulation of single tokens.
+    // Without this the SQL phrase boost was silently undone here: "compound v3"
+    // re-ranked on the token "compound" alone, every Compound tied, and
+    // reliability promoted Compound V2 over the V3 the caller asked for.
+    const flatName = name.toLowerCase().replace(/[-_.]+/g, " ").replace(/\s+/g, " ");
+    const tightName = flatName.replace(/ /g, "");
+    for (const ph of phrases) {
+      if (flatName.includes(ph) || tightName.includes(ph.replace(/ /g, ""))) out += 15;
+    }
     res.forEach((re, i) => {
       if (re.test(name)) out += 6;
       else if (name.toLowerCase().includes(words[i])) out += 1;
@@ -381,7 +424,14 @@ function boundaryRerank(rows, words) {
   };
   return rows
     .map((r) => ({ r, s: score(r) }))
-    .sort((a, b) => b.s - a.s || (b.r.reliability_score || 0) - (a.r.reliability_score || 0))
+    .sort(
+      (a, b) =>
+        b.s - a.s ||
+        // On a "highest volume" goal, scale is the answer the caller asked for,
+        // so it outranks accrued reliability inside an equal-relevance band.
+        (tieBreak ? tieBreak(a.r, b.r) : 0) ||
+        (b.r.reliability_score || 0) - (a.r.reliability_score || 0),
+    )
     .map((x) => x.r);
 }
 
@@ -751,15 +801,60 @@ function recommendSubgraph({ goal, chain = "" }) {
   // is used, so "on ethereum" narrows the network instead of flattering any
   // subgraph that happens to be called something-Ethereum.
   const allWords = queryTerms(goalLower);
+  // A scale question ("highest volume", "most TVL") is inherently a question
+  // ABOUT a category on a chain, so any chain word in it is routing.
+  const volumeIntent = VOLUME_INTENT_RE.test(goalLower);
+  const isChainish = (w) => {
+    const c = normalizeNetwork(w);
+    return c !== w || KNOWN_NETWORKS.has(c);
+  };
   const chainWords = [];
   const words = [];
   for (const w of allWords) {
-    const canonical = normalizeNetwork(w);
     // Only treat it as a chain if it resolves to a network the corpus has —
     // otherwise a protocol genuinely called "Base" or "Mode" would vanish.
-    if (canonical !== w || KNOWN_NETWORKS.has(canonical)) chainWords.push(canonical);
-    else words.push(w);
+    if (isChainish(w)) {
+      // ...and only if it is actually ROUTING. A chain name routes when the prose
+      // marks it ("...on base") or when the goal names something else to search
+      // for. "Safe / Gnosis Safe" has neither: consuming `gnosis` as a filter left
+      // only the noise token "safe", and the answer was HOPR Nodes on the gnosis
+      // chain rather than the Safe multisig.
+      const idx = goalLower.indexOf(w);
+      const prepositioned = idx > 0 && CHAIN_PREP_RE.test(goalLower.slice(0, idx));
+      const otherSubjectRemains = allWords.some(
+        (o) => o !== w && !NOISE_TOKENS.has(o) && !VERSION_TOKEN_RE.test(o) && !isChainish(o),
+      );
+      // "Base DEX with highest volume" names no protocol and has no preposition,
+      // but it is unambiguously a question about the Base chain — without this
+      // clause `base` stayed a search term and base-dexstarter (0 queries) beat
+      // uniswap-v4-base-3 (347M) on the accidental phrase "base dex".
+      if (prepositioned || otherSubjectRemains || volumeIntent) {
+        chainWords.push(normalizeNetwork(w));
+        continue;
+      }
+    }
+    words.push(w);
   }
+
+  // Which tokens actually identify a protocol? Version tokens (v2/v3/v4) and
+  // category nouns (pool, dex, marketplace…) MODIFY a request; on their own they
+  // just select whichever popular subgraph happens to contain them.
+  const strongWords = words.filter(
+    (w) => !NOISE_TOKENS.has(w) && !VERSION_TOKEN_RE.test(w),
+  );
+  const weakWords = words.filter((w) => !strongWords.includes(w));
+
+  // Adjacent word pairs, matched whole against the display name. "compound v3"
+  // as a phrase beats Uniswap-V3 on the bare token "v3"; "rocket pool" as a
+  // phrase beats Venus Core Pool on the bare token "pool".
+  const meaningful = (parts) =>
+    parts.some((w) => !NOISE_TOKENS.has(w) && !VERSION_TOKEN_RE.test(w));
+  const phrases = [];
+  for (let i = 0; i + 1 < words.length; i++) {
+    const pair = [words[i], words[i + 1]];
+    if (meaningful(pair)) phrases.push(pair.join(" "));
+  }
+  if (words.length > 2 && meaningful(words)) phrases.push(words.join(" "));
   // A chain word NEVER becomes a scoring term. The first version of this fell
   // back to `words.push(...chainWords)` whenever it could not use them as a
   // filter — and because chainWords hold the CANONICAL form, "on ethereum"
@@ -782,16 +877,51 @@ function recommendSubgraph({ goal, chain = "" }) {
   // read as "your chain was ignored".
   inferredChain = explicitChain || (chainWords.length === 1 ? chainWords[0] : null);
 
-  if (words.length) {
-    const textConds = words.map(() => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)");
+  // Whole-phrase name matches, scored far above any single token. This is what
+  // separates "compound v3" from Uniswap-V3 and "rocket pool" from Venus Core
+  // Pool: both lost on a shared modifier token that the phrase disambiguates.
+  const phrasePatterns = phrases.flatMap((ph) => [
+    `%${ph}%`,
+    `%${ph.replace(/ /g, "-")}%`,
+    `%${ph.replace(/ /g, "")}%`,
+  ]);
+  if (phrasePatterns.length) {
+    scoreParts.push(
+      phrases
+        .map(
+          () =>
+            "(CASE WHEN (display_name LIKE ? OR display_name LIKE ? OR display_name LIKE ?)" +
+            " THEN 12 ELSE 0 END)",
+        )
+        .join(" + "),
+    );
+    phrasePatterns.forEach((pat) => scoreParams.push(pat));
+  }
+
+  // The candidate SET is constrained by strong tokens only. Weak tokens still
+  // score — "pool" ought to help Rocket Pool rank — but a row whose ONLY match is
+  // "pool" never enters the candidate set, so reliability can no longer promote
+  // it. When the goal has no strong token at all ("DEX volume on Base") the text
+  // constraint is dropped and the inferred domain/type plus volume do the work,
+  // which is the paraphrase path.
+  if (strongWords.length) {
+    const textConds = strongWords.map(
+      () => "(display_name LIKE ? OR description LIKE ? OR auto_description LIKE ?)",
+    );
+    strongWords.forEach((w) => params.push(`%${w}%`, `%${w}%`, `%${w}%`));
+    conditions.push(`(${textConds.join(" OR ")})`);
+  }
+  if (strongWords.length && words.length) {
     scoreParts.push(
       words
-        .map(() => "((CASE WHEN display_name LIKE ? THEN 4 ELSE 0 END) + (CASE WHEN (description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END))")
+        .map(
+          (w) =>
+            `((CASE WHEN display_name LIKE ? THEN ${strongWords.includes(w) ? 6 : 1} ELSE 0 END)` +
+            ` + (CASE WHEN (description LIKE ? OR auto_description LIKE ?) THEN 1 ELSE 0 END))`,
+        )
         .join(" + "),
     );
     words.forEach((w) => scoreParams.push(`%${w}%`, `%${w}%`, `%${w}%`));
-    words.forEach((w) => params.push(`%${w}%`, `%${w}%`, `%${w}%`));
-    conditions.push(`(${textConds.join(" OR ")})`);
   }
   if (domains.length) {
     scoreParts.push(`(CASE WHEN domain IN (${domains.map(() => "?").join(",")}) THEN 1 ELSE 0 END)`);
@@ -811,14 +941,23 @@ function recommendSubgraph({ goal, chain = "" }) {
            (${goalScore}) AS goal_score
     FROM subgraphs
     ${where}
-    ORDER BY goal_score DESC, reliability_score DESC
+    ORDER BY goal_score DESC, ${volumeIntent ? "query_volume_30d DESC, " : ""}reliability_score DESC
     LIMIT 60
   `;
 
   // SELECT-clause params bind before WHERE-clause params.
   let rows = getDb().prepare(sql).all(...scoreParams, ...params);
 
-  rows = boundaryRerank(rows, words);
+  rows = boundaryRerank(
+    rows,
+    // Re-rank on the tokens that identify the protocol. Including noise tokens
+    // here would re-import the pollution the WHERE clause just removed.
+    strongWords,
+    volumeIntent
+      ? (a, b) => (b.query_volume_30d || 0) - (a.query_volume_30d || 0)
+      : null,
+    phrases,
+  );
 
   // De-dup first so we batch the stability lookup over the trimmed set.
   const seenIpfs = new Set();
