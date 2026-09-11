@@ -5,23 +5,23 @@
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
 <text x="576.0" y="55.0" fill="#e8eaed" font-size="11">2,483</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Base</text>
-<rect x="110" y="68" width="340.7" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="456.69271043093033" y="83.0" fill="#e8eaed" font-size="11">1,839</text>
+<rect x="110" y="68" width="341.1" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="457.06322996375354" y="83.0" fill="#e8eaed" font-size="11">1,841</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Bsc</text>
-<rect x="110" y="96" width="309.4" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
-<text x="425.3838099073701" y="111.0" fill="#e8eaed" font-size="11">1,670</text>
+<rect x="110" y="96" width="309.9" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="425.9395892066049" y="111.0" fill="#e8eaed" font-size="11">1,673</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Arbitrum One</text>
-<rect x="110" y="124" width="266.2" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="382.2182843334676" y="139.0" fill="#e8eaed" font-size="11">1,437</text>
+<rect x="110" y="124" width="266.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="382.4035440998792" y="139.0" fill="#e8eaed" font-size="11">1,438</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Matic</text>
 <rect x="110" y="152" width="241.8" height="22" rx="4" fill="#10b981" opacity="0.85"/>
 <text x="357.7639951671365" y="167.0" fill="#e8eaed" font-size="11">1,305</text>
 <text x="102" y="195.0" text-anchor="end" fill="#7b8394" font-size="11">Optimism</text>
-<rect x="110" y="180" width="107.6" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
-<text x="223.63592428513894" y="195.0" fill="#e8eaed" font-size="11">581</text>
+<rect x="110" y="180" width="107.8" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
+<text x="223.82118405155055" y="195.0" fill="#e8eaed" font-size="11">582</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Sepolia</text>
-<rect x="110" y="208" width="104.3" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="220.30124848973017" y="223.0" fill="#e8eaed" font-size="11">563</text>
+<rect x="110" y="208" width="104.5" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="220.48650825614175" y="223.0" fill="#e8eaed" font-size="11">564</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Avalanche</text>
 <rect x="110" y="236" width="83.9" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
 <text x="199.92267418445428" y="251.0" fill="#e8eaed" font-size="11">453</text>
@@ -32,9 +32,9 @@
 <rect x="110" y="292" width="60.0" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
 <text x="176.02416431735804" y="307.0" fill="#e8eaed" font-size="11">324</text>
 <text x="102" y="335.0" text-anchor="end" fill="#7b8394" font-size="11">Base Sepolia</text>
-<rect x="110" y="320" width="53.4" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
-<text x="169.35481272654047" y="335.0" fill="#e8eaed" font-size="11">288</text>
+<rect x="110" y="320" width="53.5" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
+<text x="169.54007249295208" y="335.0" fill="#e8eaed" font-size="11">289</text>
 <text x="102" y="363.0" text-anchor="end" fill="#7b8394" font-size="11">Gnosis</text>
-<rect x="110" y="348" width="52.8" height="22" rx="4" fill="#84cc16" opacity="0.85"/>
-<text x="168.7990334273057" y="363.0" fill="#e8eaed" font-size="11">285</text>
+<rect x="110" y="348" width="53.0" height="22" rx="4" fill="#84cc16" opacity="0.85"/>
+<text x="168.9842931937173" y="363.0" fill="#e8eaed" font-size="11">286</text>
 </svg>

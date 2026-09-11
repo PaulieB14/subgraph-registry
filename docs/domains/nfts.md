@@ -1,43 +1,43 @@
 ---
 domain: nfts
-count: 1591
+count: 1594
 percentage: 10.4
-updated: 2026-09-07
+updated: 2026-09-11
 ---
 
 # NFTs Subgraphs
 
-**1,591** subgraphs (10.4% of registry)
+**1,594** subgraphs (10.4% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| etherfi-v2-main | mainnet | staking | 0.84 | 937,297 |
-| superfourtune_bsc_mainnet | bsc | general | 0.76 | 1,904,377 |
-| punks-v2 | mainnet | nft-marketplace | 0.74 | 1,229,755 |
-| ORMarketplace | bsc | nft-marketplace | 0.74 | 1,461,307 |
-| unlock-protocol-polygon | matic | general | 0.74 | 506,885 |
-| Marketplace | mainnet | nft-marketplace | 0.74 | 297,930 |
-| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.73 | 1,049,734 |
-| TellerV2 Base | base | lending | 0.72 | 623,534 |
-| unlock-protocol-arbitrum | arbitrum-one | general | 0.71 | 355,058 |
-| Super Freak | base | dex | 0.71 | 149,667 |
-| arbitrum-jiffy-scan | arbitrum-one | staking | 0.71 | 27,004 |
-| nftmarket-base | base | nft-marketplace | 0.71 | 16,838 |
-| mainnet-jiffy-scan | mainnet | staking | 0.70 | 115,124 |
-| superfourtune_bsc_testnet | chapel | general | 0.70 | 2,228,689 |
-| matic-jiffy-scan | matic | staking | 0.69 | 30,419 |
-| TellerV2 Arbitrum | arbitrum-one | lending | 0.69 | 78,270 |
-| cryptopunks_eth | mainnet | nft-marketplace | 0.69 | 77,927 |
-| Nft Market | bsc | name-service | 0.69 | 25,248 |
-| avalanche-jiffy-scan | avalanche | staking | 0.69 | 20,953 |
-| PUNKS V1 | mainnet | nft-marketplace | 0.68 | 480,235 |
-| unlock-protocol-bsc | bsc | general | 0.68 | 322,554 |
-| unlock-protocol-mainnet | mainnet | general | 0.66 | 333,213 |
-| phunks | mainnet | nft-marketplace | 0.66 | 322,192 |
-| loan-prod-marketplace | matic | nft-marketplace | 0.66 | 311 |
-| NFTMarket-Optimism | optimism | nft-marketplace | 0.65 | 3,814 |
+| etherfi-v2-main | mainnet | staking | 0.83 | 910,858 |
+| superfourtune_bsc_mainnet | bsc | general | 0.75 | 1,805,977 |
+| unlock-protocol-polygon | matic | general | 0.75 | 618,852 |
+| ORMarketplace | bsc | nft-marketplace | 0.75 | 1,602,461 |
+| punks-v2 | mainnet | nft-marketplace | 0.74 | 1,160,217 |
+| Marketplace | mainnet | nft-marketplace | 0.73 | 240,520 |
+| TellerV2 Base | base | lending | 0.73 | 1,015,522 |
+| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.73 | 1,030,862 |
+| unlock-protocol-arbitrum | arbitrum-one | general | 0.72 | 421,736 |
+| Super Freak | base | dex | 0.71 | 147,197 |
+| arbitrum-jiffy-scan | arbitrum-one | staking | 0.71 | 27,293 |
+| nftmarket-base | base | nft-marketplace | 0.71 | 19,202 |
+| mainnet-jiffy-scan | mainnet | staking | 0.70 | 114,369 |
+| superfourtune_bsc_testnet | chapel | general | 0.70 | 2,189,607 |
+| TellerV2 Arbitrum | arbitrum-one | lending | 0.70 | 121,664 |
+| matic-jiffy-scan | matic | staking | 0.69 | 30,266 |
+| cryptopunks_eth | mainnet | nft-marketplace | 0.69 | 84,543 |
+| Nft Market | bsc | name-service | 0.68 | 23,917 |
+| avalanche-jiffy-scan | avalanche | staking | 0.68 | 20,720 |
+| PUNKS V1 | mainnet | nft-marketplace | 0.68 | 586,975 |
+| unlock-protocol-bsc | bsc | general | 0.68 | 389,702 |
+| unlock-protocol-mainnet | mainnet | general | 0.66 | 400,511 |
+| Crypto Phunks Auction House | mainnet | nft-marketplace | 0.66 | 89,078 |
+| phunks | mainnet | nft-marketplace | 0.66 | 288,607 |
+| loan-prod-marketplace | matic | nft-marketplace | 0.66 | 307 |
 
 ## Query This Domain
 
