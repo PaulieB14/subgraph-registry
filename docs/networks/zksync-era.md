@@ -2,7 +2,7 @@
 network: zksync-era
 count: 375
 percentage: 2.4
-updated: 2026-09-11
+updated: 2026-09-16
 ---
 
 # Zksync Era Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-09-11
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| trades-uat | defi | perpetuals | 0.80 | 3,429,627 |
-| stats-prod | defi | perpetuals | 0.70 | 974,697 |
-| WOOFi zkSync Testing | analytics | dex | 0.70 | 737,195 |
-| referral-prod | identity | general | 0.69 | 856,668 |
-| Request Payments zkSyncEra | infrastructure | dex | 0.66 | 452,081 |
-| mv2-prune-324 | defi | dex | 0.66 | 144,277 |
-| exchange v3 zksync | defi | dex | 0.62 | 582,374 |
-| Venus Isolated Pools Zksync | defi | lending | 0.60 | 73,033 |
+| trades-uat | defi | perpetuals | 0.80 | 3,523,838 |
+| stats-prod | defi | perpetuals | 0.70 | 993,840 |
+| WOOFi zkSync Testing | analytics | dex | 0.70 | 705,261 |
+| referral-prod | identity | general | 0.69 | 874,433 |
+| Request Payments zkSyncEra | infrastructure | dex | 0.66 | 462,390 |
+| mv2-prune-324 | defi | dex | 0.65 | 115,625 |
+| exchange v3 zksync | defi | dex | 0.61 | 558,861 |
+| Venus Isolated Pools Zksync | defi | lending | 0.60 | 75,625 |
 | maverick-zksync-new-2 | defi | dex | 0.56 | 1 |
-| syncswap-zksync | defi | dex | 0.52 | 80 |
+| syncswap-zksync | defi | dex | 0.52 | 76 |
 | zyfi-zksync-staked-zfi | unknown | staking | 0.46 | 1,457 |
-| Protocol V3 ZKsync | defi | lending | 0.46 | 6,105 |
-| unlock-protocol-zksync | infrastructure | dex | 0.45 | 4,241 |
+| Protocol V3 ZKsync | defi | lending | 0.46 | 5,641 |
 | zyfi-zksync-new-staked-zfi-5 | dao | staking | 0.45 | 1,463 |
-| syncswap-zksync | defi | dex | 0.42 | 15,809 |
+| syncswap-zksync | defi | dex | 0.42 | 16,184 |
+| unlock-protocol-zksync | infrastructure | dex | 0.41 | 449 |
 | syncswap-graph | defi | dex | 0.40 | 1 |
 | Connext ZkSync Era | analytics | bridge | 0.37 | — |
-| Zyfai-Zksync-Vester-2-weeks | unknown | general | 0.30 | 3,366 |
-| Connext ZkSync Era StableSwap | defi | dex | 0.28 | 1 |
+| Zyfai-Zksync-Vester-2-weeks | unknown | general | 0.30 | 3,364 |
+| Connext ZkSync Era StableSwap | defi | dex | 0.29 | 2 |
 | Connext ZkSync Era Staging | analytics | bridge | 0.28 | 1 |
-| Zyfai-Zksync-Vester-3-months | unknown | general | 0.26 | 3,367 |
-| Zyfai-Zksync-Vester-6-Months | unknown | general | 0.26 | 3,370 |
-| Venus Governance zkSync | dao | dex | 0.24 | 2,696 |
+| Zyfai-Zksync-Vester-3-months | unknown | general | 0.26 | 3,366 |
+| Zyfai-Zksync-Vester-6-Months | unknown | general | 0.26 | 3,368 |
 | zyfi-zksync-new-staked-zfi-4 | dao | staking | 0.24 | 1,451 |
-| exchange v2 zksync | defi | dex | 0.22 | 1,914 |
+| Venus Governance zkSync | dao | dex | 0.23 | 920 |
+| exchange v2 zksync | defi | dex | 0.22 | 2,309 |
 
 ## Query This Network
 
