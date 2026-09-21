@@ -5,14 +5,14 @@
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
 <text x="576.0" y="55.0" fill="#e8eaed" font-size="11">5,716</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Dex</text>
-<rect x="110" y="68" width="356.1" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="472.10566829951017" y="83.0" fill="#e8eaed" font-size="11">4,425</text>
+<rect x="110" y="68" width="356.9" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
+<text x="472.9104268719384" y="83.0" fill="#e8eaed" font-size="11">4,435</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Lending</text>
 <rect x="110" y="96" width="119.3" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
 <text x="235.34569629111266" y="111.0" fill="#e8eaed" font-size="11">1,483</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Staking</text>
-<rect x="110" y="124" width="73.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="189.39398180545837" y="139.0" fill="#e8eaed" font-size="11">912</text>
+<rect x="110" y="124" width="73.5" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="189.47445766270118" y="139.0" fill="#e8eaed" font-size="11">913</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Bridge</text>
 <rect x="110" y="152" width="67.4" height="22" rx="4" fill="#10b981" opacity="0.85"/>
 <text x="183.35829251224632" y="167.0" fill="#e8eaed" font-size="11">837</text>
@@ -20,14 +20,14 @@
 <rect x="110" y="180" width="36.1" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
 <text x="152.1336599020294" y="195.0" fill="#e8eaed" font-size="11">449</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Yield Aggrega...</text>
-<rect x="110" y="208" width="34.3" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="150.28271518544437" y="223.0" fill="#e8eaed" font-size="11">426</text>
+<rect x="110" y="208" width="34.4" height="22" rx="4" fill="#f97316" opacity="0.85"/>
+<text x="150.3631910426872" y="223.0" fill="#e8eaed" font-size="11">427</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Governance</text>
-<rect x="110" y="236" width="34.1" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
-<text x="150.1217634709587" y="251.0" fill="#e8eaed" font-size="11">424</text>
+<rect x="110" y="236" width="34.3" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
+<text x="150.28271518544437" y="251.0" fill="#e8eaed" font-size="11">426</text>
 <text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Perpetuals</text>
-<rect x="110" y="264" width="22.0" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
-<text x="137.9699090272918" y="279.0" fill="#e8eaed" font-size="11">273</text>
+<rect x="110" y="264" width="22.1" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
+<text x="138.05038488453465" y="279.0" fill="#e8eaed" font-size="11">274</text>
 <text x="102" y="307.0" text-anchor="end" fill="#7b8394" font-size="11">Name Service</text>
 <rect x="110" y="292" width="18.3" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
 <text x="134.26801959412177" y="307.0" fill="#e8eaed" font-size="11">227</text>

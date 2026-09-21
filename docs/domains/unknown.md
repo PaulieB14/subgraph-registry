@@ -1,42 +1,42 @@
 ---
 domain: unknown
-count: 1319
+count: 1320
 percentage: 8.6
-updated: 2026-09-16
+updated: 2026-09-21
 ---
 
 # Unknown Subgraphs
 
-**1,319** subgraphs (8.6% of registry)
+**1,320** subgraphs (8.6% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| uni-lp-positions-bsc | bsc | general | 0.73 | 569,069 |
-| torn-eth | mainnet | general | 0.73 | 332,367 |
-| BTCM | arbitrum-one | general | 0.71 | 474,777 |
-| Thena BSC Vethes | bsc | general | 0.69 | 241,915 |
-| odos-loyalty-base | base | general | 0.68 | 659 |
-| torn-bsc | bsc | general | 0.66 | 65,714 |
-| topsmall-server | bsc | general | 0.65 | 1,410,869 |
-| investmentledger-mainnet | base | general | 0.61 | 41,770 |
-| DscionMainnet | bsc | general | 0.58 | 716,539 |
-| Block_timestamps_arb | arbitrum-one | general | 0.57 | 9,233 |
-| tops-server | bsc | general | 0.57 | 967,002 |
-| Block_timestamps_base | base | general | 0.54 | 1,920 |
-| ppun | matic | general | 0.53 | 2 |
-| avalanche-pangolin-blocks | avalanche | general | 0.53 | 79,048 |
-| torn-arb | arbitrum-one | general | 0.52 | 6,244 |
-| superfourtune_bsc_sweep_prod | bsc | general | 0.52 | 188,332 |
-| omen-agentresultmapping | gnosis | general | 0.51 | 26,146 |
-| delta-v2-base | base | general | 0.49 | 11,765 |
+| uni-lp-positions-bsc | bsc | general | 0.73 | 560,293 |
+| torn-eth | mainnet | general | 0.73 | 319,133 |
+| BTCM | arbitrum-one | general | 0.71 | 458,713 |
+| Thena BSC Vethes | bsc | general | 0.69 | 217,622 |
+| odos-loyalty-base | base | general | 0.68 | 654 |
+| torn-bsc | bsc | general | 0.66 | 66,937 |
+| topsmall-server | bsc | general | 0.65 | 1,421,304 |
+| investmentledger-mainnet | base | general | 0.61 | 42,087 |
+| DscionMainnet | bsc | general | 0.58 | 783,224 |
+| Block_timestamps_arb | arbitrum-one | general | 0.57 | 9,327 |
+| tops-server | bsc | general | 0.57 | 973,961 |
+| Block_timestamps_base | base | general | 0.54 | 1,945 |
+| ppun | matic | general | 0.53 | 3 |
+| avalanche-pangolin-blocks | avalanche | general | 0.53 | 79,254 |
+| torn-arb | arbitrum-one | general | 0.52 | 6,886 |
+| superfourtune_bsc_sweep_prod | bsc | general | 0.52 | 189,689 |
+| omen-agentresultmapping | gnosis | general | 0.51 | 22,728 |
+| delta-v2-base | base | general | 0.49 | 11,905 |
 | proof-of-hold-mainnet | celo | general | 0.49 | — |
 | peun | mainnet | general | 0.48 | 2 |
-| GloryMainnet | bsc | general | 0.48 | 149,540 |
-| torn-pol | matic | general | 0.48 | 6,348 |
-| PassportIssuance | mainnet | general | 0.47 | 691 |
-| planbnb-server | bsc | general | 0.46 | 150,042 |
+| GloryMainnet | bsc | general | 0.48 | 150,736 |
+| torn-pol | matic | general | 0.48 | 5,921 |
+| PassportIssuance | mainnet | general | 0.47 | 690 |
+| planbnb-server | bsc | general | 0.46 | 151,166 |
 | zyfi-zksync-staked-zfi | zksync-era | staking | 0.46 | 1,457 |
 
 ## Query This Domain

@@ -2,7 +2,7 @@
 domain: social
 count: 160
 percentage: 1.0
-updated: 2026-09-16
+updated: 2026-09-21
 ---
 
 # Social Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-09-16
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| polymarket-v2-orderbook | matic | dex | 0.69 | 525,164 |
-| Super Accounts | optimism | general | 0.63 | 12,607 |
-| omen-thumbnailmapping | gnosis | general | 0.58 | 14,348 |
-| sepolia-ddocs-comments | sepolia | general | 0.55 | 446,626 |
-| polynetica-prod | matic | general | 0.49 | 98,463 |
-| shitpost-bsc | bsc | general | 0.45 | 920 |
-| polymarket-v2-main | matic | dex | 0.45 | 4,927 |
-| Polymarket Open Interest V2 | matic | lending | 0.44 | 834 |
-| halgraph | base | general | 0.44 | 50,411 |
-| aemulaV1Base | base | dex | 0.43 | 144,777 |
-| On-Chain Alpha | mainnet | general | 0.42 | 71 |
-| suixi | bsc | general | 0.39 | 118,291 |
-| profeeds | base | options | 0.39 | 3 |
+| polymarket-v2-orderbook | matic | dex | 0.68 | 279,505 |
+| Super Accounts | optimism | general | 0.63 | 7,570 |
+| omen-thumbnailmapping | gnosis | general | 0.60 | 55,109 |
+| sepolia-ddocs-comments | sepolia | general | 0.55 | 449,992 |
+| polynetica-prod | matic | general | 0.50 | 197,826 |
+| shitpost-bsc | bsc | general | 0.45 | 1,312 |
+| polymarket-v2-main | matic | dex | 0.45 | 4,369 |
+| Polymarket Open Interest V2 | matic | lending | 0.43 | 624 |
+| aemulaV1Base | base | dex | 0.43 | 146,556 |
+| On-Chain Alpha | mainnet | general | 0.42 | 69 |
+| suixi | bsc | general | 0.39 | 80,889 |
+| profeeds | base | options | 0.38 | 1 |
 | sharx | arbitrum-one | general | 0.38 | 1 |
-| polymarket-v2-pnl | matic | dex | 0.35 | 498 |
+| halgraph | base | general | 0.37 | 1,605 |
+| polymarket-v2-pnl | matic | dex | 0.35 | 461 |
 | tr56 | bsc | general | 0.35 | 3 |
 | agent-contracts-subgraph | base | staking | 0.34 | 10 |
 | bonsai-launchpad-base | base | dex | 0.30 | 2 |
-| Lens v1 Post Content | matic | dex | 0.27 | 4 |
-| suixi life | bsc | general | 0.24 | 444 |
-| taco-matic | matic | general | 0.23 | 51 |
+| Lens v1 Post Content | matic | dex | 0.27 | 3 |
+| taco-matic | matic | general | 0.23 | 46 |
 | ethp2p-v2-index | arbitrum-one | dex | 0.22 | 2 |
-| EchoMarket Mainnet V1 | fraxtal | nft-marketplace | 0.21 | 3 |
+| EchoMarket Mainnet V1 | fraxtal | nft-marketplace | 0.21 | 4 |
 | dchan alpha 0 | matic | general | 0.20 | — |
-| markee-base | base | bridge | 0.20 | 102 |
+| markee-base | base | bridge | 0.20 | 100 |
+| dzy-v2-eth | mainnet | general | 0.20 | 3 |
 
 ## Query This Domain
 

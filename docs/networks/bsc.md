@@ -1,43 +1,43 @@
 ---
 network: bsc
-count: 1676
+count: 1681
 percentage: 10.9
-updated: 2026-09-16
+updated: 2026-09-21
 ---
 
 # BSC Subgraphs
 
-**1,676** subgraphs (10.9% of registry)
+**1,681** subgraphs (10.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v4-bnb | defi | dex | 0.98 | 33,147,183 |
-| uniswap-v3-bsc | defi | dex | 0.95 | 29,053,087 |
-| forsage-x2-prod | defi | general | 0.91 | 12,067,971 |
-| Prediction V2 | dao | dex | 0.86 | 2,381,932 |
-| exchange-v3-bsc | defi | dex | 0.85 | 2,615,556 |
-| sofa bsc opt | defi | lending | 0.83 | 2,803,909 |
-| protocol-v3-bnb | defi | lending | 0.83 | 1,985,874 |
-| Pancakeswap V3 BSC | defi | dex | 0.83 | 5,070,774 |
-| Request Payments BSC | infrastructure | dex | 0.83 | 2,125,624 |
-| Uniswap V3 BNB | defi | dex | 0.82 | 1,037,233 |
-| Venus Core Pool Subgraph | defi | lending | 0.80 | 727,937 |
-| apx-perp-bnb | defi | perpetuals | 0.80 | 1,363,622 |
-| PancakeSwap Infinity CL Bsc | defi | dex | 0.80 | 4,992,620 |
-| uniswap-v4-bsc | defi | dex | 0.79 | 1,584,346 |
-| orizon | analytics | staking | 0.78 | 2,071,322 |
-| Thena BSC V1 | defi | dex | 0.77 | 725,492 |
-| Pancakeswap V3 BNB | defi | dex | 0.77 | 415,786 |
-| phi-statistics | analytics | staking | 0.77 | 316,946 |
-| metrics | analytics | staking | 0.76 | 170,734 |
-| Compoundor BNB | analytics | lending | 0.76 | 181,344 |
-| v3-bsc | defi | dex | 0.76 | 662,497 |
-| superfourtune_bsc_mainnet | nfts | general | 0.75 | 1,740,208 |
-| ORMarketplace | nfts | nft-marketplace | 0.75 | 2,084,851 |
-| astherus-earn-bsc | identity | bridge | 0.75 | 292,235 |
-| Pancakeswap V3 Compoundor BNB | defi | dex | 0.75 | 173,833 |
+| uniswap-v4-bnb | defi | dex | 0.98 | 31,560,465 |
+| uniswap-v3-bsc | defi | dex | 0.95 | 28,442,122 |
+| forsage-x2-prod | defi | general | 0.91 | 11,529,378 |
+| Prediction V2 | dao | dex | 0.86 | 2,421,834 |
+| exchange-v3-bsc | defi | dex | 0.85 | 2,630,822 |
+| sofa bsc opt | defi | lending | 0.83 | 2,855,823 |
+| protocol-v3-bnb | defi | lending | 0.83 | 2,016,026 |
+| Request Payments BSC | infrastructure | dex | 0.83 | 2,455,340 |
+| Pancakeswap V3 BSC | defi | dex | 0.83 | 4,625,821 |
+| Uniswap V3 BNB | defi | dex | 0.82 | 1,072,410 |
+| Venus Core Pool Subgraph | defi | lending | 0.80 | 778,155 |
+| apx-perp-bnb | defi | perpetuals | 0.80 | 1,359,351 |
+| PancakeSwap Infinity CL Bsc | defi | dex | 0.80 | 4,929,957 |
+| uniswap-v4-bsc | defi | dex | 0.80 | 1,673,463 |
+| orizon | analytics | staking | 0.78 | 2,182,465 |
+| Pancakeswap V3 BNB | defi | dex | 0.77 | 429,016 |
+| Thena BSC V1 | defi | dex | 0.77 | 733,426 |
+| phi-statistics | analytics | staking | 0.76 | 295,336 |
+| metrics | analytics | staking | 0.76 | 155,332 |
+| Compoundor BNB | analytics | lending | 0.76 | 185,329 |
+| v3-bsc | defi | dex | 0.76 | 652,798 |
+| superfourtune_bsc_mainnet | nfts | general | 0.75 | 1,666,150 |
+| astherus-earn-bsc | identity | bridge | 0.75 | 299,697 |
+| ORMarketplace | nfts | nft-marketplace | 0.75 | 2,032,948 |
+| Pancakeswap V3 Compoundor BNB | defi | dex | 0.75 | 176,415 |
 
 ## Query This Network
 
