@@ -1,43 +1,43 @@
 ---
 network: avalanche
-count: 453
+count: 454
 percentage: 2.9
-updated: 2026-09-26
+updated: 2026-10-01
 ---
 
 # Avalanche Subgraphs
 
-**453** subgraphs (2.9% of registry)
+**454** subgraphs (2.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| avalanche-pangolin-v3-test | defi | dex | 0.80 | 1,813,783 |
-| Protocol V3 Avalanche | defi | lending | 0.79 | 805,082 |
-| yieldyak-strategies-avalanche | defi | yield-aggregator | 0.78 | 1,790,508 |
-| Request Payments Avalanche | infrastructure | dex | 0.78 | 857,414 |
-| Balancer Avalanche V2 Beta | defi | dex | 0.78 | 538,007 |
-| Steer Protocol Avalanche | defi | yield-aggregator | 0.77 | 1,769,632 |
-| tracker-v2-avalanche | identity | bridge | 0.74 | 683,615 |
-| benqi-01 | defi | lending | 0.74 | 390,353 |
-| Pangolin Dex | defi | dex | 0.72 | 256,351 |
-| Exchange | defi | dex | 0.71 | 110,696 |
-| Uniswap V3 Avalanche | defi | dex | 0.71 | 182,725 |
-| pharaoh-cl | defi | dex | 0.69 | 14,799 |
-| WOOFi AVAX | analytics | dex | 0.69 | 869,816 |
-| Curve Finance Avalanche | defi | dex | 0.69 | 46,668 |
-| joe-v2 | defi | dex | 0.68 | 74,506 |
-| avalanche-jiffy-scan | nfts | staking | 0.68 | 17,219 |
-| GMX Avalanche | defi | perpetuals | 0.68 | 59,726 |
-| Benqi | defi | lending | 0.68 | 43,311 |
-| memetropolis-avax-mainnet | defi | dex | 0.67 | 302,977 |
-| Silo Finance v2 Avalanche | defi | lending | 0.67 | 23,525 |
-| Avalanche Blocks | infrastructure | general | 0.66 | 68,717 |
-| SushiSwap Avalanche | defi | dex | 0.66 | 57,344 |
-| Trader Joe Avalanche | defi | dex | 0.65 | 29,106 |
-| Protocol V2 Avalanche | defi | lending | 0.64 | 5,225 |
-| benqi21 | defi | lending | 0.64 | 15,589 |
+| avalanche-pangolin-v3-test | defi | dex | 0.80 | 1,830,669 |
+| Protocol V3 Avalanche | defi | lending | 0.79 | 744,608 |
+| yieldyak-strategies-avalanche | defi | yield-aggregator | 0.78 | 1,789,488 |
+| Request Payments Avalanche | infrastructure | dex | 0.78 | 817,539 |
+| Balancer Avalanche V2 Beta | defi | dex | 0.78 | 536,639 |
+| Steer Protocol Avalanche | defi | yield-aggregator | 0.77 | 1,785,238 |
+| tracker-v2-avalanche | identity | bridge | 0.74 | 709,335 |
+| benqi-01 | defi | lending | 0.74 | 404,008 |
+| Pangolin Dex | defi | dex | 0.72 | 216,459 |
+| Exchange | defi | dex | 0.72 | 118,880 |
+| Uniswap V3 Avalanche | defi | dex | 0.71 | 180,928 |
+| pharaoh-cl | defi | dex | 0.69 | 15,136 |
+| WOOFi AVAX | analytics | dex | 0.69 | 862,105 |
+| Curve Finance Avalanche | defi | dex | 0.69 | 47,708 |
+| avalanche-jiffy-scan | nfts | staking | 0.68 | 19,781 |
+| joe-v2 | defi | dex | 0.68 | 69,598 |
+| GMX Avalanche | defi | perpetuals | 0.68 | 59,647 |
+| Benqi | defi | lending | 0.68 | 43,576 |
+| memetropolis-avax-mainnet | defi | dex | 0.67 | 302,956 |
+| Silo Finance v2 Avalanche | defi | lending | 0.67 | 23,955 |
+| Avalanche Blocks | infrastructure | general | 0.66 | 68,657 |
+| SushiSwap Avalanche | defi | dex | 0.66 | 57,420 |
+| Trader Joe Avalanche | defi | dex | 0.64 | 22,751 |
+| Protocol V2 Avalanche | defi | lending | 0.64 | 5,170 |
+| benqi21 | defi | lending | 0.64 | 13,478 |
 
 ## Query This Network
 
