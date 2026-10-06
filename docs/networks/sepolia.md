@@ -2,7 +2,7 @@
 network: sepolia
 count: 564
 percentage: 3.7
-updated: 2026-10-01
+updated: 2026-10-06
 ---
 
 # Sepolia Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-10-01
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Request Payments Sepolia | infrastructure | dex | 0.85 | 6,041,286 |
-| LIS_NEW_STAGE | identity | general | 0.71 | 991,712 |
-| LIS_AAVE_DEV | identity | lending | 0.70 | 1,106,237 |
-| amoy-root-subgraph | infrastructure | staking | 0.69 | 610,291 |
-| uniswap-v4-sepolia | defi | dex | 0.62 | 105,717 |
-| sepolia-ddocs-comments | social | general | 0.56 | 452,981 |
-| unlock-protocol-sepolia | nfts | general | 0.56 | 342,626 |
-| boost-sepolia | dao | general | 0.56 | 2,569 |
-| geotest | unknown | bridge | 0.56 | 329,049 |
-| Agent0 | infrastructure | name-service | 0.56 | 21,592 |
-| polygon-pos-staking-sepolia | defi | staking | 0.55 | 354,214 |
-| finathlon | defi | options | 0.55 | 12,111 |
-| dex223-subgraph-revenue-sepolia | defi | dex | 0.53 | 75,090 |
-| proof-of-humanity-sepolia | identity | bridge | 0.53 | 68,610 |
-| Balancer CoW AMM Sepolia | defi | dex | 0.52 | 31,019 |
-| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.51 | 34,157 |
-| Graph Network Sepolia | infrastructure | staking | 0.47 | 56,760 |
-| conquest-sepolia-fast | gaming | bridge | 0.47 | 37,313 |
-| torn-sepolia | unknown | general | 0.45 | 76,713 |
-| Uniswap v3 sepolia | defi | dex | 0.44 | 96,778 |
-| Test Vault | defi | yield-aggregator | 0.44 | 2,888 |
+| Request Payments Sepolia | infrastructure | dex | 0.84 | 5,999,277 |
+| LIS_NEW_STAGE | identity | general | 0.71 | 996,500 |
+| LIS_AAVE_DEV | identity | lending | 0.70 | 1,109,832 |
+| amoy-root-subgraph | infrastructure | staking | 0.68 | 472,567 |
+| uniswap-v4-sepolia | defi | dex | 0.61 | 79,960 |
+| sepolia-ddocs-comments | social | general | 0.56 | 454,298 |
+| boost-sepolia | dao | general | 0.56 | 2,628 |
+| polygon-pos-staking-sepolia | defi | staking | 0.56 | 561,018 |
+| geotest | unknown | bridge | 0.56 | 277,390 |
+| unlock-protocol-sepolia | nfts | general | 0.56 | 261,015 |
+| Agent0 | infrastructure | name-service | 0.56 | 18,955 |
+| finathlon | defi | options | 0.55 | 12,092 |
+| proof-of-humanity-sepolia | identity | bridge | 0.53 | 57,068 |
+| dex223-subgraph-revenue-sepolia | defi | dex | 0.52 | 35,993 |
+| Balancer CoW AMM Sepolia | defi | dex | 0.52 | 30,977 |
+| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.51 | 34,535 |
+| Graph Network Sepolia | infrastructure | staking | 0.47 | 42,833 |
+| conquest-sepolia-fast | gaming | bridge | 0.47 | 37,353 |
+| torn-sepolia | unknown | general | 0.46 | 86,982 |
+| Hats v1 Sepolia | gaming | general | 0.44 | 21,220 |
 | child-contract-sepolia-6 | identity | general | 0.44 | — |
-| hemi-tunnel-withdrawals-proof-claim-subg | defi | general | 0.44 | 1,900 |
-| light-bridge-sepolia | unknown | bridge | 0.44 | 18,080 |
-| grafun-eth-dev-testnet | defi | dex | 0.43 | 1 |
+| hemi-tunnel-withdrawals-proof-claim-subg | defi | general | 0.44 | 1,747 |
+| light-bridge-sepolia | unknown | bridge | 0.44 | 17,948 |
+| Test Vault | defi | yield-aggregator | 0.43 | 1,977 |
+| tellor-autopay-sepolia | infrastructure | general | 0.43 | 5,079 |
 
 ## Query This Network
 
