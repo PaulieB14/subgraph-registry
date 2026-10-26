@@ -3,38 +3,38 @@
 <text x="300.0" y="26" text-anchor="middle" fill="#e8eaed" font-size="15" font-weight="600">Subgraphs by Network</text>
 <text x="102" y="55.0" text-anchor="end" fill="#7b8394" font-size="11">Mainnet</text>
 <rect x="110" y="40" width="460.0" height="22" rx="4" fill="#3b82f6" opacity="0.85"/>
-<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">2,495</text>
+<text x="576.0" y="55.0" fill="#e8eaed" font-size="11">2,496</text>
 <text x="102" y="83.0" text-anchor="end" fill="#7b8394" font-size="11">Base</text>
 <rect x="110" y="68" width="343.3" height="22" rx="4" fill="#8b5cf6" opacity="0.85"/>
-<text x="459.2945891783567" y="83.0" fill="#e8eaed" font-size="11">1,862</text>
+<text x="459.34134615384613" y="83.0" fill="#e8eaed" font-size="11">1,863</text>
 <text x="102" y="111.0" text-anchor="end" fill="#7b8394" font-size="11">Bsc</text>
-<rect x="110" y="96" width="313.2" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
-<text x="429.2424849699399" y="111.0" fill="#e8eaed" font-size="11">1,699</text>
+<rect x="110" y="96" width="314.4" height="22" rx="4" fill="#06b6d4" opacity="0.85"/>
+<text x="430.40705128205127" y="111.0" fill="#e8eaed" font-size="11">1,706</text>
 <text x="102" y="139.0" text-anchor="end" fill="#7b8394" font-size="11">Arbitrum One</text>
-<rect x="110" y="124" width="268.4" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
-<text x="384.4408817635271" y="139.0" fill="#e8eaed" font-size="11">1,456</text>
+<rect x="110" y="124" width="268.3" height="22" rx="4" fill="#f59e0b" opacity="0.85"/>
+<text x="384.33333333333337" y="139.0" fill="#e8eaed" font-size="11">1,456</text>
 <text x="102" y="167.0" text-anchor="end" fill="#7b8394" font-size="11">Matic</text>
-<rect x="110" y="152" width="242.3" height="22" rx="4" fill="#10b981" opacity="0.85"/>
-<text x="358.2605210420842" y="167.0" fill="#e8eaed" font-size="11">1,314</text>
+<rect x="110" y="152" width="242.5" height="22" rx="4" fill="#10b981" opacity="0.85"/>
+<text x="358.53205128205127" y="167.0" fill="#e8eaed" font-size="11">1,316</text>
 <text x="102" y="195.0" text-anchor="end" fill="#7b8394" font-size="11">Optimism</text>
-<rect x="110" y="180" width="108.2" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
-<text x="224.22444889779558" y="195.0" fill="#e8eaed" font-size="11">587</text>
+<rect x="110" y="180" width="108.4" height="22" rx="4" fill="#ec4899" opacity="0.85"/>
+<text x="224.3653846153846" y="195.0" fill="#e8eaed" font-size="11">588</text>
 <text x="102" y="223.0" text-anchor="end" fill="#7b8394" font-size="11">Sepolia</text>
 <rect x="110" y="208" width="104.5" height="22" rx="4" fill="#f97316" opacity="0.85"/>
-<text x="220.5370741482966" y="223.0" fill="#e8eaed" font-size="11">567</text>
+<text x="220.49519230769232" y="223.0" fill="#e8eaed" font-size="11">567</text>
 <text x="102" y="251.0" text-anchor="end" fill="#7b8394" font-size="11">Avalanche</text>
 <rect x="110" y="236" width="84.4" height="22" rx="4" fill="#6366f1" opacity="0.85"/>
-<text x="200.44088176352705" y="251.0" fill="#e8eaed" font-size="11">458</text>
+<text x="200.40705128205127" y="251.0" fill="#e8eaed" font-size="11">458</text>
 <text x="102" y="279.0" text-anchor="end" fill="#7b8394" font-size="11">Zksync Era</text>
 <rect x="110" y="264" width="69.1" height="22" rx="4" fill="#ef4444" opacity="0.85"/>
-<text x="185.1382765531062" y="279.0" fill="#e8eaed" font-size="11">375</text>
+<text x="185.1105769230769" y="279.0" fill="#e8eaed" font-size="11">375</text>
 <text x="102" y="307.0" text-anchor="end" fill="#7b8394" font-size="11">Linea</text>
 <rect x="110" y="292" width="60.3" height="22" rx="4" fill="#14b8a6" opacity="0.85"/>
-<text x="176.28857715430863" y="307.0" fill="#e8eaed" font-size="11">327</text>
+<text x="176.2644230769231" y="307.0" fill="#e8eaed" font-size="11">327</text>
 <text x="102" y="335.0" text-anchor="end" fill="#7b8394" font-size="11">Base Sepolia</text>
-<rect x="110" y="320" width="55.1" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
-<text x="171.12625250501003" y="335.0" fill="#e8eaed" font-size="11">299</text>
+<rect x="110" y="320" width="55.3" height="22" rx="4" fill="#a855f7" opacity="0.85"/>
+<text x="171.28846153846155" y="335.0" fill="#e8eaed" font-size="11">300</text>
 <text x="102" y="363.0" text-anchor="end" fill="#7b8394" font-size="11">Gnosis</text>
 <rect x="110" y="348" width="53.3" height="22" rx="4" fill="#84cc16" opacity="0.85"/>
-<text x="169.28256513026054" y="363.0" fill="#e8eaed" font-size="11">289</text>
+<text x="169.26121794871796" y="363.0" fill="#e8eaed" font-size="11">289</text>
 </svg>

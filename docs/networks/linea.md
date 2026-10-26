@@ -2,7 +2,7 @@
 network: linea
 count: 327
 percentage: 2.1
-updated: 2026-10-21
+updated: 2026-10-26
 ---
 
 # Linea Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-10-21
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| verax-v2-linea | identity | general | 0.79 | 1,430,847 |
-| WOOFi Linea | analytics | dex | 0.73 | 666,638 |
-| tracker-v2-linea | identity | bridge | 0.66 | 87,577 |
-| exchange v3 linea | defi | dex | 0.66 | 51,603 |
-| unlock-protocol-linea | nfts | general | 0.66 | 80,187 |
-| linea-v1-lynex | defi | yield-aggregator | 0.65 | 74,846 |
-| Protocol V3 Linea | defi | lending | 0.65 | 53,610 |
-| nile-cl | defi | dex | 0.64 | 527 |
-| nile-legacy | dao | general | 0.61 | 30,024 |
-| linea-lynex | defi | dex | 0.61 | 2,915 |
-| nile-legacy-analytics | analytics | dex | 0.55 | 4 |
-| v2-linea | defi | dex | 0.54 | 15,328 |
-| ens-linea-mainnet | identity | name-service | 0.53 | 135,694 |
-| linea-wave1-points-normal | defi | lending | 0.52 | 51 |
-| Linea Blocks | infrastructure | general | 0.51 | 58,575 |
-| exchange v2 linea | defi | dex | 0.51 | 2,211 |
-| secta-linea-exchange-v3 | defi | dex | 0.48 | 37,875 |
-| linea-wave1-points-lynex | defi | dex | 0.47 | 45 |
-| linea-v1-linehub | defi | yield-aggregator | 0.44 | 761 |
-| kotaiko-v3-linea | defi | dex | 0.43 | 998 |
-| secta-linea-exchange-v2 | defi | dex | 0.41 | 37,979 |
-| gamma-uniswap-uniswapv-3-linea | defi | dex | 0.38 | 19,562 |
-| gamma-lynex-uniswapv3-linea | defi | dex | 0.38 | 15,496 |
-| odos-linea | defi | dex | 0.36 | 15 |
-| Sablier Lockup Linea | infrastructure | general | 0.33 | 307 |
+| verax-v2-linea | identity | general | 0.79 | 1,447,761 |
+| WOOFi Linea | analytics | dex | 0.73 | 728,111 |
+| unlock-protocol-linea | nfts | general | 0.67 | 221,585 |
+| tracker-v2-linea | identity | bridge | 0.66 | 89,639 |
+| exchange v3 linea | defi | dex | 0.66 | 50,061 |
+| linea-v1-lynex | defi | yield-aggregator | 0.65 | 84,503 |
+| Protocol V3 Linea | defi | lending | 0.64 | 34,973 |
+| nile-cl | defi | dex | 0.64 | 505 |
+| nile-legacy | dao | general | 0.61 | 30,518 |
+| linea-lynex | defi | dex | 0.61 | 2,913 |
+| nile-legacy-analytics | analytics | dex | 0.54 | 3 |
+| v2-linea | defi | dex | 0.54 | 14,788 |
+| linea-wave1-points-normal | defi | lending | 0.53 | 92 |
+| ens-linea-mainnet | identity | name-service | 0.53 | 108,373 |
+| Linea Blocks | infrastructure | general | 0.51 | 58,252 |
+| exchange v2 linea | defi | dex | 0.50 | 1,855 |
+| linea-wave1-points-lynex | defi | dex | 0.48 | 87 |
+| secta-linea-exchange-v3 | defi | dex | 0.48 | 38,426 |
+| kotaiko-v3-linea | defi | dex | 0.43 | 970 |
+| linea-v1-linehub | defi | yield-aggregator | 0.42 | 356 |
+| secta-linea-exchange-v2 | defi | dex | 0.41 | 38,528 |
+| gamma-uniswap-uniswapv-3-linea | defi | dex | 0.38 | 21,640 |
+| gamma-lynex-uniswapv3-linea | defi | dex | 0.38 | 17,062 |
+| odos-linea | defi | dex | 0.35 | 10 |
+| avant-linea | defi | general | 0.33 | 496 |
 
 ## Query This Network
 
