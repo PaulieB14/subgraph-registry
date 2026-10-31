@@ -1,43 +1,43 @@
 ---
 domain: identity
-count: 1062
-percentage: 6.8
-updated: 2026-10-26
+count: 1065
+percentage: 6.9
+updated: 2026-10-31
 ---
 
 # Identity Subgraphs
 
-**1,062** subgraphs (6.8% of registry)
+**1,065** subgraphs (6.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| ENS | mainnet | name-service | 0.98 | 36,811,647 |
-| conditional-tokens-gc | gnosis | name-service | 0.91 | 3,947,178 |
-| LIS_AAVE_PROD | mainnet | lending | 0.80 | 2,220,608 |
-| verax-v2-linea | linea | general | 0.79 | 1,447,761 |
-| tracker-v2-base | base | bridge | 0.78 | 1,034,839 |
-| tracker-v2-ethereum | mainnet | bridge | 0.76 | 791,797 |
-| tracker-v2-arbitrum | arbitrum-one | bridge | 0.76 | 667,588 |
-| tracker-v2-optimism | optimism | bridge | 0.75 | 957,725 |
-| tracker-v2-polygon | matic | bridge | 0.75 | 909,290 |
-| Realtoken gnosis | gnosis | bridge | 0.75 | 40,868 |
-| poh-origin-gnosis | gnosis | bridge | 0.75 | 873,183 |
-| tracker-v2-avalanche | avalanche | bridge | 0.75 | 577,362 |
-| astherus-earn-bsc | bsc | bridge | 0.74 | 245,866 |
-| poh-origin-mainnet | mainnet | bridge | 0.74 | 716,564 |
-| tracker-v2-bsc | bsc | bridge | 0.73 | 384,281 |
-| tracker-v2-unichain | unichain | bridge | 0.72 | 462,973 |
-| LIS_NEW_STAGE | sepolia | general | 0.71 | 1,008,500 |
-| LIS_AAVE_DEV | sepolia | lending | 0.70 | 1,123,613 |
-| referral-prod | zksync-era | general | 0.69 | 906,660 |
-| ENS reclaim deposit subgraph | mainnet | name-service | 0.67 | 8,220 |
-| tracker-v2-linea | linea | bridge | 0.66 | 89,639 |
-| Realtoken ethereum | mainnet | bridge | 0.66 | 12,215 |
-| cypher-tokens | mainnet | options | 0.65 | 55,700 |
-| Bridge Realtokens gnosis | gnosis | bridge | 0.65 | 42,262 |
-| tokens-polygon | matic | name-service | 0.62 | 2,660 |
+| conditional-tokens-gc | gnosis | name-service | 0.91 | 4,023,343 |
+| LIS_AAVE_PROD | mainnet | lending | 0.80 | 2,271,694 |
+| verax-v2-linea | linea | general | 0.79 | 1,480,789 |
+| tracker-v2-base | base | bridge | 0.78 | 969,115 |
+| tracker-v2-ethereum | mainnet | bridge | 0.76 | 966,511 |
+| tracker-v2-arbitrum | arbitrum-one | bridge | 0.76 | 682,591 |
+| tracker-v2-polygon | matic | bridge | 0.75 | 990,081 |
+| tracker-v2-optimism | optimism | bridge | 0.75 | 976,992 |
+| poh-origin-gnosis | gnosis | bridge | 0.75 | 1,014,028 |
+| Realtoken gnosis | gnosis | bridge | 0.75 | 28,951 |
+| tracker-v2-avalanche | avalanche | bridge | 0.75 | 565,470 |
+| astherus-earn-bsc | bsc | bridge | 0.74 | 261,117 |
+| poh-origin-mainnet | mainnet | bridge | 0.74 | 844,783 |
+| tracker-v2-bsc | bsc | bridge | 0.73 | 393,344 |
+| tracker-v2-unichain | unichain | bridge | 0.72 | 473,373 |
+| LIS_NEW_STAGE | sepolia | general | 0.71 | 1,029,754 |
+| LIS_AAVE_DEV | sepolia | lending | 0.70 | 1,148,874 |
+| referral-prod | zksync-era | general | 0.69 | 928,883 |
+| ENS reclaim deposit subgraph | mainnet | name-service | 0.67 | 8,346 |
+| tracker-v2-linea | linea | bridge | 0.67 | 96,621 |
+| Realtoken ethereum | mainnet | bridge | 0.65 | 7,990 |
+| Bridge Realtokens gnosis | gnosis | bridge | 0.64 | 25,784 |
+| cypher-tokens | mainnet | options | 0.64 | 30,830 |
+| tokens-polygon | matic | name-service | 0.62 | 2,690 |
+| llens-aggs-base | base | name-service | 0.61 | 1,300,130 |
 
 ## Query This Domain
 
