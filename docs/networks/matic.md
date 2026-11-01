@@ -2,7 +2,7 @@
 network: matic
 count: 1318
 percentage: 8.5
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 # Polygon Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-10-31
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| streamr | infrastructure | staking | 0.91 | 6,324,133 |
-| uniswap-v3-matic | defi | dex | 0.91 | 8,008,430 |
-| QuickSwap V3 | defi | dex | 0.90 | 821,517 |
-| Uniswap V3 Polygon | defi | dex | 0.90 | 1,714,027 |
-| Quickswap06 | defi | dex | 0.84 | 107,454 |
-| sofa polygon opt | defi | lending | 0.84 | 3,446,013 |
-| Request Payments Matic | infrastructure | dex | 0.83 | 1,699,895 |
-| Protocol V3 Polygon | defi | lending | 0.82 | 686,403 |
-| Indexer-Mainnet | defi | dex | 0.81 | 22,321 |
-| Boost Indexer Production | defi | dex | 0.81 | 3,229,412 |
-| Compoundor Polygon | analytics | lending | 0.80 | 213,815 |
-| uniswap-v4-polygon | defi | dex | 0.80 | 396,548 |
-| Uniswap V3 Polygon | defi | dex | 0.79 | 171,956 |
-| Uni V3 Staker Polygon | defi | staking | 0.79 | 86,502 |
-| Uni V3 Vesting Staker Polygon | defi | staking | 0.79 | 32,342 |
-| holiverse-analytics | analytics | dex | 0.78 | 1,612,077 |
-| maticblocks | analytics | dex | 0.78 | 13,184 |
-| Polygon Optimistic Oracle | infrastructure | options | 0.77 | 829,812 |
-| Balancer Polygon V2 Beta | defi | dex | 0.76 | 596,929 |
-| Uniswap V3 Polygon | defi | dex | 0.76 | 168,345 |
-| unlock-protocol-polygon | nfts | general | 0.75 | 557,755 |
-| polygon-v1-quickswap | defi | dex | 0.75 | 36,557 |
-| tracker-v2-polygon | identity | bridge | 0.75 | 990,081 |
-| Polygon Optimistic Oracle V2 | infrastructure | options | 0.74 | 571,225 |
-| Polygon Optimistic Oracle V3 | infrastructure | options | 0.74 | 426,661 |
+| streamr | infrastructure | staking | 0.91 | 6,277,828 |
+| uniswap-v3-matic | defi | dex | 0.91 | 7,693,006 |
+| QuickSwap V3 | defi | dex | 0.90 | 816,140 |
+| Uniswap V3 Polygon | defi | dex | 0.90 | 1,682,674 |
+| Quickswap06 | defi | dex | 0.84 | 105,343 |
+| sofa polygon opt | defi | lending | 0.84 | 3,428,177 |
+| Request Payments Matic | infrastructure | dex | 0.83 | 1,671,281 |
+| Protocol V3 Polygon | defi | lending | 0.82 | 675,050 |
+| Indexer-Mainnet | defi | dex | 0.81 | 21,282 |
+| Boost Indexer Production | defi | dex | 0.81 | 3,212,588 |
+| Compoundor Polygon | analytics | lending | 0.80 | 213,865 |
+| uniswap-v4-polygon | defi | dex | 0.80 | 404,817 |
+| Uniswap V3 Polygon | defi | dex | 0.79 | 170,996 |
+| Uni V3 Staker Polygon | defi | staking | 0.79 | 81,762 |
+| Uni V3 Vesting Staker Polygon | defi | staking | 0.79 | 32,300 |
+| holiverse-analytics | analytics | dex | 0.78 | 1,612,909 |
+| maticblocks | analytics | dex | 0.78 | 13,263 |
+| Polygon Optimistic Oracle | infrastructure | options | 0.77 | 838,614 |
+| Balancer Polygon V2 Beta | defi | dex | 0.76 | 581,150 |
+| Uniswap V3 Polygon | defi | dex | 0.76 | 168,599 |
+| unlock-protocol-polygon | nfts | general | 0.75 | 559,059 |
+| polygon-v1-quickswap | defi | dex | 0.75 | 37,321 |
+| tracker-v2-polygon | identity | bridge | 0.75 | 1,017,283 |
+| Polygon Optimistic Oracle V3 | infrastructure | options | 0.74 | 436,868 |
+| Polygon Optimistic Oracle V2 | infrastructure | options | 0.74 | 553,858 |
 
 ## Query This Network
 

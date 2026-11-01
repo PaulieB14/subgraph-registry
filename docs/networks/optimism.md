@@ -2,7 +2,7 @@
 network: optimism
 count: 588
 percentage: 3.8
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 # Optimism Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-10-31
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| uniswap-v3-optimism | defi | dex | 0.87 | 6,160,036 |
-| Optimism Post Regenesis | defi | dex | 0.86 | 763,276 |
-| Uniswap V3 Optimism | defi | dex | 0.83 | 1,803,375 |
-| Request Payments Optimism | infrastructure | dex | 0.82 | 1,596,025 |
-| Uniswap V3 Optimism | defi | dex | 0.80 | 146,115 |
-| Protocol V3 Optimism | defi | lending | 0.80 | 704,451 |
-| Compoundor Optimism | analytics | lending | 0.78 | 180,599 |
-| tracker-v2-optimism | identity | bridge | 0.75 | 976,992 |
-| WOOFi Optimism Testing | analytics | dex | 0.73 | 892,192 |
-| Unnamed | defi | dex | 0.73 | 289,641 |
-| Optimism Optimistic Oracle V3 | infrastructure | options | 0.71 | 381,503 |
-| PikaPerpV4_New | defi | perpetuals | 0.71 | 203 |
-| Optimism Optimistic Oracle | infrastructure | options | 0.71 | 444,241 |
-| exactly optimism | defi | lending | 0.70 | 82,986 |
-| Optimism Blocks | infrastructure | general | 0.70 | 81,343 |
-| wombat-exchange-op-develop | defi | dex | 0.69 | 39,330 |
-| seer-uniswap-v3-optimism | defi | dex | 0.68 | 356,088 |
-| steer-protocol-optimism | defi | yield-aggregator | 0.68 | 196,218 |
-| Velodrome Optimism Full | defi | dex | 0.68 | 20,628 |
-| v3-optimism | defi | dex | 0.68 | 181,145 |
-| unlock-protocol-optimism | nfts | general | 0.67 | 206,721 |
-| NFTMarket-Optimism | nfts | nft-marketplace | 0.66 | 5,972 |
-| ExtraSubgraph | defi | lending | 0.66 | 63,988 |
-| ExtraFi-xLend | defi | lending | 0.66 | 182,215 |
-| uniswap-v4-optimism | defi | dex | 0.65 | 85,304 |
+| uniswap-v3-optimism | defi | dex | 0.87 | 6,038,605 |
+| Optimism Post Regenesis | defi | dex | 0.86 | 729,073 |
+| Uniswap V3 Optimism | defi | dex | 0.83 | 1,787,481 |
+| Request Payments Optimism | infrastructure | dex | 0.82 | 1,649,943 |
+| Protocol V3 Optimism | defi | lending | 0.80 | 709,381 |
+| Uniswap V3 Optimism | defi | dex | 0.79 | 133,582 |
+| Compoundor Optimism | analytics | lending | 0.78 | 181,575 |
+| tracker-v2-optimism | identity | bridge | 0.75 | 978,910 |
+| WOOFi Optimism Testing | analytics | dex | 0.73 | 886,268 |
+| Unnamed | defi | dex | 0.73 | 285,008 |
+| Optimism Optimistic Oracle V3 | infrastructure | options | 0.71 | 388,386 |
+| Optimism Optimistic Oracle | infrastructure | options | 0.71 | 450,432 |
+| PikaPerpV4_New | defi | perpetuals | 0.71 | 199 |
+| exactly optimism | defi | lending | 0.70 | 81,856 |
+| Optimism Blocks | infrastructure | general | 0.70 | 81,559 |
+| wombat-exchange-op-develop | defi | dex | 0.69 | 39,442 |
+| seer-uniswap-v3-optimism | defi | dex | 0.68 | 357,470 |
+| steer-protocol-optimism | defi | yield-aggregator | 0.68 | 196,895 |
+| Velodrome Optimism Full | defi | dex | 0.68 | 18,108 |
+| v3-optimism | defi | dex | 0.68 | 174,302 |
+| unlock-protocol-optimism | nfts | general | 0.67 | 208,041 |
+| NFTMarket-Optimism | nfts | nft-marketplace | 0.66 | 6,090 |
+| ExtraSubgraph | defi | lending | 0.66 | 64,193 |
+| ExtraFi-xLend | defi | lending | 0.66 | 182,941 |
+| uniswap-v4-optimism | defi | dex | 0.65 | 82,448 |
 
 ## Query This Network
 
