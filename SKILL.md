@@ -1,6 +1,6 @@
 ---
 name: subgraph-registry-mcp
-description: Same abilities as graphops/subgraph-mcp with better discovery. Search 15,528+ classified subgraphs; real 30-day query volume on every hit; opt-in schema and execute under the official tool names. Discovery tools never auto-query.
+description: Same abilities as graphops/subgraph-mcp with better discovery. Search 15,431+ classified subgraphs; real 30-day query volume on every hit; opt-in schema and execute under the official tool names. Discovery tools never auto-query.
 metadata:
   {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
 ---
@@ -51,7 +51,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.10.14
+npx subgraph-registry-mcp@0.10.15
 ```
 
 ## Network & Data Behavior
@@ -65,10 +65,10 @@ npx subgraph-registry-mcp@0.10.14
 
 ## Verifying the registry
 
-The npm package version `0.10.14` ships with this expected hash:
+The npm package version `0.10.15` ships with this expected hash:
 
 ```
-SHA-256(registry.db) = 99ed138ab8dedcfdf2d172f4cf1d937c3969d74e2ce27840f1933e3f5b17d74b
+SHA-256(registry.db) = e92e6a63634556b701836f2cfc299fe7cfbf36f638a70739d6d99497ab104e98
 ```
 
 This hash is hard-coded in `src/index.js` (`EXPECTED_DB_SHA256`). On every run,

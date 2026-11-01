@@ -1,43 +1,43 @@
 ---
 domain: nfts
-count: 1607
-percentage: 10.3
+count: 1608
+percentage: 10.4
 updated: 2026-11-01
 ---
 
 # NFTs Subgraphs
 
-**1,607** subgraphs (10.3% of registry)
+**1,608** subgraphs (10.4% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| etherfi-v2-main | mainnet | staking | 0.83 | 823,249 |
-| punks-v2 | mainnet | nft-marketplace | 0.77 | 2,060,513 |
-| ORMarketplace | bsc | nft-marketplace | 0.77 | 903,580 |
-| superfourtune_bsc_mainnet | bsc | general | 0.77 | 1,914,146 |
-| TellerV2 Base | base | lending | 0.76 | 1,401,507 |
-| unlock-protocol-polygon | matic | general | 0.75 | 559,059 |
-| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.73 | 1,100,780 |
-| arbitrum-jiffy-scan | arbitrum-one | staking | 0.73 | 74,950 |
-| nftmarket-base | base | nft-marketplace | 0.72 | 37,539 |
-| superfourtune_bsc_testnet | chapel | general | 0.72 | 2,360,439 |
-| Super Freak | base | dex | 0.72 | 157,755 |
-| TellerV2 Arbitrum | arbitrum-one | lending | 0.71 | 288,460 |
-| PUNKS V1 | mainnet | nft-marketplace | 0.71 | 731,356 |
-| mainnet-jiffy-scan | mainnet | staking | 0.70 | 134,719 |
-| cryptopunks_eth | mainnet | nft-marketplace | 0.70 | 168,882 |
-| avalanche-jiffy-scan | avalanche | staking | 0.70 | 40,826 |
-| unlock-protocol-bsc | bsc | general | 0.68 | 204,341 |
-| phunks | mainnet | nft-marketplace | 0.68 | 523,992 |
-| Crypto Phunks Auction House | mainnet | nft-marketplace | 0.67 | 177,786 |
-| unlock-protocol-linea | linea | general | 0.67 | 201,361 |
-| unlock-protocol-arbitrum | arbitrum-one | general | 0.67 | 221,637 |
-| unlock-protocol-optimism | optimism | general | 0.67 | 208,041 |
-| loan-prod-marketplace | matic | nft-marketplace | 0.66 | 398 |
-| NFTMarket-Optimism | optimism | nft-marketplace | 0.66 | 6,090 |
-| matic-jiffy-scan | matic | staking | 0.66 | 49,327 |
+| etherfi-v2-main | mainnet | staking | 0.84 | 822,817 |
+| punks-v2 | mainnet | nft-marketplace | 0.78 | 2,057,803 |
+| superfourtune_bsc_mainnet | bsc | general | 0.77 | 1,915,360 |
+| ORMarketplace | bsc | nft-marketplace | 0.77 | 901,480 |
+| TellerV2 Base | base | lending | 0.77 | 1,401,491 |
+| Art Blocks | mainnet | nft-marketplace | 0.76 | 1,194,324 |
+| unlock-protocol-polygon | matic | general | 0.76 | 558,068 |
+| auction-subgraph-mainnet | mainnet | nft-marketplace | 0.74 | 1,100,796 |
+| arbitrum-jiffy-scan | arbitrum-one | staking | 0.73 | 75,069 |
+| nftmarket-base | base | nft-marketplace | 0.72 | 37,447 |
+| TellerV2 Arbitrum | arbitrum-one | lending | 0.72 | 288,464 |
+| PUNKS V1 | mainnet | nft-marketplace | 0.72 | 730,849 |
+| Super Freak | base | dex | 0.72 | 157,757 |
+| mainnet-jiffy-scan | mainnet | staking | 0.71 | 134,627 |
+| superfourtune_bsc_testnet | chapel | general | 0.70 | 2,360,509 |
+| cryptopunks_eth | mainnet | nft-marketplace | 0.70 | 168,800 |
+| avalanche-jiffy-scan | avalanche | staking | 0.70 | 40,800 |
+| unlock-protocol-arbitrum | arbitrum-one | general | 0.69 | 221,253 |
+| Crypto Phunks Auction House | mainnet | nft-marketplace | 0.68 | 177,647 |
+| unlock-protocol-bsc | bsc | general | 0.68 | 203,992 |
+| phunks | mainnet | nft-marketplace | 0.68 | 524,155 |
+| unlock-protocol-linea | linea | general | 0.67 | 201,013 |
+| unlock-protocol-optimism | optimism | general | 0.67 | 207,691 |
+| loan-prod-marketplace | matic | nft-marketplace | 0.67 | 397 |
+| NFTMarket-Optimism | optimism | nft-marketplace | 0.66 | 6,092 |
 
 ## Query This Domain
 

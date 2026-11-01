@@ -13,31 +13,31 @@ updated: 2026-11-01
 
 | Name | Domain | Protocol | Reliability | 30d Queries |
 |------|--------|----------|-------------|-------------|
-| Request Payments Sepolia | infrastructure | dex | 0.83 | 2,871,554 |
-| LIS_NEW_STAGE | identity | general | 0.71 | 1,032,700 |
-| LIS_AAVE_DEV | identity | lending | 0.70 | 1,152,232 |
-| uniswap-v4-sepolia | defi | dex | 0.63 | 228,690 |
-| polygon-pos-staking-sepolia | defi | staking | 0.57 | 917,620 |
-| Agent0 | infrastructure | name-service | 0.57 | 30,967 |
-| sepolia-ddocs-comments | social | general | 0.56 | 471,181 |
-| boost-sepolia | dao | general | 0.56 | 2,808 |
-| finathlon | defi | options | 0.56 | 27,478 |
-| unlock-protocol-sepolia | nfts | general | 0.55 | 188,236 |
-| proof-of-humanity-sepolia | identity | bridge | 0.52 | 40,465 |
-| Balancer CoW AMM Sepolia | defi | dex | 0.52 | 27,180 |
-| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.51 | 28,499 |
-| amoy-root-subgraph | infrastructure | staking | 0.49 | 3 |
-| dex223-subgraph-revenue-sepolia | defi | dex | 0.48 | 2,512 |
+| Request Payments Sepolia | infrastructure | dex | 0.85 | 2,866,139 |
+| LIS_AAVE_DEV | identity | lending | 0.72 | 1,152,263 |
+| LIS_NEW_STAGE | identity | general | 0.72 | 1,032,735 |
+| uniswap-v4-sepolia | defi | dex | 0.63 | 228,834 |
+| sepolia-ddocs-comments | social | general | 0.63 | 471,197 |
+| unlock-protocol-sepolia | nfts | general | 0.62 | 187,878 |
+| polygon-pos-staking-sepolia | defi | staking | 0.62 | 915,415 |
+| finathlon | defi | options | 0.56 | 27,327 |
+| boost-sepolia | dao | general | 0.56 | 2,806 |
+| Agent0 | infrastructure | name-service | 0.56 | 30,993 |
+| Arb Bridge Eth Arb Sep | infrastructure | bridge | 0.54 | 28,432 |
+| Balancer CoW AMM Sepolia | defi | dex | 0.52 | 27,117 |
+| amoy-root-subgraph | infrastructure | staking | 0.51 | 3 |
+| proof-of-humanity-sepolia | identity | bridge | 0.49 | 40,462 |
+| dex223-subgraph-revenue-sepolia | defi | dex | 0.47 | 5,012 |
 | conquest-sepolia-fast | gaming | bridge | 0.47 | 39,564 |
-| Hats v1 Sepolia | gaming | general | 0.46 | 54,524 |
-| torn-sepolia | unknown | general | 0.46 | 80,891 |
-| child-contract-sepolia-6 | identity | general | 0.45 | 1 |
-| Onyx Sepolia Pool | defi | dex | 0.44 | 1,351 |
-| Test Vault | defi | yield-aggregator | 0.44 | 2,754 |
-| light-bridge-sepolia | unknown | bridge | 0.44 | 19,165 |
-| grafun-eth-dev-testnet | defi | dex | 0.43 | 1 |
+| light-bridge-sepolia | unknown | bridge | 0.46 | 19,166 |
+| Hats v1 Sepolia | gaming | general | 0.46 | 54,572 |
+| child-contract-sepolia-6 | identity | general | 0.44 | 1 |
 | genesis-expedition-sepolia | infrastructure | general | 0.43 | 3 |
 | hook-art-sepolia | nfts | general | 0.43 | 1 |
+| Uniswap v3 sepolia | defi | dex | 0.43 | 11,408 |
+| torn-sepolia | unknown | general | 0.43 | 80,873 |
+| token-distribution-staging | infrastructure | general | 0.42 | 7,973 |
+| ground-state | gaming | general | 0.41 | 78,247 |
 
 ## Query This Network
 

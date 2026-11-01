@@ -1,43 +1,43 @@
 ---
 domain: dao
-count: 765
+count: 762
 percentage: 4.9
 updated: 2026-11-01
 ---
 
 # DAO Subgraphs
 
-**765** subgraphs (4.9% of registry)
+**762** subgraphs (4.9% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| snapshot | mainnet | governance | 0.91 | 2,162,680 |
-| Prediction V2 | bsc | dex | 0.86 | 3,149,583 |
-| inverse-governance-subgraph | mainnet | governance | 0.84 | 2,541,004 |
-| onyx_graph | mainnet | governance | 0.80 | 2,372,771 |
-| Livepeer | arbitrum-one | staking | 0.77 | 2,385,379 |
-| rootstockcollective-governance-release-c | rootstock | governance | 0.69 | 170,706 |
-| rootstockcollective-governance | rootstock | governance | 0.69 | 170,706 |
-| snapshot-base | base | governance | 0.69 | 39,297 |
-| unlock-protocol-base | base | governance | 0.68 | 397,176 |
-| gardens-gnosis | gnosis | governance | 0.67 | 4,368 |
-| Mainnet Voting V2 | mainnet | staking | 0.67 | 338,489 |
-| dao-pools Upgraded | bsc | governance | 0.66 | 94,431 |
-| Audius Network Mainnet | mainnet | staking | 0.66 | 21,391 |
-| gbc-bridge-gnosis | gnosis | bridge | 0.66 | 731 |
-| Bridge Realtoken Etherum | mainnet | bridge | 0.64 | 22,906 |
-| snapshot-arbitrum-one | arbitrum-one | governance | 0.63 | 17,290 |
-| connect-gnosis | gnosis | governance | 0.63 | 946 |
-| Venus Governance | bsc | governance | 0.63 | 77,505 |
+| snapshot | mainnet | governance | 0.91 | 2,162,549 |
+| Prediction V2 | bsc | dex | 0.86 | 3,148,752 |
+| inverse-governance-subgraph | mainnet | governance | 0.84 | 2,541,090 |
+| onyx_graph | mainnet | governance | 0.81 | 2,372,789 |
+| Livepeer | arbitrum-one | staking | 0.78 | 2,385,319 |
+| rootstockcollective-governance-release-c | rootstock | governance | 0.70 | 341,246 |
+| snapshot-base | base | governance | 0.69 | 39,234 |
+| unlock-protocol-base | base | governance | 0.68 | 396,430 |
+| gardens-gnosis | gnosis | governance | 0.68 | 4,367 |
+| Mainnet Voting V2 | mainnet | staking | 0.67 | 338,170 |
+| dao-pools Upgraded | bsc | governance | 0.66 | 94,369 |
+| Audius Network Mainnet | mainnet | staking | 0.66 | 21,345 |
+| gbc-bridge-gnosis | gnosis | bridge | 0.66 | 730 |
+| Bridge Realtoken Etherum | mainnet | bridge | 0.64 | 22,853 |
+| snapshot-arbitrum-one | arbitrum-one | governance | 0.63 | 17,301 |
+| bsc_mainnet_wc_prediction | bsc | general | 0.63 | 629,331 |
 | DAOhaus v2 | mainnet | governance | 0.63 | 17,240 |
-| DeFi Choice | base | general | 0.62 | 94 |
-| Nouns | mainnet | governance | 0.61 | 4,525 |
-| nile-legacy | linea | general | 0.61 | 29,785 |
-| DAOhaus v3 gnosis | gnosis | governance | 0.61 | 17,101 |
-| snapshot-gnosis-chain | gnosis | governance | 0.61 | 2,544 |
-| prediction-v3-ai-arb | arbitrum-one | general | 0.60 | 970 |
+| connect-gnosis | gnosis | governance | 0.63 | 944 |
+| Venus Governance | bsc | governance | 0.63 | 77,435 |
+| DeFi Choice | base | general | 0.62 | 93 |
+| Nouns | mainnet | governance | 0.61 | 4,524 |
+| nile-legacy | linea | general | 0.61 | 29,749 |
+| DAOhaus v3 gnosis | gnosis | governance | 0.61 | 17,098 |
+| prediction-v3-ai-arb | arbitrum-one | general | 0.61 | 967 |
+| snapshot-gnosis-chain | gnosis | governance | 0.60 | 2,541 |
 
 ## Query This Domain
 

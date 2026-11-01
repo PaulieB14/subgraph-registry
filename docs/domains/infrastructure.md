@@ -1,43 +1,43 @@
 ---
 domain: infrastructure
-count: 1256
+count: 1250
 percentage: 8.1
 updated: 2026-11-01
 ---
 
 # Infrastructure Subgraphs
 
-**1,256** subgraphs (8.1% of registry)
+**1,250** subgraphs (8.1% of registry)
 
 ## Top Subgraphs by Reliability
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| Graph Network Arbitrum - Horizon Temp | arbitrum-one | staking | 0.92 | 11,542,367 |
-| streamr | matic | staking | 0.91 | 6,277,828 |
-| Graph TAP Arbitrum One | arbitrum-one | general | 0.91 | 1,784,593 |
-| pepe2 | arbitrum-one | staking | 0.91 | 30,558,847 |
-| Request Payments Base | base | dex | 0.85 | 3,976,188 |
-| Request Payments Mainnet | mainnet | dex | 0.84 | 2,445,423 |
-| Request Payments Sepolia | sepolia | dex | 0.83 | 2,871,554 |
-| Request Payments Matic | matic | dex | 0.83 | 1,671,281 |
-| Request Payments Arbitrum One | arbitrum-one | dex | 0.83 | 1,671,245 |
-| Request Payments BSC | bsc | dex | 0.82 | 1,579,784 |
-| Request Payments Optimism | optimism | dex | 0.82 | 1,649,943 |
-| Graph Network Ethereum | mainnet | staking | 0.80 | 792,156 |
-| Graph Billing Arbitrum | arbitrum-one | general | 0.79 | 481,691 |
-| Polygon Root Subgraph | mainnet | staking | 0.79 | 42,182 |
-| Request Payments Avalanche | avalanche | dex | 0.78 | 875,815 |
-| Ethereum Blocks | mainnet | general | 0.77 | 809,235 |
-| Polygon Optimistic Oracle | matic | options | 0.77 | 838,614 |
-| Marlin-Staking-Staging | arbitrum-one | staking | 0.77 | 776,442 |
-| Request Payments xDAI | gnosis | dex | 0.77 | 491,861 |
-| etherfi-phase-phase2 | mainnet | staking | 0.77 | 150,846 |
-| Base Blocks | base | general | 0.76 | 412,599 |
-| Request Payments Celo | celo | dex | 0.76 | 492,718 |
-| Request Payments Sonic | sonic | dex | 0.76 | 471,116 |
-| base-jiffyscan | base | staking | 0.75 | 103,964 |
-| Polygon Optimistic Oracle V3 | matic | options | 0.74 | 436,868 |
+| Graph Network Arbitrum - Horizon Temp | arbitrum-one | staking | 0.92 | 11,544,744 |
+| streamr | matic | staking | 0.92 | 6,275,538 |
+| Graph TAP Arbitrum One | arbitrum-one | general | 0.91 | 1,781,069 |
+| pepe2 | arbitrum-one | staking | 0.89 | 30,488,062 |
+| Graph Network Arbitrum | arbitrum-one | staking | 0.87 | 14,728,099 |
+| Request Payments Base | base | dex | 0.86 | 3,973,791 |
+| Request Payments Sepolia | sepolia | dex | 0.85 | 2,866,139 |
+| Request Payments Mainnet | mainnet | dex | 0.85 | 2,446,593 |
+| Request Payments Matic | matic | dex | 0.84 | 1,668,947 |
+| Request Payments Arbitrum One | arbitrum-one | dex | 0.84 | 1,668,920 |
+| Request Payments BSC | bsc | dex | 0.83 | 1,578,209 |
+| Request Payments Optimism | optimism | dex | 0.83 | 1,653,773 |
+| Request Payments Avalanche | avalanche | dex | 0.80 | 875,647 |
+| Graph Network Ethereum | mainnet | staking | 0.80 | 792,292 |
+| Graph Billing Arbitrum | arbitrum-one | general | 0.79 | 481,065 |
+| Polygon Root Subgraph | mainnet | staking | 0.79 | 42,217 |
+| Marlin-Staking-Staging | arbitrum-one | staking | 0.79 | 1,552,882 |
+| Request Payments xDAI | gnosis | dex | 0.78 | 491,850 |
+| Ethereum Blocks | mainnet | general | 0.78 | 809,622 |
+| Polygon Optimistic Oracle | matic | options | 0.77 | 839,149 |
+| etherfi-phase-phase2 | mainnet | staking | 0.77 | 150,444 |
+| Request Payments Celo | celo | dex | 0.77 | 492,706 |
+| Request Payments Sonic | sonic | dex | 0.77 | 471,126 |
+| Base Blocks | base | general | 0.77 | 412,783 |
+| Polygon Optimistic Oracle V2 | matic | options | 0.75 | 552,663 |
 
 ## Query This Domain
 
