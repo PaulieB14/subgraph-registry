@@ -31,6 +31,94 @@ Agents querying The Graph need to discover and select the right subgraph before 
 
 ---
 
+## Contract lookup, measured freshness, and goal-to-starter workflow
+
+The **Node MCP server** (stdio and SSE) now exposes three complementary tools.
+Existing search/recommend/detail calls remain discovery-only; they never probe or
+execute. No crawler/database migration or Python API change is required.
+
+### `find_by_contract(address, chain?, limit=3)`
+
+```js
+await mcp.call("find_by_contract", {
+  address: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+  chain: "ethereum", // normalized to mainnet; omit to search all networks
+  limit: 3,         // integer 1–20
+});
+```
+
+Matches exact, case-insensitive EVM addresses from crawled manifests, checking
+**each manifest record's network** (falling back to the deployment network).
+Ranks allocated, non-denied snapshot deployments by reliability then 30-day
+volume; de-duplicates before limiting. `get_top_subgraph_deployments` keeps its
+existing `(contract_address, chain)` interface and uses the same implementation.
+
+Results include matched manifest records, starters, and `schema_entities` for the
+**whole deployment**. Current registry data does not map a contract to particular
+entities/fields, so `coverage.contract_to_entity_mapping` is explicitly null.
+Dynamic template instances and substreams may be missing. No match is not proof
+that no subgraph indexes the contract; allocation/reliability remain snapshot signals.
+
+### `check_subgraph_health(id | subgraph_id | ipfs_hash | deployment_id)`
+
+Explicitly opts into **one** Studio-key gateway request for:
+
+```graphql
+{ _meta { deployment hasIndexingErrors block { number timestamp } } }
+```
+
+Known subgraph IDs are pinned to the crawled deployment. Returns `freshness.live`
+with measured `observed_at` (Unix seconds), indexed block/timestamp, indexing-error
+flag, HTTP status, and one of `serving`, `indexing_errors`, `metadata_unavailable`,
+or `query_failed`. A successful metadata query **does not prove chain-head sync**;
+`synced_to_chain_head` remains null. Unsupported metadata is unknown, not fabricated.
+
+Search, recommendation, detail, contract results, and JSON-LD manifests expose
+cached freshness without making calls. Before a probe, `live` is null. Observations
+are process-local (maximum 500), become `stale: true` after 300 seconds, and disappear
+on restart. There is no background check or new reliability-score interpretation.
+`registry_updated_at` is the upstream metadata update, **not** a crawl/health timestamp.
+This credential-only tool is not advertised on keyless servers.
+
+### `query_for_goal(goal, chain?, first=5, execute=false)`
+
+```js
+// Local preparation only — also safe when the server has a Studio key.
+const prepared = await mcp.call("query_for_goal", {
+  goal: "uniswap v3 on ethereum", first: 3,
+});
+
+// Only when data fetching is wanted: one opt-in gateway POST.
+const fetched = await mcp.call("query_for_goal", {
+  goal: "uniswap v3 on ethereum", first: 3, execute: true,
+});
+```
+
+Uses existing recommendation ranking, skips missing/unsafe starters among the top
+five candidates, and selects the first suitable one. The returned `selected`,
+`query`, request payload (keyed and x402 URLs), validation status, and cached
+freshness allow one-call preparation or optional first-page execution. Requests
+pin the crawled deployment where available. **The starter is an example, not an
+arbitrary natural-language query generator**: inspect whether it answers the goal.
+
+GraphQL syntax is parsed; a conservative structural check permits one collection,
+1–10 rows, at most ten flat fields, optional standard `_meta`, and ordering only.
+Mutations, variables, aliases, fragments, directives and nested selections are
+rejected. This is **not live schema validation** (`validation.live_schema` always
+says `not_checked`). Gateway execution success/failure is reported separately;
+GraphQL/auth errors (even HTTP 200), partial data, malformed responses and transport
+failures never become a success claim. `execution_attempted` records a gateway
+attempt; `executed` is true only for a successful gateway result, not on a timeout. There are no execution retries or automatic
+fallback queries. The existing timeout/response-size limits apply, and gateway
+redirects are rejected.
+
+`execute` defaults to false. Execution and health require an explicitly invoked
+path **and** `THE_GRAPH_STUDIO_API_KEY` (existing key aliases still work). Keyless
+execution returns `credentials_required`, `executed: false` and an unsigned request
+payload. These tools never sign/pay x402 and accept no arbitrary endpoint URL.
+
+---
+
 ## Querying with x402 (no API key)
 
 Every result includes `query_url_x402` alongside the legacy `query_url`. The Graph's public x402 gateway (live since 2026-05-08) accepts **$0.01 USDC on Base** per query with zero signup.

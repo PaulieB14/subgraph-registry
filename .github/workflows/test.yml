@@ -51,6 +51,11 @@ jobs:
       - name: Syntax-check OpenAPI generator
         run: node --check scripts/gen-openapi.js
 
+      - name: Run agent workflow and gateway regressions
+        # These use an in-memory contract fixture and mocked gateway responses;
+        # no Studio key, payment, production database write, or live query.
+        run: node --test test/agent-discovery.test.mjs test/execute-gateway.test.mjs
+
       - name: Smoke-test the installed bin (the one that was broken)
         # npm pack -> install -> drive node_modules/.bin/ through a real MCP
         # handshake. The unit suite runs `node src/index.js`, which satisfied

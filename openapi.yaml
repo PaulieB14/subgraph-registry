@@ -15,6 +15,132 @@ servers:
   - url: "http://localhost:3848"
     description: "Local MCP HTTP transport (default port)"
 paths:
+  "/mcp/tools/find_by_contract":
+    post:
+      operationId: "tool_find_by_contract"
+      summary: "Discovery only: exact case-insensitive EVM contract lookup from crawled manifests."
+      description: "Discovery only: exact case-insensitive EVM contract lookup from crawled manifests. Optional chain (aliases supported); omitted chain searches all networks. Ranks allocated, non-denied snapshot deployments by reliability then volume. Returns matched manifest records, deployment-level schema entities (NOT verified contract-to-entity mappings), starter and cached freshness. No live calls or payments."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "address"
+              properties:
+                address:
+                  type: "string"
+                  description: "0x-prefixed 40-hex EVM address"
+                chain:
+                  type: "string"
+                  description: "Optional network, e.g. ethereum, base, arbitrum"
+                limit:
+                  type: "integer"
+                  minimum: 1
+                  maximum: 20
+                  default: 3
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/check_subgraph_health":
+    post:
+      operationId: "tool_check_subgraph_health"
+      summary: "Opt-in: one fixed _meta query against The Graph gateway using your Studio API key, pinning known subgraphs to their…"
+      description: "Opt-in: one fixed _meta query against The Graph gateway using your Studio API key, pinning known subgraphs to their crawled deployment. Reports observed timestamp, indexed block/timestamp, indexing errors or honest failure/unknown states. Does NOT establish sync to chain head or trigger x402 payments. Observations are process-local, stale after five minutes and lost on restart; discovery never probes automatically."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              properties:
+                id:
+                  type: "string"
+                  description: "Subgraph id (e.g. 5zvR82…). Also accepts an IPFS hash or 0x deployment id — it is classified by shape."
+                subgraph_id:
+                  type: "string"
+                  description: "Official-MCP alias of id. Subgraph id for the current deployment."
+                deployment_id:
+                  type: "string"
+                  description: "32-byte deployment id (0x + 64 hex). Queries gateway deployments/id/…"
+                ipfs_hash:
+                  type: "string"
+                  description: "Manifest IPFS hash (Qm…). Queries gateway deployments/id/…, matching official subgraph-MCP."
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
+  "/mcp/tools/query_for_goal":
+    post:
+      operationId: "tool_query_for_goal"
+      summary: "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and…"
+      description: "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and cached freshness in one call. Default execute=false makes NO network call, even with a key. Explicit execute=true opts into at most ONE gateway POST with your Studio key; no x402 payment or retries/fallback requests. Pins the crawled deployment when available. Parses syntax and restricts one collection, 1-10 rows, flat fields; does NOT claim live-schema validation or synthesize arbitrary goal-specific GraphQL. The starter may not answer the goal; inspect selected/query. Execution errors/partial data are returned honestly."
+      tags:
+        - "mcp-tools"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: false
+              required:
+                - "goal"
+              properties:
+                goal:
+                  type: "string"
+                  minLength: 1
+                  maxLength: 1000
+                chain:
+                  type: "string"
+                first:
+                  type: "integer"
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                execute:
+                  type: "boolean"
+                  default: false
+                  description: "Explicit opt-in to spend a Studio gateway query; never auto-pays x402"
+      responses:
+        "200":
+          description: "Tool result (JSON-encoded)"
+          content:
+            application/json:
+              schema:
+                type: "object"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ToolError"
   "/mcp/tools/search_subgraphs":
     post:
       operationId: "tool_search_subgraphs"
