@@ -1,6 +1,6 @@
 ---
 name: subgraph-registry-mcp
-description: Same abilities as graphops/subgraph-mcp with better discovery. Search 15,452+ classified subgraphs; real 30-day query volume on every hit; opt-in schema and execute under the official tool names. Discovery tools never auto-query.
+description: Use to discover The Graph subgraphs by chain, protocol, entity or contract and prepare bounded GraphQL starters. Includes API-key onboarding and explicitly paid external x402 guidance; discovery never executes queries or signs payments.
 metadata:
   {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
 ---
@@ -8,6 +8,76 @@ metadata:
 # Subgraph Registry
 
 Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-mcp) (hosted SSE `https://subgraphs.mcp.thegraph.com/sse`), **better discovery**. Search/recommend/semantic stay DISCOVERY — they never execute GraphQL. Schema and execute are opt-in and use the **same tool names** as official so an agent can swap connectors. Volume is already on every search hit (`query_volume_30d`) — skip official's extra `get_deployment_30day_query_counts` round-trip. Official that tool has been observed returning 0 for ENS/Lido/Uniswap; this registry does not copy those zeros. No private key. Set `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) for execute/live-schema; without a key those tools return `credentials_required` + both URLs and do not hang or auto-pay x402.
+
+## Agent quick path: connect → discover → prepare → opt in
+
+1. **Connect a reviewed, pinned release.** This is the canonical shareable skill;
+   share this file with the GitHub repository, not a second `skills.md` recipe.
+   For a stdio MCP host, start with this keyless configuration:
+
+   ```json
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"]}}}
+   ```
+
+   Inspect `tools/list` before calling a tool. Keyless 0.11.0 advertises 10
+   discovery/preparation tools; execution/schema/health tools are advertised only
+   when a Studio key is configured. A mounted connector can use another runtime
+   or corpus: do not assume installing a release updates an existing connector.
+2. **Discover with explicit chain identity.** For example, call
+   `search_subgraphs({"network":"arc","include_unserved":true,"limit":3})`.
+   This explicitly broadens discovery to zero-allocation snapshot records; it
+   does **not** probe them or establish serving health. `arc` is mainnet;
+   `arc-testnet` is different. Other examples: `ethereum`→`mainnet`,
+   `arbitrum`→`arbitrum-one`, `polygon`→`matic`, `sei`→`sei-mainnet`.
+   Use `query:"ens"` for a protocol and `network` for its chain. Inspect
+   `emerging`, network and testnet labels, not just reliability. If results are
+   empty, inspect `diagnostics` when available; otherwise check registry stats
+   and deliberately broaden the relevant `include_*` flag. Never interpret an
+   empty snapshot as proof that a chain or queryable Subgraph does not exist.
+3. **Reuse an existing Studio key; otherwise help a human create one.**
+   Open [Studio API Keys](https://thegraph.com/studio/apikeys/) and have the human
+   create/manage the key. There is no automated key-minting API in this server.
+   Store it via the MCP host's secret manager as `THE_GRAPH_STUDIO_API_KEY`
+   (or `GATEWAY_API_KEY`); never ask for it in ordinary chat or put it in tool
+   arguments, source, URLs or logs. Reload only the intended host as its setup
+   requires. A configured key is not proof that it is valid or has free quota.
+   [Official pricing](https://thegraph.com/studio-pricing/) advertises **100,000
+   free monthly queries**; check the account's current plan and remaining usage.
+   This is not a fresh allowance per key. Studio development endpoints have
+   separate limits; do not promise every endpoint has this allowance.
+4. **Prepare without spending.** If advertised, call
+   `query_for_goal({"goal":"Uniswap v3 pools on Ethereum","first":2,"execute":false})`.
+   Inspect `selected`, `query`, `request` and validation labels. A bounded stored
+   starter is **not** a generated goal-specific answer or a live-schema check.
+   Use local detail/schema metadata and, with a configured key, opt-in schema
+   introspection before relying on fields. With an older six-tool connector,
+   use `recommend_subgraph` / `get_subgraph_detail` and its stored starter instead.
+5. **Execute only when requested and authorized.** With a configured Studio key
+   and execution tool available, use `execute_query` with the selected identifier
+   and reviewed query. A direct keyed client uses the returned fixed gateway URL
+   and `Authorization: Bearer <STUDIO_API_KEY>`; never print the actual header.
+   `query_for_goal` with explicit `execute:true` is another opt-in path after
+   inspecting the starter; preparation alone never sends a query.
+6. **Read errors and evidence.** HTTP 200 can contain GraphQL `errors` or partial
+   `data`. Report them, don't claim success from HTTP status alone. For missing
+   credentials follow step 3; for quota/billing errors stop rather than silently
+   switching to a paid route. Health observations are process-local, stale after
+   300 seconds, and do not prove chain-head sync. No observation means unknown.
+
+**Across ALL chains:** rewards/curation eligibility, on-chain allocation counts,
+query demand and actual query availability are distinct. A chain can serve data
+before rewards or curation signaling are enabled. `include_unserved` is a legacy
+flag name for including zero-allocation **snapshot** records, not a declaration
+that those records cannot be queried. `denied` means the recorded deployment was
+denied indexing rewards, not proof it is malicious or unavailable. The corpus
+does not establish every chain's current rewards/signaling eligibility and does
+not include every Studio-only deployment. See [supported network modes](https://thegraph.com/docs/en/supported-networks/).
+
+**Paid alternative, never a fallback without consent:** external x402 clients can
+sign a USDC payment authorization and retry automatically. This is a financial
+capability of that external client, NOT this MCP server. Require the owner's
+explicit approval of the payment/amount before using a funded signing client;
+do not run the README payment example just because a free/keyed request failed.
 
 ## New agent workflow (Node MCP)
 
@@ -45,7 +115,7 @@ Optional next step after discovery: `execute_query_by_subgraph_id` (or `execute_
 
 ## Requirements
 
-- **Runtime:** Node.js >= 18 (runs via `npx`)
+- **Runtime:** Node.js 20 is CI-tested (runs via pinned `npx`); install native dependencies for the Node major you actually run
 - **Environment variables:** None required for discovery. For opt-in execute / live schema: `THE_GRAPH_STUDIO_API_KEY` (preferred) or `GATEWAY_API_KEY` (official subgraph-MCP name). No private key is in the package.
 - **For x402 queries you run yourself:** USDC on Base in the agent's signing wallet (one query ≈ $0.01).
 

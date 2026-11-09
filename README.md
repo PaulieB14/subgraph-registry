@@ -6,7 +6,7 @@
 
 Agent-friendly semantic classification of all subgraphs on [The Graph Network](https://thegraph.com).
 
-Pre-computed index of **15,330 subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
+Pre-computed index of **15,452 subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
 
 > **What's new in 0.8.0** — three agent-discovery upgrades:
 > - **[Semantic search](#semantic-search)** via 384-dim embeddings (`semantic_search_subgraphs`)
@@ -123,23 +123,70 @@ payload. These tools never sign/pay x402 and accept no arbitrary endpoint URL.
 
 ---
 
+## Agent usability and discovery diagnostics
+
+The canonical shareable agent guide is [SKILL.md](SKILL.md): pinned installation,
+capability discovery, chain/protocol lookup, human-assisted Studio key setup,
+bounded preparation, opt-in execution and error handling. See the reproducible
+[discovery audit](docs/DISCOVERY_AUDIT.md) for published-package versus connected
+runtime results and which changes here are not released yet.
+
+Search recognizes a standalone known chain/alias (for example `query:"arc"`) as
+a network filter and returns `inferred_network`; an explicit `network` always
+wins. Use `network:"arc"` for mainnet and `network:"arc-testnet"` for testnet.
+Empty searches explain matching snapshot records and overlapping exclusions in
+`diagnostics`. Default allocation/denied/testnet filters remain unchanged;
+`include_unserved:true` deliberately includes zero-allocation records for discovery.
+
+**Rewards, curation and queryability are not interchangeable.** A chain can be
+live and queried before rewards or curation signaling is enabled. Zero
+allocations is not proof of unavailable queries, and positive allocations is not
+a live health check. Reward denial is not proof of spam or query failure.
+Reliability is a traction-weighted ranking input, not a measured uptime or
+reward-eligibility score. Unknown health remains unknown; no discovery probe is
+performed. The published-network corpus cannot include all Studio-only deployments.
+
+Search/recommend/goal responses provide a structured `next_action`: reuse a
+configured key (not assumed valid), or have a human create one at
+[Studio API Keys](https://thegraph.com/studio/apikeys/), then store it in the MCP
+host's secret manager as `THE_GRAPH_STUDIO_API_KEY`. Never paste it in chat or
+logs. [Official Studio pricing](https://thegraph.com/studio-pricing/) currently
+advertises **100,000 free monthly queries**; check the account's remaining quota
+and plan, not a fictitious per-key allowance. Studio development endpoints have
+separate limits. These hints never create a key, execute GraphQL, or auto-pay.
+
+Search `limit` is an integer 1–100 (semantic: 1–50); booleans must be JSON
+booleans. Unsupported offset/cursor arguments are rejected, not silently ignored.
+`total` remains the number returned, not a total-match or pagination promise.
+
 ## Querying with x402 (no API key)
 
 Every result includes `query_url_x402` alongside the legacy `query_url`. The Graph's public x402 gateway (live since 2026-05-08) accepts **$0.01 USDC on Base** per query with zero signup.
 
+**Financial capability warning:** this optional external client signs a USDC
+payment authorization and may retry automatically. It is not the registry server.
+Use it only after explicit owner approval of the payment/amount and review of
+the signing client and query. Never fall back to payment on auth/quota failure.
+The example is disabled by default; the keyed Studio route above needs no wallet.
+
 ```js
+// Requires a separately configured, reviewed external x402 client.
+const ownerApprovedPaidQuery = false; // set only after explicit payment approval
+if (!ownerApprovedPaidQuery) throw new Error("Payment approval required");
 // An x402-native agent — discovery to data in two calls
 const { recommendations } = await mcp.call("recommend_subgraph", {
   goal: "find DEX trades on Arbitrum",
 });
 const top = recommendations[0];
+if (!top?.example_query) throw new Error("No starter; inspect schema first");
+// Inspect the starter against schema and goal before signing any payment.
 
 // POST your GraphQL query. The first call returns HTTP 402 with a
 // base64 `payment-required` header; the x402 client signs the
 // EIP-3009 USDC transfer on Base and retries automatically.
 const data = await x402Fetch(top.query_url_x402, {
   method: "POST",
-  body: JSON.stringify({ query: "{ swaps(first: 5) { id amountUSD } }" }),
+  body: JSON.stringify({ query: top.example_query }),
 });
 ```
 
@@ -248,15 +295,17 @@ Each subgraph gets a composite reliability score (0-1) based on four on-chain si
 | **Curation Signal** | 20% | GRT tokens curated by the community |
 | **Indexer Allocation** | 20% | GRT allocated to this subgraph by indexers |
 
-All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
+All values are log-scaled and capped at 1.0. A 0.5 penalty is applied when the snapshot records denied indexing rewards. This does not establish deprecation, safety, reward eligibility for a whole chain, or query availability.
 
-**Score tiers:** High (0.7+) = strong signal, real usage | Medium (0.3-0.7) = functional, some activity | Low (<0.3) = minimal signal or test deployment
+**Score tiers:** High (0.7+), medium (0.3–0.7), and low (<0.3) summarize the measured ranking inputs only. None establishes functionality, safety, testnet status, rewards eligibility or current query availability.
 
-### The score measures traction, so it measures age
+### Traction-weighted ranking can favor older deployments
 
-All four inputs are cumulative — fees and curation accrue, volume needs 30 days
-to exist at all. A subgraph deployed last month therefore scores near zero no
-matter how good it is. Measured on the current corpus (served, non-denied):
+Lifetime fees accumulate, curation/stake are snapshots, and 30-day volume is a
+rolling window (it does not require waiting 30 days to register traffic). Older
+deployments can have a ranking advantage; this is not an uptime or quality test.
+For context, a historical 2026-08-25 snapshot with positive allocations and no
+denied rewards showed:
 
 | Age | Count | Avg reliability |
 |-----|-------|-----------------|
@@ -265,8 +314,9 @@ matter how good it is. Measured on the current corpus (served, non-denied):
 | 90–365 days | 1,100 | 0.225 |
 | > 1 year | 4,034 | 0.313 |
 
-The newest subgraph anywhere in the registry's top 25 is **280 days old** — yet
-59 of those 64 sub-30-day subgraphs are already serving real query volume.
+These are dated observations, not current corpus or health measurements. The
+runtime caveat deliberately avoids frozen claims about the youngest top-ranked
+entry. New networks may serve traffic before rewards or curation are enabled.
 
 Rather than reweight the score and trade a measurable signal for a guess,
 `search_subgraphs` returns young matches in a **separate `emerging` list**
@@ -274,8 +324,8 @@ alongside an `emerging_caveat` explaining that a low score at that age is
 expected rather than damning. Every result also carries `age_days` and
 `maturity` (`new` < 30d, `emerging` < 90d, `established`). This matters most
 for new chains and new protocols, where no mature deployment *can* exist —
-searching "perpetual futures" surfaces years-old Ethereum and BSC deployments
-in the main list and the 40-day-old Monad perps subgraph under `emerging`.
+newer matching deployments can appear separately without being mislabelled as
+bad or unavailable merely because their traction score is lower.
 
 `semantic_search_subgraphs` ranks by cosine similarity rather than reliability,
 so it is already age-neutral — it carries the `maturity` labels but no
@@ -315,13 +365,17 @@ returns exactly what you asked for.
 
 ## Using the registry from payql
 
+The optional `payql@0.1.5` pin below prevents floating installs; it is not an audit
+or a safety endorsement of that external package. Review it before running, and
+require explicit approval before enabling any funded payment/signing path.
+
 [`payql`](https://www.npmjs.com/package/payql) can use this registry as its
 free discovery source instead of paying for a network-subgraph query. Run the
 registry's HTTP transport and point payql at it:
 
 ```bash
-npx subgraph-registry-mcp --http-only          # serves :3848
-PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql
+npx subgraph-registry-mcp@0.11.0 --http-only          # serves :3848
+PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql@0.1.5
 ```
 
 `POST /graphql` answers in the Graph network subgraph's `subgraphMetadataSearch`
@@ -330,8 +384,8 @@ side, and discovery becomes free and locally-ranked.
 
 ### Denied deployments
 
-Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, usually
-spam, duplicates or deprecations) are **excluded by default** from
+Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, not proof
+of spam, deprecation or query failure) are **excluded by default** from
 `search_subgraphs`, `semantic_search_subgraphs` and `recommend_subgraph`. Pass
 `include_denied: true` to the two search tools to see them; every result then
 carries `denied: true|false` so the choice stays visible.
@@ -367,29 +421,36 @@ Set `THE_GRAPH_STUDIO_API_KEY` in the MCP host env to enable execute/live-schema
 
 ### Install
 
-```bash
-# Claude Code
-claude mcp add subgraph-registry -- npx subgraph-registry-mcp
+Node 20 is CI-tested. Pin a reviewed release rather than floating to latest.
+The new source changes described above require a future release; see the audit.
 
-# Claude Desktop
+Claude Code:
+
+```bash
+claude mcp add subgraph-registry -- npx subgraph-registry-mcp@0.11.0
+```
+
+A JSON MCP host configuration (keyless discovery):
+
+```json
 {
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["subgraph-registry-mcp"],
-      "env": {
-        "THE_GRAPH_STUDIO_API_KEY": "your-studio-key"
-      }
+      "args": ["subgraph-registry-mcp@0.11.0"]
     }
   }
 }
-
-# Remote agents (SSE)
-npx subgraph-registry-mcp --http-only
-# Then connect to http://localhost:3848/sse
 ```
 
-The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run.
+For a trusted local HTTP/SSE client:
+
+```bash
+npx subgraph-registry-mcp@0.11.0 --http-only
+# Connect to http://localhost:3848/sse; keep the listener firewalled/trusted.
+```
+
+The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; inject a Studio key through your host's secret manager to enable opt-in execution.
 
 ---
 
@@ -407,7 +468,7 @@ Each manifest includes classification, parsed entities, contract addresses (from
 
 ```bash
 # Start the HTTP transport
-npx subgraph-registry-mcp --http-only
+npx subgraph-registry-mcp@0.11.0 --http-only
 
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld

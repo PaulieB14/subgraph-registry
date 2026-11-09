@@ -40,13 +40,27 @@ try {
     const p = spawn(process.execPath, [bin], { stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
     let settled = false;
-    const done = (c, why) => { if (!settled) { settled = true; process.stderr.write(why + "\n"); try { p.kill(); } catch {} resolve(c); } };
+    let deadline;
+    const done = (c, why) => { if (!settled) { settled = true; clearTimeout(deadline); process.stderr.write(why + "\n"); try { p.kill(); } catch {} resolve(c); } };
 
     p.stdout.on("data", (d) => {
       out += d.toString();
-      if (out.includes('"tools"')) {
-        const n = (out.match(/"name":/g) || []).length;
-        done(0, `OK: handshake completed over the installed bin, ${n} tool entries`);
+      let newline;
+      while ((newline = out.indexOf("\n")) >= 0) {
+        const line = out.slice(0, newline);
+        out = out.slice(newline + 1);
+        let reply;
+        try { reply = JSON.parse(line); } catch { continue; }
+        // initialize also contains capabilities.tools; a substring check
+        // passed prematurely with "1 tool entries" before tools/list replied.
+        if (reply?.id !== 2) continue;
+        const tools = reply.result?.tools;
+        if (!Array.isArray(tools)) return done(1, "FAIL: tools/list did not return an array");
+        const names = new Set(tools.map(tool => tool.name));
+        for (const required of ["search_subgraphs", "find_by_contract", "query_for_goal"]) {
+          if (!names.has(required)) return done(1, `FAIL: installed bin omits ${required}`);
+        }
+        done(0, `OK: installed bin answered tools/list with ${tools.length} tool entries`);
       }
     });
     // The failure mode is a SILENT exit 0 before the handshake, so an exit
@@ -57,7 +71,7 @@ try {
     p.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize",
       params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "smoke", version: "1" } } }) + "\n");
     setTimeout(() => p.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n"), 500);
-    setTimeout(() => done(1, "FAIL: no tools/list reply within 60s"), 60_000);
+    deadline = setTimeout(() => done(1, "FAIL: no tools/list reply within 60s"), 60_000);
   });
   failed = code !== 0;
 } catch (err) {

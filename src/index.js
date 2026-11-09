@@ -224,6 +224,9 @@ function getDb() {
 // the example values; two of those three matched nothing.
 // mainnet/bsc/arbitrum-one/matic alone are ~45% of the corpus.
 const NETWORK_ALIASES = {
+  "arc-mainnet": "arc",
+  "arc mainnet": "arc",
+  "arc testnet": "arc-testnet",
   ethereum: "mainnet",
   eth: "mainnet",
   "ethereum-mainnet": "mainnet",
@@ -406,7 +409,9 @@ function boundaryRerank(rows, words, tieBreak = null, phrases = []) {
   const score = (r) => {
     const name = r.display_name || "";
     const text = `${r.description || ""} ${r.auto_description || ""}`;
-    let out = 0;
+    // An exact protocol name should beat a longer, similarly named fork.
+    let out = (name.trim().toLowerCase() === words.join(" ") ||
+      words.some(w => !NOISE_TOKENS.has(w) && name.trim().toLowerCase() === w)) ? 20 : 0;
     // A whole-phrase name hit outranks any accumulation of single tokens.
     // Without this the SQL phrase boost was silently undone here: "compound v3"
     // re-ranked on the token "compound" alone, every Compound tied, and
@@ -437,9 +442,9 @@ function boundaryRerank(rows, words, tieBreak = null, phrases = []) {
 }
 
 // ── Maturity / cold-start handling ─────────────────────────
-// reliability_score is built from four CUMULATIVE inputs (curation signal,
+// reliability_score combines snapshot/traction inputs (curation signal,
 // indexer stake, lifetime query fees, 30d volume — see _reliability_score in
-// python/classifier.py), so it measures accrued traction and therefore age.
+// python/classifier.py); its observed age bias is not a health measurement.
 // Measured on the 2026-08-25 corpus, served and non-denied:
 //
 //   age      n      avg reliability
@@ -482,14 +487,13 @@ function maturityOf(created_at) {
 }
 
 const EMERGING_CAVEAT =
-  "Recent deployments that matched your query but ranked below the main list " +
-  "because reliability_score is cumulative (curation signal, indexer stake, " +
-  "lifetime query fees, 30d volume) and so grows with age — the newest subgraph " +
-  "in the whole registry's top 25 is 280 days old. A low score here is expected " +
-  "at this age and is NOT evidence of a problem; these are unproven, not bad. " +
-  "Prefer `subgraphs` for production work. Consider these when the protocol is " +
-  "itself new (no mature deployment can exist), when you want the newest schema, " +
-  "or when the ranked list missed what you asked for.";
+  "Recent matching deployments outside the primary returned page. " +
+  "Ranking combines snapshot curation/stake, lifetime query fees and rolling " +
+  "30-day volume; this traction-weighted score can favor established entries. " +
+  "A low score is not proof of poor health, missing rewards or unavailable " +
+  "queries. Inspect relevance, age and measured health separately; neither " +
+  "this companion list nor the primary ranking validates live queryability.";
+
 
 // Young matches for the same filter, fetched separately because they cannot
 // compete on the main ORDER BY. Returns [] on any failure — this is an
@@ -517,30 +521,83 @@ function findEmerging(where, params, excludeIds, selectCols) {
 
 // ── Tool Implementations ───────────────────────────────────
 
-function searchSubgraphs({
-  query = "",
-  domain = "",
-  network = "",
-  protocol_type = "",
-  entity = "",
-  min_reliability = 0,
-  include_unserved = false,
-  include_denied = false,
-  include_testnets = false,
-  limit = 20,
-} = {}) {
+// Discovery input schemas are documentation unless checked at runtime. In
+// particular SQLite LIMIT -1 is unbounded, and string "false" is truthy.
+function validateDiscoveryInput(args, kind = "search") {
+  if (!args || typeof args !== "object" || Array.isArray(args)) return "arguments must be an object";
+  const strings = kind === "recommend" ? ["goal", "chain"] :
+    ["query", "domain", "network", "protocol_type", ...(kind === "semantic" ? [] : ["entity"])];
+  const booleans = kind === "recommend" ? [] : ["include_unserved", "include_denied", "include_testnets"];
+  const allowed = new Set([...strings, ...booleans, ...(kind === "recommend" ? [] : ["limit", "min_reliability"]), ...(kind === "semantic" ? ["min_score"] : [])]);
+  for (const key of Object.keys(args)) {
+    if (!allowed.has(key)) return `Unsupported argument: ${key}${["offset", "cursor", "page"].includes(key) ? "; pagination is not supported" : ""}`;
+  }
+  for (const key of strings) {
+    if (args[key] !== undefined && (typeof args[key] !== "string" || args[key].length > 1000)) {
+      return `${key} must be a string of at most 1000 characters`;
+    }
+  }
+  if (kind === "recommend" && !args.goal?.trim()) return "goal must be a non-empty string";
+  if (kind === "semantic" && !args.query?.trim()) return "query must be a non-empty string";
+  if (kind === "semantic" && args.min_score !== undefined && (!Number.isFinite(args.min_score) || args.min_score < 0 || args.min_score > 1)) return "min_score must be a number from 0 to 1";
+  for (const key of booleans) {
+    if (args[key] !== undefined && typeof args[key] !== "boolean") return `${key} must be boolean`;
+  }
+  if (args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > (kind === "semantic" ? 50 : 100))) {
+    return `limit must be an integer from 1 to ${kind === "semantic" ? 50 : 100}`;
+  }
+  if (args.min_reliability !== undefined && (!Number.isFinite(args.min_reliability) ||
+      args.min_reliability < 0 || args.min_reliability > 1)) return "min_reliability must be a number from 0 to 1";
+  return null;
+}
+
+const ALLOCATION_CAVEAT = "Allocation counts, curation signal, denied rewards and reliability are snapshot discovery signals, NOT a live queryability test. Zero allocations or no indexing rewards does not prove a deployment cannot be queried; positive allocations do not prove it is healthy. Discovery never probes a gateway.";
+
+function executionNextAction(hasCandidates = true) {
+  return {
+    action: !hasCandidates ? "broaden_discovery_before_execution" : studioApiKey() ? "prepare_then_explicitly_execute" : "configure_api_key_before_execution",
+    credentials: studioApiKey() ? "configured_not_validated" : "not_configured",
+    prepare_tool: "query_for_goal",
+    api_key: {
+      create_url: "https://thegraph.com/studio/apikeys/",
+      setup: "A human creates/manages the key in Studio. Store it in your MCP host's secret manager as THE_GRAPH_STUDIO_API_KEY; never paste it in chat, tool arguments, source or logs.",
+      header: "Authorization: Bearer <STUDIO_API_KEY>",
+      free_plan: "Official Studio pricing currently advertises 100,000 free queries per month; check your account's remaining allowance and plan. This is not a per-key guarantee or a quota check.",
+      pricing_url: "https://thegraph.com/studio-pricing/",
+    },
+    execution: "Inspect starter relevance and schema before opting in. HTTP 200 can contain GraphQL errors; check errors and data. No query has been executed by discovery.",
+    paid_alternative: "x402 is a separate explicitly paid route; this server never signs or auto-pays it.",
+  };
+}
+
+function searchSubgraphs(args = {}) {
+  const invalid = validateDiscoveryInput(args);
+  if (invalid) return { error: invalid };
+  let {
+    query = "", domain = "", network = "", protocol_type = "", entity = "",
+    min_reliability = 0, include_unserved = false, include_denied = false,
+    include_testnets = false, limit = 20,
+  } = args;
+  const requestedNetwork = network;
+  let inferredNetwork = null;
+  // Only a standalone known chain/alias is routing intent. An explicit
+  // network always wins: query:"arc", network:"mainnet" can mean Aave ARC.
+  if (!network && query.trim() && KNOWN_NETWORKS.has(normalizeNetwork(query))) {
+    inferredNetwork = normalizeNetwork(query);
+    network = inferredNetwork;
+    query = "";
+  }
   const conditions = [];
   const params = [];
 
-  // Default: hide deployments with 0 active indexer allocations — these
-  // return "subgraph not found: no allocations" even though the ID is valid.
+  // Compatibility discovery filter, NOT proof of query failure. Studio or
+  // other serving routes can exist without on-chain active allocations.
   if (!include_unserved) {
     conditions.push("active_allocation_count > 0");
   }
 
   // Default: hide curation-denied deployments (deniedAt > 0 on the network
-  // subgraph — denied indexing rewards, typically spam, duplicates or
-  // deprecations). classifier.py has persisted this since the denied_at
+  // subgraph — denied indexing rewards, not a live serving or safety verdict). classifier.py has persisted this since the denied_at
   // column landed, explicitly "so agents can filter denied subgraphs", but
   // nothing in this file ever read it, so the filter the crawler was feeding
   // did not exist. The 0.5 reliability penalty already keeps denied entries
@@ -555,6 +612,7 @@ function searchSubgraphs({
     conditions.push(`(${NOT_TESTNET_SQL})`);
   }
 
+  const visibilityConditionCount = conditions.length;
   if (domain) {
     conditions.push("domain = ?");
     params.push(domain);
@@ -612,6 +670,8 @@ function searchSubgraphs({
     }
   }
 
+  const scopeConditions = conditions.slice(visibilityConditionCount);
+  const scopeWhere = scopeConditions.length ? `WHERE ${scopeConditions.join(" AND ")}` : "";
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   // Over-fetch to allow dedup by IPFS hash (same deployment, different subgraph IDs)
   const fetchLimit = limit * 3;
@@ -710,8 +770,52 @@ function searchSubgraphs({
     ...buildQueryEndpoints(r.id),
   }));
 
+  let diagnostics;
+  if (!results.length) {
+    const counts = getDb().prepare(`SELECT COUNT(*) AS matching_records,
+      SUM(CASE WHEN active_allocation_count <= 0 THEN 1 ELSE 0 END) AS no_active_allocation,
+      SUM(CASE WHEN denied_at != 0 THEN 1 ELSE 0 END) AS curation_denied,
+      SUM(CASE WHEN network IS NULL THEN 1 ELSE 0 END) AS unknown_network,
+      SUM(CASE WHEN NOT (${NOT_TESTNET_SQL}) THEN 1 ELSE 0 END) AS testnet
+      FROM subgraphs ${scopeWhere}`).get(...filterParams);
+    diagnostics = {
+      matching_records_before_visibility_filters: counts.matching_records,
+      excluded_by: {
+        no_active_allocation: include_unserved ? 0 : counts.no_active_allocation || 0,
+        curation_denied: include_denied ? 0 : counts.curation_denied || 0,
+        testnet: shouldExcludeTestnets({ include_testnets, network }) ? counts.testnet || 0 : 0,
+        unknown_network: shouldExcludeTestnets({ include_testnets, network }) ? counts.unknown_network || 0 : 0,
+      },
+      counts_overlap: true,
+      ...(!include_unserved && counts.no_active_allocation > 0 ? {
+        suggested_retry: {
+          tool: "search_subgraphs",
+          arguments: { ...args, query, network, include_unserved: true },
+          effect: "Discovery only: include zero-allocation snapshot records, not verified live endpoints. Other filters remain unchanged.",
+        },
+      } : {}),
+      network_known_in_snapshot: network ? KNOWN_NETWORKS.has(normalizeNetwork(network)) : null,
+      ...(network && !KNOWN_NETWORKS.has(normalizeNetwork(network)) ? {
+        available_networks: getDb().prepare("SELECT DISTINCT network FROM subgraphs WHERE network IS NOT NULL ORDER BY network").all().map(r => r.network),
+      } : {}),
+      next_step: counts.matching_records ? "Inspect excluded_by and opt in to the relevant include_* flag for discovery; availability is still unverified." :
+        "No matching record in this snapshot. Check network spelling or broaden text filters; absence is not proof no deployment exists. Studio-only deployments may be outside this corpus.",
+    };
+  }
   return {
     total: results.length,
+    // total remains returned-count for compatibility; no pagination is implied.
+    total_is_returned_count: true,
+    network_filter: network ? normalizeNetwork(network) : null,
+    inferred_network: inferredNetwork,
+    requested_network: requestedNetwork || null,
+    discovery_filters: {
+      require_positive_allocation: !include_unserved, exclude_denied: !include_denied,
+      exclude_testnets: shouldExcludeTestnets({ include_testnets, network }),
+      caveat: ALLOCATION_CAVEAT,
+    },
+    ...(diagnostics ? { diagnostics } : {}),
+    next_action: executionNextAction(results.length > 0),
     subgraphs: results,
     ...(emerging.length
       ? { emerging, emerging_caveat: EMERGING_CAVEAT }
@@ -720,7 +824,10 @@ function searchSubgraphs({
   };
 }
 
-function recommendSubgraph({ goal, chain = "" }) {
+function recommendSubgraph(args = {}) {
+  const invalid = validateDiscoveryInput(args, "recommend");
+  if (invalid) return { error: invalid };
+  const { goal, chain = "" } = args;
   const goalLower = goal.toLowerCase();
 
   const domainMap = {
@@ -765,8 +872,8 @@ function recommendSubgraph({ goal, chain = "" }) {
     .map(([t]) => t);
 
   // recommend_subgraph exposes no include_* escape hatches — it answers "which
-  // one should I use", so a curation-denied deployment is never the right
-  // answer and the filter is unconditional here.
+  // one should I use" under conservative snapshot filters. Reward denial
+  // does not prove query failure; search exposes the opt-in discovery path.
   const conditions = ["active_allocation_count > 0", "denied_at = 0"];
   if (shouldExcludeTestnets({ include_testnets: false, network: chain })) {
     conditions.push(`(${NOT_TESTNET_SQL})`);
@@ -1014,6 +1121,9 @@ function recommendSubgraph({ goal, chain = "" }) {
     inferred_chain: inferredChain,
     inferred_protocol_type: ptypes.length ? ptypes : null,
     total_matches: recommendations.length,
+    next_action: executionNextAction(recommendations.length > 0),
+    allocation_caveat: ALLOCATION_CAVEAT,
+    ...(!recommendations.length ? { discovery_hint: "No recommendation survived snapshot filters; use search_subgraphs with an explicit network and inspect diagnostics. Zero allocations or rewards is not proof of unavailable queries." } : {}),
     recommendations,
   };
 }
@@ -1262,26 +1372,14 @@ function cosineSim(a, b) {
   return dot;
 }
 
-async function semanticSearchSubgraphs({
-  query,
-  limit = 10,
-  min_score = 0.3,
-  include_unserved = false,
-  include_denied = false,
-  include_testnets = false,
-  domain = "",
-  network = "",
-  protocol_type = "",
-  min_reliability = 0,
-}) {
-  if (!query || typeof query !== "string") {
-    return { error: "query is required and must be a string" };
-  }
-  // Clamp limit — the inputSchema declares maximum:50 but MCP clients
-  // don't validate by default. Without the clamp, `limit: 10000` just
-  // sorts more results pointlessly.
-  limit = Math.max(1, Math.min(Number(limit) || 10, 50));
-  if (typeof min_score !== "number" || isNaN(min_score)) min_score = 0.3;
+async function semanticSearchSubgraphs(args = {}) {
+  const invalid = validateDiscoveryInput(args, "semantic");
+  if (invalid) return { error: invalid };
+  const {
+    query, limit = 10, min_score = 0.3, include_unserved = false,
+    include_denied = false, include_testnets = false, domain = "", network = "",
+    protocol_type = "", min_reliability = 0,
+  } = args;
 
   const qvec = await embedQuery(query);
 
@@ -1399,6 +1497,8 @@ async function semanticSearchSubgraphs({
   }
 
   return {
+    allocation_caveat: ALLOCATION_CAVEAT,
+    next_action: executionNextAction(results.length > 0),
     query,
     total: results.length,
     model: "sentence-transformers/all-MiniLM-L6-v2",
@@ -1691,6 +1791,7 @@ function credentialsRequired(target, extra = {}) {
       "an x402 client. The keyed gateway often returns HTTP 200 with a GraphQL error body when the " +
       "header is missing — read the body rather than trusting the status.",
     get_a_key: "https://thegraph.com/studio/apikeys/",
+    next_action: executionNextAction(),
     ...extra,
   };
 }
@@ -1951,6 +2052,7 @@ function findByContract({ address, chain, limit = 3 } = {}) {
     chain: found.chain,
     source: "registry",
     ranking: "reliability_score DESC, query_volume_30d DESC, id ASC; only allocated, non-denied deployments in the snapshot",
+    allocation_caveat: ALLOCATION_CAVEAT,
     total: found.deployments.length,
     deployments: found.deployments.map(({ row: r, matched }) => ({
       id: r.id, display_name: r.display_name, domain: r.domain,
@@ -2022,7 +2124,7 @@ async function queryForGoal({ goal, chain, first = 5, execute = false } = {}) {
       skipped.push({ id: candidate.id, reason: err.message });
     }
   }
-  if (!selected) return { error: "no_suitable_starter", goal, skipped, execution_attempted: false, executed: false };
+  if (!selected) return { error: "no_suitable_starter", goal, skipped, execution_attempted: false, executed: false, next_action: executionNextAction(false), discovery_hint: "Use search_subgraphs with an explicit network and inspect diagnostics; no suitable example is not proof that no queryable deployment exists." };
   // Prefer the immutable crawled deployment over a mutable subgraph id.
   const target = resolveQueryTarget(selected.ipfs_hash
     ? { ipfs_hash: selected.ipfs_hash } : { subgraph_id: selected.id });
@@ -2030,6 +2132,7 @@ async function queryForGoal({ goal, chain, first = 5, execute = false } = {}) {
   const row = target.row || { id: selected.id, ipfs_hash: selected.ipfs_hash };
   const out = {
     goal,
+    next_action: executionNextAction(),
     selected: {
       id: selected.id, display_name: selected.display_name, network: selected.network,
       ipfs_hash: selected.ipfs_hash, domain: selected.domain, protocol_type: selected.protocol_type,
@@ -2201,26 +2304,26 @@ const TOOLS = [
   {
     name: "search_subgraphs",
     description:
-      "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user.",
+      "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is traction-weighted it can favour older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
-        query: { type: "string", description: "Free-text search across names and descriptions" },
-        domain: { type: "string", description: "Filter by domain: defi, nfts, dao, gaming, identity, infrastructure, social, analytics" },
-        network: { type: "string", description: "Filter by chain: mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc." },
-        protocol_type: { type: "string", description: "Filter by protocol type: dex, lending, bridge, staking, options, perpetuals, etc." },
-        entity: { type: "string", description: "Filter by canonical entity: liquidity_pool, trade, token, position, vault, loan, etc." },
-        min_reliability: { type: "number", description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation. NOTE: all four inputs are cumulative, so this score rises with age — setting a floor here filters out good recent subgraphs along with bad ones." },
-        limit: { type: "integer", description: "Max results to return (default: 20)", default: 20 },
+        query: { type: "string", maxLength: 1000, description: "Free-text search across names and descriptions. A standalone known chain or alias (e.g. arc, ethereum) becomes an explicit network filter unless network is supplied; inferred_network makes this visible" },
+        domain: { type: "string", maxLength: 1000, description: "Filter by domain: defi, nfts, dao, gaming, identity, infrastructure, social, analytics" },
+        network: { type: "string", maxLength: 1000, description: "Filter by chain: mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc." },
+        protocol_type: { type: "string", maxLength: 1000, description: "Filter by protocol type: dex, lending, bridge, staking, options, perpetuals, etc." },
+        entity: { type: "string", maxLength: 1000, description: "Filter by canonical entity: liquidity_pool, trade, token, position, vault, loan, etc." },
+        min_reliability: { type: "number", minimum: 0, maximum: 1, description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation. NOTE: this traction-weighted score can favor older deployments; 30-day volume is a rolling window — setting a floor here filters out good recent subgraphs along with bad ones." },
+        limit: { type: "integer", description: "Max results to return, 1–100 (default: 20); total is returned count, not corpus match count. No offset/cursor pagination.", minimum: 1, maximum: 100, default: 20 },
         include_unserved: {
           type: "boolean",
-          description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
+          description: "Include records with zero active allocations in the registry snapshot. Default false is a discovery heuristic, NOT a queryability test; Studio or other serving routes may work without allocations.",
           default: false,
         },
         include_denied: {
           type: "boolean",
-          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
+          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards; not proof of spam or query failure). Default false. When true, each result carries denied: true so the choice stays visible.",
           default: false,
         },
         include_testnets: {
@@ -2239,8 +2342,8 @@ const TOOLS = [
       type: "object",
       additionalProperties: false,
       properties: {
-        goal: { type: "string", description: "What you want to do, e.g. 'query Uniswap pool data on Base'" },
-        chain: { type: "string", description: "Optional chain filter: mainnet, arbitrum-one, base, matic, etc." },
+        goal: { type: "string", maxLength: 1000, description: "What you want to do, e.g. 'query Uniswap pool data on Base'" },
+        chain: { type: "string", maxLength: 1000, description: "Optional chain filter: mainnet, arbitrum-one, base, matic, etc." },
       },
       required: ["goal"],
     },
@@ -2288,18 +2391,18 @@ const TOOLS = [
           maximum: 50,
         },
         min_score: {
-          type: "number",
+          type: "number", minimum: 0, maximum: 1,
           description: "Minimum cosine similarity to include (0-1). Default 0.3.",
           default: 0.3,
         },
         include_unserved: {
           type: "boolean",
-          description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false.",
+          description: "Include records with zero active allocations in the registry snapshot. Default false is a discovery heuristic, NOT a queryability test; Studio or other serving routes may work without allocations.",
           default: false,
         },
         include_denied: {
           type: "boolean",
-          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible.",
+          description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards; not proof of spam or query failure). Default false. When true, each result carries denied: true so the choice stays visible.",
           default: false,
         },
         include_testnets: {
@@ -2320,7 +2423,7 @@ const TOOLS = [
           description: "Pre-filter by protocol type (dex, lending, bridge, staking, options, perpetuals, etc.)",
         },
         min_reliability: {
-          type: "number",
+          type: "number", minimum: 0, maximum: 1,
           description: "Pre-filter: minimum reliability score (0-1).",
         },
       },
