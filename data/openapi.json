@@ -145,8 +145,8 @@
     "/mcp/tools/query_for_goal": {
       "post": {
         "operationId": "tool_query_for_goal",
-        "summary": "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and…",
-        "description": "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and cached freshness in one call. Default execute=false makes NO network call, even with a key. Explicit execute=true opts into at most ONE gateway POST with your Studio key; no x402 payment or retries/fallback requests. Pins the crawled deployment when available. Parses syntax and restricts one collection, 1-10 rows, flat fields; does NOT claim live-schema validation or synthesize arbitrary goal-specific GraphQL. The starter may not answer the goal; inspect selected/query. Execution errors/partial data are returned honestly.",
+        "summary": "Turn a goal into a bounded, goal-specific GraphQL query: maps intent (pool ids, swaps, candles/OHLCV, daily/hourly…",
+        "description": "Turn a goal into a bounded, goal-specific GraphQL query: maps intent (pool ids, swaps, candles/OHLCV, daily/hourly data, positions, liquidations, tokens, addresses, time ranges, latest/top) to a deployment entity from the registry's crawled entity names, with rationale, confidence, unmet parts and ranked alternatives. Returns query:null instead of a misleading query when no entity maps confidently; goals without entity intent get the stored starter labelled generic. Keyless default makes NO network call. validate_schema=true (your own Studio key) adds ONE scoped introspection request to confirm fields/arguments and add typed ordering/filters; execute=true adds ONE gateway POST. No x402 payment, retries or fallbacks. Without a key, onboarding explains the human-operator key setup.",
         "tags": [
           "mcp-tools"
         ],
@@ -173,12 +173,27 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 10,
-                    "default": 5
+                    "description": "Rows to request; defaults to a number in the goal (e.g. top 3) or 5"
                   },
                   "execute": {
                     "type": "boolean",
                     "default": false,
                     "description": "Explicit opt-in to spend a Studio gateway query; never auto-pays x402"
+                  },
+                  "validate_schema": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Opt-in: with your own Studio key, one scoped live introspection request validates the generated fields/arguments before any execution"
+                  },
+                  "include_denied": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Also consider deployments with denied indexing rewards (not proof of unavailability) for entity matching"
+                  },
+                  "include_unserved": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Also consider deployments with zero active allocations in the snapshot (not a queryability test)"
                   }
                 }
               }

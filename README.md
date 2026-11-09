@@ -42,16 +42,19 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
    {"name":"query_for_goal","arguments":{"goal":"Uniswap v3 pools on Ethereum","first":2,"execute":false}}
    ```
 
-   Inspect the selected deployment, starter and validation labels. A starter is
-   not guaranteed to answer the goal or match a live schema. Older connectors can
-   use recommendation/detail and their stored starter instead.
-4. **Reuse a configured Studio key**, or have a human create one at
-   [Studio API Keys](https://thegraph.com/studio/apikeys/). Store it through the
-   host's secret manager as `THE_GRAPH_STUDIO_API_KEY`; never paste it in chat,
+   Inspect the selected deployment, query, `goal_mapping` (current source) and
+   validation labels. Published 0.11.0 returns a stored starter that may not
+   answer the goal. Older connectors can use recommendation/detail instead.
+4. **Bring your own Studio key — set up by a human.** This server never ships or
+   shares a key. Studio keys belong to a Studio account managed by a person, so
+   agents should hand this step to their operator rather than sign up or mint
+   keys. The operator creates a key at [Studio API Keys](https://thegraph.com/studio/apikeys/),
+   stores it via the host's secret manager or environment as
+   `THE_GRAPH_STUDIO_API_KEY` and restarts the server; never paste it in chat,
    source, tool arguments or logs. [Official pricing](https://thegraph.com/studio-pricing/)
    currently advertises **100,000 free queries/month**; verify the account's plan
    and remaining allowance. It is not a new quota per key; Studio development
-   endpoints have separate limits. The server does not create keys automatically.
+   endpoints have separate limits. See [host configuration](#bring-your-own-key-host-configuration).
 5. **Execute only when wanted and authorized**, using an advertised execution
    tool and reviewed fields. Bearer format: `Authorization: Bearer <STUDIO_API_KEY>`.
    Read GraphQL `errors` and partial `data` even on HTTP 200. On missing
@@ -61,7 +64,8 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
 
 **Published npm/ClawHub 0.11.0** includes contract lookup, measured opt-in health,
 and bounded goal preparation. The additional chain-only inference, empty-result
-`diagnostics`, strict search validation and structured `next_action` hints described
+`diagnostics`, strict search validation, structured `next_action` hints, and
+goal-specific `query_for_goal` planning with human-handoff key onboarding described
 below are **source improvements, not yet included in that published version**.
 They require a future release or running a reviewed source checkout (`npm install`
 then `npm start`, with Node 20 and the bundled database). No crawl is needed.
@@ -139,42 +143,102 @@ on restart. There is no background check or new reliability-score interpretation
 `registry_updated_at` is the upstream metadata update, **not** a crawl/health timestamp.
 This credential-only tool is not advertised on keyless servers.
 
-### `query_for_goal(goal, chain?, first=5, execute=false)`
+### `query_for_goal(goal, chain?, first?, execute=false, validate_schema=false)`
+
+**Current source (after 0.11.0):** goal-specific planning. Published 0.11.0
+returns the first recommendation's stored starter instead.
 
 ```js
-// Local preparation only — also safe when the server has a Studio key.
+// Keyless and local: no network call.
 const prepared = await mcp.call("query_for_goal", {
-  goal: "uniswap v3 on ethereum", first: 3,
+  goal: "Uniswap V4 pool IDs on Arc", chain: "arc", first: 3,
 });
+// prepared.query            -> { _meta {…} pools(first: 3) { id } }
+// prepared.goal_mapping     -> entity "Pool", confidence "medium", rationale,
+//                              unmet, alternatives
+// prepared.onboarding       -> human-handoff key setup (keyless servers only)
 
-// Only when data fetching is wanted: one opt-in gateway POST.
+// With the operator's own key: one scoped schema check + one query.
 const fetched = await mcp.call("query_for_goal", {
-  goal: "uniswap v3 on ethereum", first: 3, execute: true,
+  goal: "latest Uniswap v3 swaps on Ethereum in the last 7 days", first: 3,
+  validate_schema: true, execute: true,
 });
 ```
 
-Uses existing recommendation ranking, skips missing/unsafe starters among the top
-five candidates, and selects the first suitable one. The returned `selected`,
-`query`, request payload (keyed and x402 URLs), validation status, and cached
-freshness allow one-call preparation or optional first-page execution. Requests
-pin the crawled deployment where available. **The starter is an example, not an
-arbitrary natural-language query generator**: inspect whether it answers the goal.
+How it maps a goal:
 
-GraphQL syntax is parsed; a conservative structural check permits one collection,
-1–10 rows, at most ten flat fields, optional standard `_meta`, and ordering only.
-Mutations, variables, aliases, fragments, directives and nested selections are
-rejected. This is **not live schema validation** (`validation.live_schema` always
-says `not_checked`). Gateway execution success/failure is reported separately;
-GraphQL/auth errors (even HTTP 200), partial data, malformed responses and transport
-failures never become a success claim. `execution_attempted` records a gateway
-attempt; `executed` is true only for a successful gateway result, not on a timeout. There are no execution retries or automatic
-fallback queries. The existing timeout/response-size limits apply, and gateway
-redirects are rejected.
+1. Parses entity intent (pool IDs, swaps, candles/OHLCV, daily/hourly data,
+   positions, liquidations, borrows, mints, tokens, domains…), ordering
+   (latest/top), `top N`, 0x addresses and time ranges (`last 7 days`).
+2. Scores recommended deployments plus an entity-aware candidate search by
+   whether their crawled entity names contain the requested entity, protocol
+   text match and recommendation rank, within the inferred chain.
+3. **Keyless:** derives the collection with graph-node's pluralisation, selects
+   `id` (plus stored-starter fields only when the starter targets the same
+   entity), and filters by `id` when an address names that entity. Anything
+   that needs field types (ordering, time filters, relation filters, aggregation
+   intervals) goes into `goal_mapping.unmet` instead of being guessed.
+   Confidence is at most `medium` and `validation.live_schema` is `not_checked`.
+4. **`validate_schema:true` with a key:** one aliased introspection request
+   scoped to the chosen entity (`Query` fields, entity fields, `_orderBy`,
+   `_filter`, aggregation intervals). Fields, `orderBy`, `where` and required
+   arguments are emitted only if present; confidence becomes `high`. Probe
+   errors (including auth/quota bodies on HTTP 200) mark validation `failed`,
+   return `query:null` and block execution.
+5. **No confident mapping** returns `query:null`, `confidence` `low`/`none`, and
+   ranked `alternatives`. Matching deployments hidden by default filters appear
+   in `hidden_candidates`; `include_denied` / `include_unserved` opt them in
+   (neither denied rewards nor zero allocations proves a deployment is
+   unqueryable). Goals with no entity intent keep the stored starter, labelled
+   `confidence: "generic_starter"`.
 
-`execute` defaults to false. Execution and health require an explicitly invoked
-path **and** `THE_GRAPH_STUDIO_API_KEY` (existing key aliases still work). Keyless
-execution returns `credentials_required`, `executed: false` and an unsigned request
-payload. These tools never sign/pay x402 and accept no arbitrary endpoint URL.
+Rows are 1–10 (`first` defaults to a number in the goal or 5); selections are
+flat scalars plus single relations as `{ id }`. Mutations, variables, fragments
+and nested lists are never generated. `execute` defaults to false and needs an
+explicit call **and** `THE_GRAPH_STUDIO_API_KEY`; keyless execution returns
+`credentials_required`, the unsigned request and `onboarding`. Gateway success is
+reported separately: GraphQL/auth errors (even HTTP 200), partial data,
+malformed responses and transport failures never become a success claim. No
+retries, fallbacks, arbitrary endpoints or x402 payments.
+
+With a key configured, preparation results include
+`next_action.execute_call` (the same goal with `validate_schema` and `execute`
+set) so the explicit next step is one call away. Without a key, `onboarding`
+contains `relay_to_human` (a short message for the agent's operator), steps,
+a placeholder-only MCP config and a `curl` command that reads
+`$THE_GRAPH_STUDIO_API_KEY` from the environment. Tool output never contains
+the key.
+
+### Bring your own key: host configuration
+
+The server reads the key only from its process environment
+(`THE_GRAPH_STUDIO_API_KEY`, or `GATEWAY_API_KEY`). Prefer interpolation or a
+secret manager over a literal value in a config file, never commit a key, and
+restart the server afterwards: `tools/list` grows from 10 to 19 tools.
+
+Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`; `${env:NAME}` resolves from
+the environment Cursor was started with):
+
+```json
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+```
+
+Claude Code (`.mcp.json` supports `${VAR}` expansion):
+
+```json
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+```
+
+Claude Desktop and other stdio hosts use the same `mcpServers` shape. Without
+interpolation, the `env` value is plain text in that local file — use it only on
+a machine you control and keep the file out of version control:
+
+```json
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+```
+
+The `@0.11.0` pin runs the published release; goal-specific planning needs the
+next release or a reviewed source checkout.
 
 ---
 
@@ -476,7 +540,7 @@ not current serving health; no live volume measurement is performed by discovery
 - **get_schema_changes** — chronological fingerprint history. Fingerprints use entity names/field counts, not a full semantic schema diff.
 - **find_by_contract** and **get_top_subgraph_deployments** — exact manifest-address discovery, not live contract-to-entity validation
 - **get_deployment_30day_query_counts** — snapshot volumes for known IDs/hashes, not a live volume probe
-- **query_for_goal** — keyless preparation by default; `execute:true` is separately credential-gated
+- **query_for_goal** — goal-to-query planning (current source) with rationale/confidence; keyless by default; `validate_schema` / `execute` are separately credential-gated
 
 **Nine additional keyed tools** (19 total). Caller must invoke them; discovery never auto-queries:
 - **execute_query_by_subgraph_id** / **execute_query_by_deployment_id** / **execute_query_by_ipfs_hash** — POST GraphQL to The Graph gateway. Same routing as official (`subgraphs/id` vs `deployments/id`). Requires `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`). Without a key, returns `{error: credentials_required, query_url, query_url_x402, hint}` immediately — no hang, no x402 auto-pay. Convenience superset: **execute_query** accepts `id` OR `deployment_id` OR `ipfs_hash`.
@@ -516,7 +580,7 @@ npx subgraph-registry-mcp@0.11.0 --http-only
 # Connect to http://localhost:3848/sse; keep the listener firewalled/trusted.
 ```
 
-The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; inject a Studio key through your host's secret manager to enable opt-in execution.
+The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; see [host configuration](#bring-your-own-key-host-configuration) to add your own Studio key for opt-in execution.
 
 ---
 

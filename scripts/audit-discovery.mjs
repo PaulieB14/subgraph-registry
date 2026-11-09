@@ -41,6 +41,13 @@ const cases=[
  ["reject string boolean", "search_subgraphs",{network:"arc",include_unserved:"false",limit:3},r=>!!r.error],
  ["reject unsupported pagination", "search_subgraphs",{network:"arc",offset:10,limit:3},r=>!!r.error],
  ["recommend Arc chain intent", "recommend_subgraph",{goal:"find DEX swaps on Arc",chain:"arc"},r=>r.recommendations?.length>0 && r.recommendations.every(x=>x.network==="arc")],
+ ["goal Arc pool IDs", "query_for_goal",{goal:"Uniswap V4 pool IDs on Arc",chain:"arc",first:3},r=>/pools\(first: 3\) \{\s+id\s+\}/.test(r.query||"")],
+ ["goal Ethereum pool IDs not tokens", "query_for_goal",{goal:"Uniswap v3 liquidity pool ids on Ethereum",first:3},r=>/\bpools\(/.test(r.query||"") && !/\btokens\(/.test(r.query||"")],
+ ["goal OHLCV no misleading default", "query_for_goal",{goal:"OHLCV candles for Uniswap v4 pools on Arc",chain:"arc"},r=>r.query===null && r.goal_mapping?.hidden_candidates?.some(c=>c.entity==="Candle")],
+ ["goal OHLCV explicit opt-in", "query_for_goal",{goal:"OHLCV candles for Uniswap v4 pools on Arc",chain:"arc",include_denied:true,first:2},r=>/\bcandles\(/.test(r.query||"")],
+ ["goal latest swaps entity", "query_for_goal",{goal:"latest Uniswap v3 swaps on Ethereum",first:2},r=>/\bswaps\(/.test(r.query||"") && r.goal_mapping?.unmet?.some(u=>/ordering/.test(u))],
+ ["goal absent entity no query", "query_for_goal",{goal:"Uniswap v3 liquidations on Ethereum"},r=>r.query===null && r.request===null],
+ ["goal keyless human handoff", "query_for_goal",{goal:"Uniswap V4 pool IDs on Arc",chain:"arc"},r=>r.onboarding?.who==="human_operator" && /THE_GRAPH_STUDIO_API_KEY/.test(r.onboarding.relay_to_human||"") && /\$THE_GRAPH_STUDIO_API_KEY/.test(r.onboarding.curl_example||"")],
  ["invalid recommendation input", "recommend_subgraph",{goal:42},r=>!!r.error && !/toLowerCase/.test(r.error)],
 ];
 const results=[];
