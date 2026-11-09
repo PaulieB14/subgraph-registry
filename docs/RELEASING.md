@@ -12,7 +12,7 @@ crawler just to obtain access to publishing credentials.
    The new workflow cannot be safely exercised from its unmerged branch.
 2. Confirm main contains the desired stable `x.y.z` in `package.json`, both
    `server.json` locations, the `SKILL.md` install/hash pins and OpenAPI metadata.
-   Use a new minor version for new compatible tools (this release: **0.11.0**).
+   Use a new minor version for new compatible tools (this release: **0.12.0**).
 3. Existing repository secrets `NPM_TOKEN` and `CLAWHUB_CONFIG_JSON` must authorize
    the targets. Their existence is not proof of validity or package scope. Never
    retrieve/copy Aave's secrets or paste a token into chat. A failing CI token
@@ -23,7 +23,7 @@ crawler just to obtain access to publishing credentials.
    gh api repos/PaulieB14/subgraph-registry/commits/main --jq .sha
    # Substitute that exact SHA; this command performs publication when run.
    gh workflow run publish-only.yml --repo PaulieB14/subgraph-registry --ref main \
-     -f version=0.11.0 -f main_sha=FULL_MERGED_MAIN_SHA \
+     -f version=0.12.0 -f main_sha=FULL_MERGED_MAIN_SHA \
      -f publish_npm=true -f publish_clawhub=true
    ```
 
@@ -47,10 +47,10 @@ crawler just to obtain access to publishing credentials.
   has a pre-existing ENS ranking assertion mismatch with the bundled snapshot;
   this workflow runs the same focused suites as CI plus the release safety tests,
   rather than claiming that unrelated assertion was fixed.
-- `npm pack --ignore-scripts` is inspected against twelve explicit public files.
+- `npm pack --ignore-scripts` is inspected against thirteen explicit public files.
   Every packed file's bytes and archive SHA-512 are checked. Dependencies/model/DB
   are the existing reviewed package contents; no data rebuild occurs.
-- The ClawHub staging folder is an explicit nine-file allowlist: instructions,
+- The ClawHub staging folder is an explicit ten-file allowlist: instructions,
   README/license, server sources and public metadata. It omits DB/model binaries,
   tests, CI, dashboard code and credential/config files, preserving the existing
   instruction/server discovery listing without depending on broad ignore rules.
