@@ -13,6 +13,10 @@ Pre-computed index of **15,330 subgraphs** with domain classification, protocol 
 > - **[Schema evolution tracking](#schema-evolution)** with stability days surfaced on every result (`get_schema_changes`)
 > - **[OpenAPI 3.1 spec](#openapi)** auto-generated for MCP tools + REST routes, served at `/.well-known/openapi.json`
 
+## Publishing a reviewed release
+
+See [the publish-only release guide](docs/RELEASING.md) for main-only manual npm/ClawHub publication using repository secrets, without a crawl, data rebuild, or main-branch write.
+
 ## The Problem
 
 Agents querying The Graph need to discover and select the right subgraph before they can query data. Today this requires 3-4 tool calls (search, check volumes, fetch schema, infer structure) before any real work happens. This registry flips that: agents start with structured knowledge, not a blank slate.

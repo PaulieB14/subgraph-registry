@@ -1,0 +1,150 @@
+name: Publish existing version (no crawl)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact stable package version already merged to main (e.g. 0.11.0)"
+        required: true
+        type: string
+      main_sha:
+        description: "Full 40-character SHA of that merged main commit"
+        required: true
+        type: string
+      publish_npm:
+        description: "Publish npm (identical existing version is a no-op)"
+        type: boolean
+        default: true
+      publish_clawhub:
+        description: "Upload ClawHub (disable when a previous upload is pending scan)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Same lock as the scheduled crawler; never race its DB/version snapshot.
+concurrency:
+  group: update-registry
+  cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: ${{ inputs.version }}
+  RELEASE_SHA: ${{ inputs.main_sha }}
+
+jobs:
+  validate:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'PaulieB14/subgraph-registry'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      artifact_name: ${{ steps.bundle.outputs.name }}
+    steps:
+      - name: Require trusted main dispatch and explicit immutable source
+        env:
+          NPM_SELECTED: ${{ inputs.publish_npm }}
+          CLAWHUB_SELECTED: ${{ inputs.publish_clawhub }}
+        run: |
+          test "$GITHUB_WORKFLOW_REF" = 'PaulieB14/subgraph-registry/.github/workflows/publish-only.yml@refs/heads/main'
+          test "$GITHUB_SHA" = "$RELEASE_SHA"
+          [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          test "$NPM_SELECTED" = true || test "$CLAWHUB_SELECTED" = true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Require the requested commit to remain current main
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git ls-remote https://github.com/PaulieB14/subgraph-registry.git refs/heads/main | cut -f1)" = "$RELEASE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies without publishing credentials
+        run: npm install --no-audit --no-fund
+      - name: Test release guards and opt-in workflows
+        run: |
+          node --check scripts/release-only.mjs
+          node --test test/release-only.test.mjs test/agent-discovery.test.mjs test/execute-gateway.test.mjs
+          node scripts/smoke-bin.mjs
+          node scripts/assert-semantic.js
+      - name: Require synchronized metadata and generated API
+        run: |
+          node scripts/gen-openapi.js
+          git diff --exit-code
+      - name: Pack and verify public artifacts without lifecycle scripts
+        run: node scripts/release-only.mjs prepare "$RUNNER_TEMP/public-release"
+      - name: Name this immutable artifact attempt
+        id: bundle
+        run: echo "name=public-release-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.bundle.outputs.name }}
+          path: |
+            ${{ runner.temp }}/public-release/subgraph-registry-mcp-*.tgz
+            ${{ runner.temp }}/public-release/manifest.json
+            ${{ runner.temp }}/public-release/skill/
+          if-no-files-found: error
+          retention-days: 7
+
+  npm:
+    needs: validate
+    if: inputs.publish_npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.validate.outputs.artifact_name }}
+          path: ${{ runner.temp }}/public-release
+      - name: Verify immutable artifact before providing credentials
+        run: node scripts/release-only.mjs verify "$RUNNER_TEMP/public-release"
+      - name: Publish exact npm archive or verify identical existing bytes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          test -n "$NODE_AUTH_TOKEN" || { echo 'Repository NPM_TOKEN is missing'; exit 1; }
+          node scripts/release-only.mjs npm "$RUNNER_TEMP/public-release"
+
+  clawhub:
+    needs: validate
+    if: inputs.publish_clawhub
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.validate.outputs.artifact_name }}
+          path: ${{ runner.temp }}/public-release
+      - name: Install pinned official CLI without publishing credentials
+        run: npm install --prefix "$RUNNER_TEMP/clawhub-cli" --ignore-scripts --no-audit --no-fund clawhub@0.23.3
+      - name: Verify public skill artifact before providing credentials
+        run: node scripts/release-only.mjs verify "$RUNNER_TEMP/public-release"
+      - name: Upload skill or verify identical existing version
+        env:
+          CLAWHUB_CONFIG_JSON: ${{ secrets.CLAWHUB_CONFIG_JSON }}
+        run: |
+          test -n "$CLAWHUB_CONFIG_JSON" || { echo 'Repository CLAWHUB_CONFIG_JSON is missing'; exit 1; }
+          umask 077
+          export CLAWHUB_CONFIG_PATH="$RUNNER_TEMP/clawhub-publish-config.json"
+          trap 'rm -f "$CLAWHUB_CONFIG_PATH"' EXIT
+          printf '%s' "$CLAWHUB_CONFIG_JSON" > "$CLAWHUB_CONFIG_PATH"
+          unset CLAWHUB_CONFIG_JSON
+          export CLAWHUB_BIN="$RUNNER_TEMP/clawhub-cli/node_modules/.bin/clawhub"
+          node scripts/release-only.mjs clawhub "$RUNNER_TEMP/public-release"
