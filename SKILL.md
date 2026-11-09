@@ -9,6 +9,12 @@ metadata:
 
 Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-mcp) (hosted SSE `https://subgraphs.mcp.thegraph.com/sse`), **better discovery**. Search/recommend/semantic stay DISCOVERY — they never execute GraphQL. Schema and execute are opt-in and use the **same tool names** as official so an agent can swap connectors. Volume is already on every search hit (`query_volume_30d`) — skip official's extra `get_deployment_30day_query_counts` round-trip. Official that tool has been observed returning 0 for ENS/Lido/Uniswap; this registry does not copy those zeros. No private key. Set `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) for execute/live-schema; without a key those tools return `credentials_required` + both URLs and do not hang or auto-pay x402.
 
+## New agent workflow (Node MCP)
+
+- `find_by_contract(address, chain?, limit=3)`: exact normalized EVM manifest lookup; optional chain, limit 1–20. `schema_entities` cover the deployment, not a verified contract/entity mapping. Missing dynamic/substreams coverage is explicit.
+- `check_subgraph_health(id | subgraph_id | ipfs_hash | deployment_id)`: opt-in, Studio-key-only fixed `_meta` request; known IDs pin the crawled deployment. `freshness.live` is measured, process-local, stale after 300 seconds, null before observation. Serving is not chain-head sync. `registry_updated_at` is upstream metadata time, not health/crawl time.
+- `query_for_goal(goal, chain?, first=5, execute=false)`: local recommendation + bounded starter + unsigned request payload. No calls by default, even with a key. Only `execute:true` with a Studio key performs one pinned gateway query. First is 1–10; no retry, fallback execution, arbitrary endpoint or x402 payment. Syntax/structure checks are not live-schema validation; inspect whether the example starter answers the goal. Execution errors/partial data are surfaced.
+
 ## Tools
 
 ### Discovery (local index, no gateway)
@@ -58,9 +64,9 @@ npx subgraph-registry-mcp@0.10.16
 
 - The `registry.db` (SQLite) is **bundled inside the npm package** — no download and no API key needed for read-only use. (If it's ever missing, e.g. a bare source checkout, the server falls back to downloading it from the [GitHub repository](https://github.com/PaulieB14/subgraph-registry).)
 - The downloaded file's SHA-256 is **verified against a hash pinned in the npm package** before loading — see "Verifying the registry" below. A mismatched file is deleted and the server refuses to start.
-- Discovery tools (`search_subgraphs`, `recommend_subgraph`, `get_subgraph_detail`, `list_registry_stats`, `get_schema_changes`, `get_top_subgraph_deployments`, `get_deployment_30day_query_counts`) run entirely against the local database — no external API calls at query time.
+- Discovery tools (`search_subgraphs`, `recommend_subgraph`, `get_subgraph_detail`, `list_registry_stats`, `get_schema_changes`, `get_top_subgraph_deployments`, `find_by_contract`, `get_deployment_30day_query_counts`) run entirely against the local database — no external API calls at query time.
 - **Exception — `semantic_search_subgraphs`:** it loads a bundled ONNX embedding model via `@xenova/transformers`. If that bundled model is not present, the runtime downloads it **once** from Hugging Face (`huggingface.co`), then caches it.
-- **Exception — opt-in execute / live schema:** `execute_query*` and live `__schema` on `get_schema*` POST to `gateway.thegraph.com` **only when** `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) is set AND the caller invoked that tool. Without a key they return `credentials_required` with both URLs and do not touch the network. Discovery tools never take this path.
+- **Exception — opt-in execute / live schema:** `execute_query*`, `check_subgraph_health`, `query_for_goal` with explicit `execute:true`, and live `__schema` on `get_schema*` POST to `gateway.thegraph.com` **only when** `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) is set AND the caller invoked that tool. Without a key they return `credentials_required` with both URLs and do not touch the network. Discovery tools never take this path.
 - **Optional local HTTP/SSE server:** default transport is **stdio** (no listener). Passing `--http` or `--http-only` starts a local HTTP/SSE server on port 3848 (`MCP_HTTP_PORT` to change), exposing `/messages`, health, and OpenAPI/manifest endpoints. It is off unless you pass those flags — bind only to trusted/firewalled environments.
 
 ## Verifying the registry

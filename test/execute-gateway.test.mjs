@@ -161,7 +161,7 @@ test("a keyed server advertises the full surface, with honest wording", async ()
   const res = await send("tools/list", {});
   const byName = Object.fromEntries(res.result.tools.map((t) => [t.name, t]));
   for (const keyed of [
-    "execute_query", "execute_query_by_subgraph_id", "execute_query_by_deployment_id",
+    "check_subgraph_health", "execute_query", "execute_query_by_subgraph_id", "execute_query_by_deployment_id",
     "execute_query_by_ipfs_hash", "get_schema", "get_schema_by_subgraph_id",
     "get_schema_by_deployment_id", "get_schema_by_ipfs_hash",
   ]) {
@@ -171,4 +171,17 @@ test("a keyed server advertises the full surface, with honest wording", async ()
   assert.match(byName.execute_query.description, /never execute/i);
   assert.match(byName.execute_query.description, /POST/i);
   assert.match(byName.get_schema.description, /opt-in/i);
+});
+
+
+test("goal-to-data and health tools are wired through keyed MCP", async () => {
+  const d = await callTool("query_for_goal", { goal: "uniswap v3 on ethereum", execute: true });
+  assert.equal(d.execution_attempted, true);
+  assert.equal(d.executed, true);
+  assert.equal(d.validation.gateway_execution, "succeeded");
+  assert.equal(d.result.data._mock, true);
+  assert.equal(d.freshness.live, null); // mock has no _meta; no invented evidence
+  const health = await callTool("check_subgraph_health", { subgraph_id: d.selected.id });
+  assert.equal(health.freshness.live.status, "metadata_unavailable");
+  assert.equal(health.freshness.live.indexed_block_number, null);
 });

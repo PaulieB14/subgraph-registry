@@ -23,6 +23,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import Database from "better-sqlite3";
+import { boundedStarter, findContractDeployments, freshness, healthObservation, HEALTH_QUERY } from "./agent-discovery.js";
 import express from "express";
 import { fileURLToPath, pathToFileURL } from "url";
 import { basename, dirname, join } from "path";
@@ -465,7 +466,7 @@ const EMERGING_LIMIT = 3;
 const SEARCH_COLS = `id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, entity_count, canonical_entities,
            powered_by_substreams, active_allocation_count, example_query, denied_at, created_at,
-           query_volume_30d`;
+           query_volume_30d, updated_at`;
 
 function ageDays(created_at) {
   if (!created_at) return null;
@@ -667,6 +668,7 @@ function searchSubgraphs({
       example_query: r.example_query || null,
       age_days: ageDays(r.created_at),
       maturity: maturityOf(r.created_at),
+      freshness: freshnessFor(r),
       ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
@@ -704,6 +706,7 @@ function searchSubgraphs({
     example_query: r.example_query || null,
     age_days: ageDays(r.created_at),
     maturity: maturityOf(r.created_at),
+    freshness: freshnessFor(r),
     ...buildQueryEndpoints(r.id),
   }));
 
@@ -937,7 +940,7 @@ function recommendSubgraph({ goal, chain = "" }) {
   const sql = `
     SELECT id, display_name, description, auto_description, domain, protocol_type, network,
            reliability_score, ipfs_hash, canonical_entities, active_allocation_count, example_query,
-           query_volume_30d,
+           query_volume_30d, updated_at,
            (${goalScore}) AS goal_score
     FROM subgraphs
     ${where}
@@ -997,6 +1000,7 @@ function recommendSubgraph({ goal, chain = "" }) {
       example_query: r.example_query || null,
       schema_changed_at: stab.schema_changed_at,
       schema_stable_days: stab.schema_stable_days,
+      freshness: freshnessFor(r),
       ...buildQueryEndpoints(r.id),
     };
   });
@@ -1022,6 +1026,7 @@ function getSubgraphDetail({ subgraph_id }) {
   if (!row) return { error: `Subgraph '${subgraph_id}' not found` };
 
   const result = { ...row };
+  result.freshness = freshnessFor(row);
   result.canonical_entities = JSON.parse(result.canonical_entities);
   result.categories = JSON.parse(result.categories);
   if (result.all_entities) result.all_entities = JSON.parse(result.all_entities);
@@ -1140,6 +1145,7 @@ function buildJsonLdManifest(row) {
     entities: detail.all_entities || [],
     canonicalEntities: detail.canonical_entities || [],
     contracts: detail.contract_addresses || null,
+    freshness: detail.freshness,
     reliabilityScore: row.reliability_score,
     activeIndexers: row.active_allocation_count,
     queryVolume30d: row.query_volume_30d,
@@ -1318,7 +1324,7 @@ async function semanticSearchSubgraphs({
               protocol_type, network, reliability_score, ipfs_hash,
               entity_count, canonical_entities, powered_by_substreams,
               active_allocation_count, example_query, denied_at, created_at,
-              query_volume_30d, embedding
+              query_volume_30d, updated_at, embedding
        FROM subgraphs
        ${where}`,
     )
@@ -1386,6 +1392,7 @@ async function semanticSearchSubgraphs({
       age_days: ageDays(r.created_at),
       maturity: maturityOf(r.created_at),
       semantic_score: Number(score.toFixed(4)),
+      freshness: freshnessFor(r),
       ...buildQueryEndpoints(r.id),
     });
     if (results.length >= limit) break;
@@ -1562,7 +1569,7 @@ function getSchemaStabilityBatch(ids) {
 }
 
 // ── Opt-in gateway (schema + execute) ──────────────────────
-// Discovery tools never call these. execute_query / get_schema are the
+// Discovery tools never call these. Explicit execution/schema/health tools are the
 // only paths that POST GraphQL at The Graph gateway, and only when the
 // caller invokes them. No private key is bundled; a Studio key is read
 // from the environment if the host set one.
@@ -1726,6 +1733,7 @@ async function postGateway({ url, key, query, variables }) {
   try {
     const res = await fetch(url, {
       method: "POST",
+      redirect: "error",
       headers,
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
@@ -1790,6 +1798,10 @@ function gatewayResultShape(posted, target) {
     query_url: target.query_url,
     query_url_x402: target.query_url_x402,
   };
+  if (body?.error) out.error = body.error;
+  else if (body?.parse_error) out.error = "invalid_gateway_response";
+  else if (posted.http_status !== null && (posted.http_status < 200 || posted.http_status >= 300)) out.error = "gateway_http_error";
+  else if (!errors?.length && out.data == null) out.error = "invalid_gateway_response";
   if (posted.network_error) {
     out.error = "gateway_error";
     out.message = posted.network_error;
@@ -1915,82 +1927,137 @@ async function getSchema(args = {}) {
   return out;
 }
 
-function getTopSubgraphDeployments({
-  contract_address,
-  chain,
-  limit = 3,
-} = {}) {
-  const addr = String(contract_address || "").trim();
-  if (!CONTRACT_ADDR_RE.test(addr)) {
+// Read-only cached observations, keyed by immutable deployment where possible.
+// Bounded memory; no database writes or background/billable health checks.
+const healthObservations = new Map();
+function healthKey(row) { return row?.ipfs_hash || row?.id; }
+function freshnessFor(row) {
+  return freshness(row, healthObservations.get(healthKey(row)));
+}
+function rememberHealth(row, result) {
+  const key = healthKey(row);
+  healthObservations.delete(key);
+  healthObservations.set(key, healthObservation(result));
+  if (healthObservations.size > 500) {
+    healthObservations.delete(healthObservations.keys().next().value);
+  }
+}
+
+function findByContract({ address, chain, limit = 3 } = {}) {
+  const found = findContractDeployments(getDb(), { address, chain, limit }, normalizeNetwork);
+  if (found.error) return found;
+  return {
+    contract_address: found.address,
+    chain: found.chain,
+    source: "registry",
+    ranking: "reliability_score DESC, query_volume_30d DESC, id ASC; only allocated, non-denied deployments in the snapshot",
+    total: found.deployments.length,
+    deployments: found.deployments.map(({ row: r, matched }) => ({
+      id: r.id, display_name: r.display_name, domain: r.domain,
+      protocol_type: r.protocol_type, network: r.network,
+      reliability_score: r.reliability_score, query_volume_30d: r.query_volume_30d,
+      ipfs_hash: r.ipfs_hash, matched_contracts: matched,
+      schema_entities: registrySchemaFields(r)?.all_entities || [],
+      coverage: {
+        source: "crawled_manifest",
+        contract_to_entity_mapping: null,
+        caveat: "schema_entities describe the whole deployment, not verified entities/fields for this contract. Dynamic template instances and substreams may be absent; no match does not prove no coverage.",
+      },
+      example_query: r.example_query || null,
+      freshness: freshnessFor(r),
+      ...buildQueryEndpoints(r.id),
+    })),
+    caveat: "Exact case-insensitive EVM address matches from crawled manifests, not live chain discovery. Omit chain to search all networks; use matched_contracts.network for manifest-level chain evidence. Allocation and reliability are snapshot signals, not live health.",
+  };
+}
+
+function getTopSubgraphDeployments({ contract_address, chain, limit = 3 } = {}) {
+  if (!CONTRACT_ADDR_RE.test(String(contract_address || "").trim())) {
     return { error: "contract_address is required (0x-prefixed 40-hex EVM address)" };
   }
-  if (!chain) {
+  if (typeof chain !== "string" || !chain.trim()) {
     return { error: "chain is required (e.g. mainnet, ethereum, base, arbitrum)" };
   }
-  const network = normalizeNetwork(chain);
-  const needle = addr.toLowerCase();
-  const cap = Math.max(1, Math.min(Number(limit) || 3, 20));
-  const rows = getDb()
-    .prepare(
-      `SELECT id, display_name, domain, protocol_type, network,
-              reliability_score, ipfs_hash, example_query, denied_at,
-              query_volume_30d, contract_addresses, active_allocation_count
-       FROM subgraphs
-       WHERE network = ?
-         AND contract_addresses IS NOT NULL
-         AND lower(contract_addresses) LIKE ?
-         AND active_allocation_count > 0
-         AND denied_at = 0
-       ORDER BY reliability_score DESC, query_volume_30d DESC
-       LIMIT ?`,
-    )
-    .all(network, `%${needle}%`, cap * 5);
+  return findByContract({ address: contract_address, chain, limit });
+}
 
-  const seenIpfs = new Set();
-  const deployments = [];
-  for (const r of rows) {
-    if (r.ipfs_hash && seenIpfs.has(r.ipfs_hash)) continue;
-    if (r.ipfs_hash) seenIpfs.add(r.ipfs_hash);
-    let contracts = [];
-    try {
-      contracts = JSON.parse(r.contract_addresses) || [];
-    } catch {
-      contracts = [];
-    }
-    const matched = contracts.filter(
-      (c) => String(c.address || "").toLowerCase() === needle,
-    );
-    // LIKE can false-positive on a shorter hex substring; require an exact address.
-    if (!matched.length) continue;
-    deployments.push({
-      id: r.id,
-      display_name: r.display_name,
-      domain: r.domain,
-      protocol_type: r.protocol_type,
-      network: r.network,
-      reliability_score: r.reliability_score,
-      query_volume_30d: r.query_volume_30d ?? null,
-      ipfs_hash: r.ipfs_hash,
-      matched_contracts: matched,
-      example_query: r.example_query || null,
-      ...buildQueryEndpoints(r.id),
-    });
-    if (deployments.length >= cap) break;
+async function checkSubgraphHealth(args = {}) {
+  let target = resolveQueryTarget(args);
+  if (target.error) return target;
+  if (!studioApiKey()) return credentialsRequired(target);
+  // Pin a discovered subgraph to the snapshot deployment: a mutable subgraph
+  // id may have moved since the crawl and must not poison that snapshot's health.
+  if (target.kind === "subgraph_id" && target.row?.ipfs_hash) {
+    target = resolveQueryTarget({ ipfs_hash: target.row.ipfs_hash });
+    if (target.error) return target;
   }
+  // A fixed _meta query: caller cannot add fields, change host, or auto-pay.
+  const identifier = target.kind === "subgraph_id" ? { subgraph_id: target.id }
+    : target.kind === "ipfs_hash" ? { ipfs_hash: target.id } : { deployment_id: target.id };
+  const result = await executeQuery({ ...identifier, query: HEALTH_QUERY });
+  const row = target.row || { id: target.id, ipfs_hash: target.kind === "ipfs_hash" ? target.id : null };
+  rememberHealth(row, result);
+  return { id: target.id, kind: target.kind, ...result, freshness: freshnessFor(row) };
+}
 
-  return {
-    contract_address: needle,
-    chain: network,
-    source: "registry",
-    ranking:
-      "reliability_score DESC, then query_volume_30d DESC. Official subgraph-MCP orders by query fees on a live network-subgraph lookup; we rank the crawled corpus instead, with real 30-day volume rather than the official 0-count oracle.",
-    total: deployments.length,
-    deployments,
-    caveat:
-      deployments.length === 0
-        ? "No crawled manifest in this registry lists that contract on that chain. contract_addresses are extracted from subgraph.yaml dataSources/templates at crawl time; substreams-powered subgraphs and a minority of manifests have none. This is not a live network-subgraph lookup."
-        : "Results are subgraphs whose crawled manifest lists this contract. Coverage is high for EVM subgraphs with dataSources, not 100%.",
+async function queryForGoal({ goal, chain, first = 5, execute = false } = {}) {
+  if (typeof goal !== "string" || !goal.trim() || goal.length > 1000) {
+    return { error: "goal must be a non-empty string of at most 1000 characters" };
+  }
+  if (chain !== undefined && (typeof chain !== "string" || !chain.trim())) {
+    return { error: "chain must be a non-empty network name" };
+  }
+  if (typeof execute !== "boolean" || !Number.isInteger(first) || first < 1 || first > 10) {
+    return { error: "execute must be boolean; first must be an integer from 1 to 10" };
+  }
+  const discovery = recommendSubgraph({ goal: goal.trim(), chain: chain || "" });
+  const skipped = [];
+  let selected, query;
+  for (const candidate of discovery.recommendations) {
+    try {
+      query = boundedStarter(candidate.example_query, first);
+      selected = candidate;
+      break;
+    } catch (err) {
+      skipped.push({ id: candidate.id, reason: err.message });
+    }
+  }
+  if (!selected) return { error: "no_suitable_starter", goal, skipped, execution_attempted: false, executed: false };
+  // Prefer the immutable crawled deployment over a mutable subgraph id.
+  const target = resolveQueryTarget(selected.ipfs_hash
+    ? { ipfs_hash: selected.ipfs_hash } : { subgraph_id: selected.id });
+  if (target.error) return { ...target, executed: false };
+  const row = target.row || { id: selected.id, ipfs_hash: selected.ipfs_hash };
+  const out = {
+    goal,
+    selected: {
+      id: selected.id, display_name: selected.display_name, network: selected.network,
+      ipfs_hash: selected.ipfs_hash, domain: selected.domain, protocol_type: selected.protocol_type,
+      reliability_score: selected.reliability_score, query_volume_30d: selected.query_volume_30d,
+    },
+    query, variables: {}, first, skipped,
+    selection: "First ranked recommendation with a bounded registry starter. Starter is an example, NOT a generated answer to the goal; inspect relevance before executing.",
+    validation: { syntax: "passed", bounded_structure: "passed", live_schema: "not_checked", gateway_execution: "not_attempted" },
+    execution_attempted: false, executed: false,
+    request: { method: "POST", query_url: target.query_url,
+      query_url_x402: target.query_url_x402, body: { query, variables: {} } },
+    freshness: freshnessFor(row),
   };
+  if (!execute) return out;
+  // Explicit execution opt-in is necessary even when the process has a key.
+  if (!studioApiKey()) return { ...out, ...credentialsRequired(target) };
+  const result = await executeQuery({ ipfs_hash: selected.ipfs_hash,
+    subgraph_id: selected.id, query });
+  out.execution_attempted = true;
+  out.result = result;
+  out.validation.gateway_execution = result.http_status >= 200 && result.http_status < 300 &&
+    !result.error && !result.errors?.length && result.data != null ? "succeeded" : "failed";
+  out.executed = out.validation.gateway_execution === "succeeded";
+  if (result.data?._meta || out.validation.gateway_execution === "failed") {
+    rememberHealth(row, result);
+  }
+  out.freshness = freshnessFor(row);
+  return out;
 }
 
 function getDeployment30dayQueryCounts(args = {}) {
@@ -2080,6 +2147,7 @@ const IDENTIFIER_PROPS = {
 // Tools that cannot work without a Studio API key. Every one of them returns
 // credentials_required when none is set.
 const KEYED_TOOLS = new Set([
+  "check_subgraph_health",
   "execute_query", "execute_query_by_subgraph_id", "execute_query_by_deployment_id",
   "execute_query_by_ipfs_hash", "get_schema", "get_schema_by_subgraph_id",
   "get_schema_by_deployment_id", "get_schema_by_ipfs_hash",
@@ -2087,12 +2155,9 @@ const KEYED_TOOLS = new Set([
 
 // Advertise only what this process can actually do.
 //
-// A tool list is not free: it is injected into the model's context on every
-// conversation. The full 16 cost ~4,200 tokens against ~2,200 for discovery
-// alone, and without a key ten of them can only ever answer
-// credentials_required — so a keyless server was charging every client 2,000
-// tokens for capability it does not have, and inviting the model to spend a
-// call discovering that.
+// A tool list is injected into every model context. Omit credential-only
+// capabilities from keyless servers instead of inviting fruitless calls.
+// query_for_goal stays visible because its default preparation path is local.
 //
 // This matters most for the deployment where it is least visible: a public
 // discovery endpoint runs keyless by design, precisely so there is no
@@ -2109,6 +2174,30 @@ function listableTools() {
 }
 
 const TOOLS = [
+  {
+    name: "find_by_contract",
+    description: "Discovery only: exact case-insensitive EVM contract lookup from crawled manifests. Optional chain (aliases supported); omitted chain searches all networks. Ranks allocated, non-denied snapshot deployments by reliability then volume. Returns matched manifest records, deployment-level schema entities (NOT verified contract-to-entity mappings), starter and cached freshness. No live calls or payments.",
+    inputSchema: { type: "object", additionalProperties: false, required: ["address"], properties: {
+      address: { type: "string", description: "0x-prefixed 40-hex EVM address" },
+      chain: { type: "string", description: "Optional network, e.g. ethereum, base, arbitrum" },
+      limit: { type: "integer", minimum: 1, maximum: 20, default: 3 },
+    } },
+  },
+  {
+    name: "check_subgraph_health",
+    description: "Opt-in: one fixed _meta query against The Graph gateway using your Studio API key, pinning known subgraphs to their crawled deployment. Reports observed timestamp, indexed block/timestamp, indexing errors or honest failure/unknown states. Does NOT establish sync to chain head or trigger x402 payments. Observations are process-local, stale after five minutes and lost on restart; discovery never probes automatically.",
+    inputSchema: { type: "object", additionalProperties: false, properties: IDENTIFIER_PROPS },
+  },
+  {
+    name: "query_for_goal",
+    description: "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and cached freshness in one call. Default execute=false makes NO network call, even with a key. Explicit execute=true opts into at most ONE gateway POST with your Studio key; no x402 payment or retries/fallback requests. Pins the crawled deployment when available. Parses syntax and restricts one collection, 1-10 rows, flat fields; does NOT claim live-schema validation or synthesize arbitrary goal-specific GraphQL. The starter may not answer the goal; inspect selected/query. Execution errors/partial data are returned honestly.",
+    inputSchema: { type: "object", additionalProperties: false, required: ["goal"], properties: {
+      goal: { type: "string", minLength: 1, maxLength: 1000 },
+      chain: { type: "string" },
+      first: { type: "integer", minimum: 1, maximum: 10, default: 5 },
+      execute: { type: "boolean", default: false, description: "Explicit opt-in to spend a Studio gateway query; never auto-pays x402" },
+    } },
+  },
   {
     name: "search_subgraphs",
     description:
@@ -2424,6 +2513,9 @@ const TOOLS = [
 ];
 
 const HANDLERS = {
+  find_by_contract: findByContract,
+  check_subgraph_health: checkSubgraphHealth,
+  query_for_goal: queryForGoal,
   search_subgraphs: searchSubgraphs,
   recommend_subgraph: recommendSubgraph,
   get_subgraph_detail: getSubgraphDetail,
@@ -2750,7 +2842,7 @@ export const REST_ROUTES = [
   },
 ];
 
-export { TOOLS };
+export { TOOLS, HANDLERS };
 
 // Only auto-start when invoked as the entry point — importing the
 // module for tooling (scripts/gen-openapi.js, tests) MUST NOT spawn

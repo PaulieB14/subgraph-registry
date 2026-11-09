@@ -90,21 +90,24 @@ before(async () => {
 after(() => proc?.kill());
 
 // This suite runs credential-free (see the spawn above), so tools/list here is
-// exactly what a public discovery deployment serves: the eight tools that work
-// without a Studio key. The eight credentialed ones are asserted in
+// exactly what a public discovery deployment serves: tools that work without
+// a Studio key. The credentialed tools are asserted in
 // execute-gateway.test.mjs, which runs with a key.
 const EXPECTED_KEYLESS_TOOLS = [
+  "find_by_contract",
   "get_deployment_30day_query_counts",
   "get_schema_changes",
   "get_subgraph_detail",
   "get_top_subgraph_deployments",
   "list_registry_stats",
+  "query_for_goal",
   "recommend_subgraph",
   "search_subgraphs",
   "semantic_search_subgraphs",
 ];
 
 const KEYED_ONLY_TOOLS = [
+  "check_subgraph_health",
   "execute_query",
   "execute_query_by_deployment_id",
   "execute_query_by_ipfs_hash",
@@ -719,4 +722,22 @@ test("a keyless server advertises only what it can actually do", async () => {
   ]) {
     assert.ok(names.includes(usable), `${usable} should be available without a key`);
   }
+});
+
+test("contract-first lookup and goal preparation are wired through keyless MCP", async () => {
+  const d = await callTool("find_by_contract", {
+    address: "0x1F98431c8aD98523631AE4a59f267346ea31F984", chain: "ethereum",
+  });
+  assert.equal(d.chain, "mainnet");
+  assert.ok(d.deployments.length > 0);
+  assert.equal(d.deployments[0].coverage.contract_to_entity_mapping, null);
+  const prepared = await callTool("query_for_goal", { goal: "uniswap v3 on ethereum", first: 2 });
+  assert.equal(prepared.executed, false);
+  assert.equal(prepared.validation.syntax, "passed");
+  assert.equal(prepared.validation.live_schema, "not_checked");
+  assert.match(prepared.query, /first: 2/);
+  const denied = await callTool("query_for_goal", { goal: "uniswap v3 on ethereum", execute: true });
+  assert.equal(denied.error, "credentials_required");
+  assert.equal(denied.executed, false);
+  assert.ok(denied.request.body.query);
 });
