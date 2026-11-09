@@ -66,6 +66,9 @@ Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-m
    - With a key, `validate_schema:true` adds ONE scoped introspection request that
      confirms the collection, fields, `orderBy` and `where` filters, then adds
      goal-relevant fields and typed filters. Only then is confidence `high`.
+     If a requested address/time filter cannot be applied it appears in
+     `filters_not_applied` and execution is skipped instead of returning
+     unfiltered rows.
    - `query:null` with `confidence` `low`/`none` means no entity mapped
      confidently: pick from `alternatives` or inspect `get_subgraph_detail`.
      `hidden_candidates` lists matching deployments excluded by default filters;

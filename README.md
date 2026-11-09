@@ -182,7 +182,12 @@ How it maps a goal:
 4. **`validate_schema:true` with a key:** one aliased introspection request
    scoped to the chosen entity (`Query` fields, entity fields, `_orderBy`,
    `_filter`, aggregation intervals). Fields, `orderBy`, `where` and required
-   arguments are emitted only if present; confidence becomes `high`. Probe
+   arguments are emitted only if present; confidence becomes `high`. Address
+   context maps to relation filters (`owned by` → `owner`, `token` →
+   `token0` OR `token1` when the schema has `or`). If a requested address or
+   time filter cannot be applied, it is listed in
+   `goal_mapping.filters_not_applied` and execution is skipped
+   (`requested_filter_not_applied`) rather than returning unfiltered rows. Probe
    errors (including auth/quota bodies on HTTP 200) mark validation `failed`,
    return `query:null` and block execution.
 5. **No confident mapping** returns `query:null`, `confidence` `low`/`none`, and

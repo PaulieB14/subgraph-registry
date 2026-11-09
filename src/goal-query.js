@@ -217,18 +217,18 @@ export function planKeyless({ intent, entity, starter, first, allEntityNames = [
   } else if (intent.ordering) {
     unmet.push(`ordering: "${intent.ordering}" needs a live-schema field; use validate_schema:true`);
   }
-  const where = [];
+  const where = [], blocking = [];
   for (const a of intent.addresses) {
     if (a.context && concept && concept.words.test(a.context) || (intent.addresses.length === 1 && !a.context)) {
       where.push(["id", literal(a.address)]);
       rationale.push(`where id = ${a.address} (address names the ${concept?.key || "requested"} entity itself)`);
-    } else unmet.push(`address filter for ${a.address}: relation field unknown keylessly; use validate_schema:true`);
+    } else { unmet.push(`address filter for ${a.address}: relation field unknown keylessly; use validate_schema:true`); blocking.push(`address ${a.address}`); }
   }
-  if (intent.time_range) unmet.push(`time range (${intent.time_range.label}): field type unknown keylessly; use validate_schema:true`);
+  if (intent.time_range) { unmet.push(`time range (${intent.time_range.label}): field type unknown keylessly; use validate_schema:true`); blocking.push(`time range ${intent.time_range.label}`); }
   if (concept?.key === "candle") unmet.push("candle/OHLCV entities may be timeseries aggregations that require an interval argument; not detectable without the live schema");
   if (where.length) args.push(["where", `{ ${where.map(([k, v]) => `${k}: ${v}`).join(", ")} }`]);
   args.push(["first", String(first)]);
-  return { query: render({ collection, args, fields }), collection, fields, order, where: Object.fromEntries(where.map(([k, v]) => [k, JSON.parse(v)])), unmet, rationale, field_source: starterMatches && !intent.ids_only ? "crawled_starter_fields" : "id_only" };
+  return { query: render({ collection, args, fields }), collection, fields, order, where: Object.fromEntries(where.map(([k, v]) => [k, JSON.parse(v)])), unmet, blocking_unmet: blocking, rationale, field_source: starterMatches && !intent.ids_only ? "crawled_starter_fields" : "id_only" };
 }
 
 // One aliased, read-only introspection request scoped to the selected entity.
@@ -290,14 +290,20 @@ export function planWithSchema({ intent, entity, probe, first }) {
   const order = chooseOrder(intent, concept, orderEnum);
   if (order?.field) { args.push(["orderBy", order.field], ["orderDirection", order.direction]); rationale.push(`orderBy ${order.field} ${order.direction}`); }
   else if (order?.missing && order.requested) unmet.push(`ordering: no ${order.missing === "top" ? "metric" : "time"} field in ${entity.name}_orderBy`);
-  const where = [];
-  const RELATION_BY_CONTEXT = { pool: ["pool", "pair"], pair: ["pair", "pool"], token: ["token", "token0", "token1", "inputToken", "asset"], wallet: ["owner", "account", "user", "origin", "sender", "from"], user: ["user", "account", "owner", "origin", "sender"], account: ["account", "user", "owner"], owner: ["owner", "account", "user"], sender: ["sender", "from", "origin"], from: ["from", "sender"], to: ["to", "recipient"], recipient: ["recipient", "to"], market: ["market"], vault: ["vault"] };
+  const where = [], blocking = [];
+  const RELATION_BY_CONTEXT = { pool: ["pool", "pair"], pair: ["pair", "pool"], token: ["token", "token0", "token1", "inputToken", "asset"], wallet: ["owner", "account", "user", "origin", "sender", "from"], user: ["user", "account", "owner", "origin", "sender"], account: ["account", "user", "owner"], owner: ["owner", "registrant", "account", "user"], owned: ["owner", "registrant", "account", "user"], owns: ["owner", "registrant", "account", "user"], held: ["owner", "account", "user"], holder: ["owner", "account", "user"], holding: ["owner", "account", "user"], registrant: ["registrant", "owner"], registered: ["registrant", "owner"], sender: ["sender", "from", "origin"], from: ["from", "sender"], to: ["to", "recipient"], recipient: ["recipient", "to"], market: ["market"], vault: ["vault"] };
   for (const a of intent.addresses) {
     const self = a.context ? concept?.words.test(a.context) : intent.addresses.length === 1;
     const candidates = self ? ["id"] : (RELATION_BY_CONTEXT[a.context] || []);
     const field = candidates.find((c) => filterFields.has(c));
-    if (field) { where.push([field, literal(a.address)]); rationale.push(`where ${field} = ${a.address}`); }
-    else unmet.push(`address filter for ${a.address}: no matching filter field for context "${a.context ?? "none"}"`);
+    const pair = /^token[01]$/.test(field || "") && filterFields.has("token0") && filterFields.has("token1");
+    if (pair && filterFields.has("or")) {
+      where.push(["or", `[{ token0: ${literal(a.address)} }, { token1: ${literal(a.address)} }]`, [{ token0: a.address }, { token1: a.address }]]);
+      rationale.push(`where token0 = ${a.address} OR token1 = ${a.address}`);
+    } else if (field) {
+      where.push([field, literal(a.address)]); rationale.push(`where ${field} = ${a.address}`);
+      if (pair) unmet.push(`address ${a.address} filtered on ${field} only; this schema has no "or" filter, so matches on the other token side are not included`);
+    } else { unmet.push(`address filter for ${a.address}: no matching filter field for context "${a.context ?? "none"}"`); blocking.push(`address ${a.address}`); }
   }
   if (intent.time_range) {
     const tf = TIME_FIELDS.find((f) => filterFields.has(`${f}_gte`));
@@ -305,7 +311,7 @@ export function planWithSchema({ intent, entity, probe, first }) {
     if (tf && (type === "Int" || type === "BigInt" || type === "Int8")) {
       where.push([`${tf}_gte`, type === "Int" ? literal(intent.time_range.from) : literal(String(intent.time_range.from))]);
       rationale.push(`where ${tf}_gte = ${intent.time_range.from} (${intent.time_range.label}, unix seconds)`);
-    } else unmet.push(`time range (${intent.time_range.label}): no Int/BigInt seconds filter confirmed`);
+    } else { unmet.push(`time range (${intent.time_range.label}): no Int/BigInt seconds filter confirmed`); blocking.push(`time range ${intent.time_range.label}`); }
   }
   for (const [k] of where) if (!filterFields.has(k)) errors.push(`filter ${k} not in ${entity.name}_filter`);
   if (where.length) args.push(["where", `{ ${where.map(([k, v]) => `${k}: ${v}`).join(", ")} }`]);
@@ -313,5 +319,5 @@ export function planWithSchema({ intent, entity, probe, first }) {
   for (const f of fields) if (!(typeof f === "string" ? leaf.has(f) : objects.has(f.name))) errors.push(`field ${typeof f === "string" ? f : f.name} not on ${entity.name}`);
   if (order?.field && !orderEnum.has(order.field)) errors.push(`orderBy ${order.field} not in ${entity.name}_orderBy`);
   if (errors.length) return { errors, unmet, rationale };
-  return { query: render({ collection, args, fields }), collection, fields: fields.map((f) => (typeof f === "string" ? f : `${f.name} { id }`)), order: order?.field ? order : null, where: Object.fromEntries(where.map(([k, v]) => [k, JSON.parse(v)])), unmet, rationale, errors: [], field_source: "live_introspection" };
+  return { query: render({ collection, args, fields }), collection, fields: fields.map((f) => (typeof f === "string" ? f : `${f.name} { id }`)), order: order?.field ? order : null, where: Object.fromEntries(where.map(([k, v, j]) => [k, j ?? JSON.parse(v)])), unmet, blocking_unmet: blocking, rationale, errors: [], field_source: "live_introspection" };
 }

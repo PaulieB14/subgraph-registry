@@ -2256,7 +2256,7 @@ async function queryForGoal({ goal, chain, first, execute = false, validate_sche
           schemaValidation = "failed";
           liveErrors = live?.errors?.length ? live.errors : [{ http_status: shape.http_status, error: shape.error ?? null, errors: shape.errors, auth_error: shape.auth_error }];
           plan = null;
-        } else { plan = live; schemaValidation = "validated_fields_and_arguments"; confidence = entity.score >= 0.75 ? "high" : "medium"; }
+        } else { plan = live; schemaValidation = "validated_fields_and_arguments"; confidence = entity.score >= 0.75 && !live.blocking_unmet?.length ? "high" : "medium"; }
       } else if (validate_schema) {
         schemaValidation = "not_checked_no_key";
       }
@@ -2265,7 +2265,7 @@ async function queryForGoal({ goal, chain, first, execute = false, validate_sche
         entity: entity.name, entity_score: Number(entity.score.toFixed(2)), collection: plan?.collection ?? null,
         fields: plan?.fields ?? null, order: plan?.order ?? null, where: plan?.where ?? null, field_source: plan?.field_source ?? null,
         rationale: [`Selected ${best.rec.display_name} (${best.rec.network}) because entity ${entity.name}: ${entity.reason}; protocol text match ${best.text_match}${best.from_recommendation ? "" : "; found by entity-aware candidate search"}`, ...(plan?.rationale || [])],
-        unmet: plan?.unmet || [], alternatives, schema_source: plan?.field_source === "live_introspection" ? "live_introspection" : "registry_entity_names" };
+        unmet: plan?.unmet || [], filters_not_applied: plan?.blocking_unmet || [], alternatives, schema_source: plan?.field_source === "live_introspection" ? "live_introspection" : "registry_entity_names" };
       if (liveErrors) mapping.live_schema_errors = liveErrors;
     }
   }
@@ -2292,7 +2292,7 @@ async function queryForGoal({ goal, chain, first, execute = false, validate_sche
     freshness: row ? freshnessFor(row) : null,
   };
   if (!key) out.onboarding = keyOnboarding(request);
-  else if (query && !execute) {
+  else if (query && !execute && !(schemaValidation === "validated_fields_and_arguments" && mapping.filters_not_applied?.length)) {
     out.next_action.execute_call = { name: "query_for_goal", arguments: { goal, ...(chain ? { chain } : {}), first: rows, validate_schema: true, execute: true },
       cost: "Uses up to two gateway queries from your own Studio allowance (schema check + execution); never x402." };
   }
@@ -2301,6 +2301,9 @@ async function queryForGoal({ goal, chain, first, execute = false, validate_sche
   if (!key) return { ...out, ...credentialsRequired(target || resolveQueryTarget({ subgraph_id: selected.id })), onboarding: keyOnboarding(request) };
   if (!query) return { ...out, execution_skipped: "no_confident_goal_query" };
   if (schemaValidation === "failed") return { ...out, execution_skipped: "live_schema_validation_failed" };
+  // Never run a query that silently drops a filter the goal asked for (address
+  // or time range): the rows would look relevant but not answer the goal.
+  if (mapping.filters_not_applied?.length) return { ...out, execution_skipped: "requested_filter_not_applied" };
   const result = await executeQuery({ ipfs_hash: selected.ipfs_hash, subgraph_id: selected.id, query });
   out.gateway_requests = gatewayRequests + 1;
   out.execution_attempted = true;

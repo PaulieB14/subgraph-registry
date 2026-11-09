@@ -240,3 +240,46 @@ test("new inputs are validated before any work", async () => {
   }
   assert.equal(requests.length, 0);
 });
+
+test("live relation filters: owner context, token0/token1 OR, and dropped filters block execution", async () => {
+  const domainProbe = probe({ entity: "Domain", collection: "domains",
+    fields: [["id", "SCALAR", "ID"], ["name", "SCALAR", "String"], ["createdAt", "SCALAR", "BigInt"], ["owner", "OBJECT", "Account"]],
+    orderBy: ["id", "createdAt"], filter: [["id", "ID"], ["owner", "String"], ["createdAt_gte", "BigInt"]] });
+  const owner = "0x983110309620d911731ac0932219af06091b6744";
+  const owned = planWithSchema({ intent: parseGoal(`ENS domains owned by ${owner}`, { now: 1 }), entity: { name: "Domain" }, probe: domainProbe, first: 2 });
+  assert.deepEqual(owned.errors, []);
+  assert.deepEqual(owned.where, { owner });
+  assert.deepEqual(owned.blocking_unmet, []);
+
+  const poolFilter = [["id", "ID"], ["token0", "String"], ["token1", "String"]];
+  const poolProbe = (filter) => probe({ entity: "Pool", collection: "pools",
+    fields: [["id", "SCALAR", "ID"], ["totalValueLockedUSD", "SCALAR", "BigDecimal"]], orderBy: ["id", "totalValueLockedUSD"], filter });
+  const weth = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const intent = parseGoal(`Uniswap v3 pools with token ${weth}`, { now: 1 });
+  const both = planWithSchema({ intent, entity: { name: "Pool" }, probe: poolProbe([...poolFilter, ["or", "Pool_filter"]]), first: 2 });
+  assert.deepEqual(both.errors, []);
+  assert.match(both.query, new RegExp(`or: \\[\\{token0: "${weth}"\\}, \\{token1: "${weth}"\\}\\]`));
+  assert.deepEqual(both.where, { or: [{ token0: weth }, { token1: weth }] });
+  const one = planWithSchema({ intent, entity: { name: "Pool" }, probe: poolProbe(poolFilter), first: 2 });
+  assert.deepEqual(one.where, { token0: weth });
+  assert.ok(one.unmet.some((u) => /other token side/.test(u)));
+
+  const noField = planWithSchema({ intent: parseGoal(`ENS domains owned by ${owner}`, { now: 1 }), entity: { name: "Domain" },
+    probe: probe({ entity: "Domain", collection: "domains", fields: [["id", "SCALAR", "ID"]], orderBy: ["id"], filter: [["id", "ID"]] }), first: 2 });
+  assert.deepEqual(noField.blocking_unmet, [`address ${owner}`]);
+
+  // Keyless plan with a key but no validate_schema: the owner filter cannot be
+  // applied, so execute:true must not spend a request on unfiltered rows.
+  process.env.THE_GRAPH_STUDIO_API_KEY = FAKE_KEY;
+  const realFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("no network in tests"); };
+  try {
+    const out = await HANDLERS.query_for_goal({ goal: `ENS domains owned by ${owner}`, first: 2, execute: true });
+    assert.equal(out.execution_skipped, "requested_filter_not_applied");
+    assert.equal(out.gateway_requests, 0);
+    assert.equal(calls, 0);
+    assert.deepEqual(out.goal_mapping.filters_not_applied, [`address ${owner}`]);
+    assert.ok(!JSON.stringify(out).includes(FAKE_KEY));
+  } finally { globalThis.fetch = realFetch; delete process.env.THE_GRAPH_STUDIO_API_KEY; }
+});
