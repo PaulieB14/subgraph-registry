@@ -2,6 +2,8 @@
 
 ## Scope and reproduction
 
+> Status: the audited changes were released in 0.12.0 (together with goal-specific `query_for_goal`).
+
 Audit performed November 8, 2026, approximately 9:12–9:22 PM EST. This report distinguishes the connected runtime, immutable published 0.11.0 bytes, and the **unreleased changes in this PR**. The package version is not bumped here; no release, tag, merge, deploy, connector restart, or production crawl is performed.
 
 - `node scripts/audit-discovery.mjs [entrypoint] [report.json]` drives a real MCP SDK stdio handshake, `tools/list`, and tool calls. It reports 30 scenarios and exits nonzero when expectations fail.

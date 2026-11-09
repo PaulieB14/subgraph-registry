@@ -16,10 +16,10 @@ Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-m
    For a stdio MCP host, start with this keyless configuration:
 
    ```json
-   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"]}}}
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"]}}}
    ```
 
-   Inspect `tools/list` before calling a tool. Keyless 0.11.0 advertises 10
+   Inspect `tools/list` before calling a tool. Keyless 0.12.0 advertises 10
    discovery/preparation tools; execution/schema/health tools are advertised only
    when a Studio key is configured. A mounted connector can use another runtime
    or corpus: do not assume installing a release updates an existing connector.
@@ -75,8 +75,8 @@ Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-m
      opt in with `include_denied` / `include_unserved` (not queryability tests).
    - Goals without entity intent return the stored starter with
      `confidence:"generic_starter"`.
-   This goal mapping is in the current source after 0.11.0; published 0.11.0
-   returns its stored starter. With an older six-tool connector, use
+   This goal mapping ships in 0.12.0; earlier releases return the stored
+   starter. With an older six-tool connector, use
    `recommend_subgraph` / `get_subgraph_detail` and the stored starter instead.
 5. **Execute only when requested and authorized.** With a key configured,
    keyed `query_for_goal` results include `next_action.execute_call`, e.g.
@@ -125,15 +125,15 @@ now includes `execute_query` (19 tools instead of 10).
   resolved from the environment Cursor was launched with):
 
   ```json
-  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
   ```
 
 - **Claude Code** (`.mcp.json` supports `${VAR}` expansion; or
-  `claude mcp add --env THE_GRAPH_STUDIO_API_KEY="$THE_GRAPH_STUDIO_API_KEY" --transport stdio subgraph-registry -- npx -y subgraph-registry-mcp@0.11.0`,
+  `claude mcp add --env THE_GRAPH_STUDIO_API_KEY="$THE_GRAPH_STUDIO_API_KEY" --transport stdio subgraph-registry -- npx -y subgraph-registry-mcp@0.12.0`,
   which stores the expanded value in `~/.claude.json`):
 
   ```json
-  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
   ```
 
 - **Claude Desktop and other stdio hosts** use the same `mcpServers` shape. If the
@@ -142,7 +142,7 @@ now includes `execute_query` (19 tools instead of 10).
   keep the file out of version control.
 
   ```json
-  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
   ```
 
 Direct HTTP, with the key taken from the environment (never inline it):
@@ -196,7 +196,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.11.0
+npx subgraph-registry-mcp@0.12.0
 ```
 
 ## Network & Data Behavior
@@ -210,7 +210,7 @@ npx subgraph-registry-mcp@0.11.0
 
 ## Verifying the registry
 
-The npm package version `0.11.0` ships with this expected hash:
+The npm package version `0.12.0` ships with this expected hash:
 
 ```
 SHA-256(registry.db) = 672afa2f0d405483af5fb4c403e515fb0f1342c7eeb31968e78a53d5f6ebdd6b
