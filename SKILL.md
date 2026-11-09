@@ -57,7 +57,7 @@ plan to ship this in an autonomous-agent runtime.
 ```bash
 # Pin to a published version, do not run unpinned (`npx subgraph-registry-mcp`
 # without @VERSION will pull whatever's latest at the moment).
-npx subgraph-registry-mcp@0.10.16
+npx subgraph-registry-mcp@0.11.0
 ```
 
 ## Network & Data Behavior
@@ -71,7 +71,7 @@ npx subgraph-registry-mcp@0.10.16
 
 ## Verifying the registry
 
-The npm package version `0.10.16` ships with this expected hash:
+The npm package version `0.11.0` ships with this expected hash:
 
 ```
 SHA-256(registry.db) = 672afa2f0d405483af5fb4c403e515fb0f1342c7eeb31968e78a53d5f6ebdd6b
