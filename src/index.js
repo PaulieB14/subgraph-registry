@@ -24,6 +24,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import Database from "better-sqlite3";
 import { boundedStarter, findContractDeployments, freshness, healthObservation, HEALTH_QUERY } from "./agent-discovery.js";
+import { parseGoal, rankEntities, planKeyless, planWithSchema, schemaProbeQuery } from "./goal-query.js";
 import express from "express";
 import { fileURLToPath, pathToFileURL } from "url";
 import { basename, dirname, join } from "path";
@@ -553,20 +554,50 @@ function validateDiscoveryInput(args, kind = "search") {
 
 const ALLOCATION_CAVEAT = "Allocation counts, curation signal, denied rewards and reliability are snapshot discovery signals, NOT a live queryability test. Zero allocations or no indexing rewards does not prove a deployment cannot be queried; positive allocations do not prove it is healthy. Discovery never probes a gateway.";
 
+const STUDIO_KEYS_URL = "https://thegraph.com/studio/apikeys/";
+const KEY_RELAY_MESSAGE =
+  "To let me run live queries on The Graph with your own quota: sign in to Subgraph Studio " +
+  `(${STUDIO_KEYS_URL}) with a Studio account you manage, create an API key, and add it to this ` +
+  "MCP server's environment or secret manager as THE_GRAPH_STUDIO_API_KEY, then restart the server. " +
+  "Please don't paste the key into this chat. Studio pricing currently lists 100,000 free queries per " +
+  "month; check your plan and remaining allowance.";
+
 function executionNextAction(hasCandidates = true) {
+  const configured = Boolean(studioApiKey());
   return {
-    action: !hasCandidates ? "broaden_discovery_before_execution" : studioApiKey() ? "prepare_then_explicitly_execute" : "configure_api_key_before_execution",
-    credentials: studioApiKey() ? "configured_not_validated" : "not_configured",
+    action: !hasCandidates ? "broaden_discovery_before_execution" : configured ? "prepare_then_explicitly_execute" : "configure_api_key_before_execution",
+    credentials: configured ? "configured_not_validated" : "not_configured",
     prepare_tool: "query_for_goal",
     api_key: {
-      create_url: "https://thegraph.com/studio/apikeys/",
-      setup: "A human creates/manages the key in Studio. Store it in your MCP host's secret manager as THE_GRAPH_STUDIO_API_KEY; never paste it in chat, tool arguments, source or logs.",
+      create_url: STUDIO_KEYS_URL,
+      who: "human_operator",
+      setup: "Requires a Studio account managed by a person: the human operator creates/manages the key in Studio and stores it in the MCP host's secret manager as THE_GRAPH_STUDIO_API_KEY, then restarts the server. Agents should not create accounts or keys; never paste it in chat, tool arguments, source or logs.",
+      ...(configured ? {} : { relay_to_human: KEY_RELAY_MESSAGE }),
       header: "Authorization: Bearer <STUDIO_API_KEY>",
       free_plan: "Official Studio pricing currently advertises 100,000 free queries per month; check your account's remaining allowance and plan. This is not a per-key guarantee or a quota check.",
       pricing_url: "https://thegraph.com/studio-pricing/",
     },
-    execution: "Inspect starter relevance and schema before opting in. HTTP 200 can contain GraphQL errors; check errors and data. No query has been executed by discovery.",
+    execution: "Inspect query relevance and schema before opting in. HTTP 200 can contain GraphQL errors; check errors and data. No query has been executed by discovery.",
     paid_alternative: "x402 is a separate explicitly paid route; this server never signs or auto-pays it.",
+  };
+}
+
+// Copy-paste setup for a human operator. Placeholders only: the server never
+// reads, echoes or stores a key in tool output.
+function keyOnboarding(request) {
+  return {
+    who: "human_operator",
+    relay_to_human: KEY_RELAY_MESSAGE,
+    steps: [
+      `Sign in to Subgraph Studio with an account you manage and create an API key at ${STUDIO_KEYS_URL}`,
+      "Store it in the MCP host's secret manager / environment as THE_GRAPH_STUDIO_API_KEY (not in chat, source or logs)",
+      "Restart this MCP server; execute-capable tools then appear in tools/list",
+      "Call query_for_goal again with validate_schema:true and execute:true",
+    ],
+    mcp_config_example: { mcpServers: { "subgraph-registry": { command: "npx", args: ["-y", `subgraph-registry-mcp@${PKG_VERSION}`],
+      env: { THE_GRAPH_STUDIO_API_KEY: "<set from your host's secret manager>" } } } },
+    ...(request ? { curl_example: `curl -sS -X POST '${request.query_url}' -H 'Content-Type: application/json' -H "Authorization: Bearer $THE_GRAPH_STUDIO_API_KEY" --data '${JSON.stringify(request.body).replace(/'/g, "'\\''")}'` } : {}),
+    alternatives: "Without a key, discovery and query preparation still work. x402 is a separate, explicitly paid route; this server never signs or auto-pays it.",
   };
 }
 
@@ -2102,55 +2133,179 @@ async function checkSubgraphHealth(args = {}) {
   return { id: target.id, kind: target.kind, ...result, freshness: freshnessFor(row) };
 }
 
-async function queryForGoal({ goal, chain, first = 5, execute = false } = {}) {
+function isChainWord(w) {
+  const c = normalizeNetwork(w);
+  return c !== w || KNOWN_NETWORKS.has(c);
+}
+
+// Extra candidates for entity-specific goals: recommend_subgraph ranks by
+// protocol text and traction, so a deployment that actually has the requested
+// entity (e.g. an OHLCV subgraph) can be missing from its top five.
+function goalCandidateRows(intent, network, { include_denied = false, include_unserved = false } = {}) {
+  const terms = intent.protocol_terms.filter((w) => w.length > 1 && !/^v\d+$/.test(w));
+  if (!terms.length && !network) return [];
+  const conditions = [];
+  if (!include_unserved) conditions.push("active_allocation_count > 0");
+  if (!include_denied) conditions.push("denied_at = 0");
+  const params = [];
+  if (network) { conditions.push("network = ?"); params.push(network); }
+  if (shouldExcludeTestnets({ include_testnets: false, network })) conditions.push(`(${NOT_TESTNET_SQL})`);
+  if (terms.length) {
+    conditions.push(`(${terms.map(() => "display_name LIKE ?").join(" OR ")})`);
+    params.push(...terms.map((t) => `%${t}%`));
+  }
+  return getDb().prepare(`SELECT id, display_name, domain, protocol_type, network, reliability_score, query_volume_30d, ipfs_hash, example_query, all_entities, updated_at, active_allocation_count, denied_at
+    FROM subgraphs WHERE ${conditions.join(" AND ")} ORDER BY reliability_score DESC LIMIT 40`).all(...params);
+}
+
+function parseEntities(raw) {
+  try { const v = JSON.parse(raw || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+
+function chooseGoalTarget(intent, discovery, opts = {}) {
+  const network = discovery.inferred_chain || null;
+  const byId = new Map();
+  if (!opts.only_extra) discovery.recommendations.forEach((r, idx) => byId.set(r.id, { rec: r, idx }));
+  for (const row of goalCandidateRows(intent, network, opts)) if (!byId.has(row.id)) byId.set(row.id, { rec: row, idx: null });
+  const terms = intent.protocol_terms;
+  const scored = [];
+  for (const { rec, idx } of byId.values()) {
+    if (network && rec.network !== network) continue;
+    const row = rec.all_entities !== undefined ? rec : getDb().prepare("SELECT all_entities, example_query FROM subgraphs WHERE id = ?").get(rec.id) || {};
+    const entities = parseEntities(row.all_entities);
+    const ranked = rankEntities(entities, intent);
+    if (!ranked.length) continue;
+    const name = String(rec.display_name || "").toLowerCase().replace(/[-_]/g, " ");
+    const text = terms.length ? terms.filter((t) => name.includes(t)).length / terms.length : 0;
+    const score = ranked[0].score + 0.3 * text + (idx === null ? 0 : 0.1 * (5 - idx) / 5) + 0.05 * (rec.reliability_score || 0);
+    scored.push({ rec, entities, ranked, example_query: row.example_query ?? rec.example_query, score: Number(score.toFixed(4)), text_match: Number(text.toFixed(2)), from_recommendation: idx !== null });
+  }
+  return scored.sort((a, b) => b.score - a.score);
+}
+
+function selectedSummary(r) {
+  return { id: r.id, display_name: r.display_name, network: r.network, ipfs_hash: r.ipfs_hash, domain: r.domain,
+    protocol_type: r.protocol_type, reliability_score: r.reliability_score, query_volume_30d: r.query_volume_30d };
+}
+
+async function queryForGoal({ goal, chain, first, execute = false, validate_schema = false, include_denied = false, include_unserved = false } = {}) {
   if (typeof goal !== "string" || !goal.trim() || goal.length > 1000) {
     return { error: "goal must be a non-empty string of at most 1000 characters" };
   }
   if (chain !== undefined && (typeof chain !== "string" || !chain.trim())) {
     return { error: "chain must be a non-empty network name" };
   }
-  if (typeof execute !== "boolean" || !Number.isInteger(first) || first < 1 || first > 10) {
-    return { error: "execute must be boolean; first must be an integer from 1 to 10" };
+  if (typeof execute !== "boolean" || typeof validate_schema !== "boolean" || typeof include_denied !== "boolean" || typeof include_unserved !== "boolean" ||
+      (first !== undefined && (!Number.isInteger(first) || first < 1 || first > 10))) {
+    return { error: "execute, validate_schema, include_denied and include_unserved must be boolean; first must be an integer from 1 to 10" };
   }
   const discovery = recommendSubgraph({ goal: goal.trim(), chain: chain || "" });
+  if (discovery.error) return { error: discovery.error, execution_attempted: false, executed: false };
+  const intent = parseGoal(goal.trim(), { isChain: isChainWord });
+  const rows = first ?? Math.min(intent.first_from_goal || 5, 10);
   const skipped = [];
-  let selected, query;
-  for (const candidate of discovery.recommendations) {
-    try {
-      query = boundedStarter(candidate.example_query, first);
-      selected = candidate;
-      break;
-    } catch (err) {
-      skipped.push({ id: candidate.id, reason: err.message });
+  const key = studioApiKey();
+
+  let selected, query = null, target, mapping, schemaValidation = "not_checked", liveErrors;
+  let gatewayRequests = 0;
+  if (!intent.primary) {
+    // No entity intent recognised: keep the stored starter, labelled generic.
+    for (const candidate of discovery.recommendations) {
+      try { query = boundedStarter(candidate.example_query, rows); selected = candidate; break; }
+      catch (err) { skipped.push({ id: candidate.id, reason: err.message }); }
+    }
+    if (!selected) return { error: "no_suitable_starter", goal, skipped, execution_attempted: false, executed: false, next_action: executionNextAction(false), discovery_hint: "Use search_subgraphs with an explicit network and inspect diagnostics; no suitable example is not proof that no queryable deployment exists." };
+    mapping = { intent, confidence: "generic_starter", goal_specific: false,
+      rationale: ["No entity intent (e.g. pools, swaps, candles, positions, liquidations) was recognised, so the deployment's stored starter is returned as a generic example."],
+      unmet: [], alternatives: [], schema_source: "crawled_starter" };
+  } else {
+    const scored = chooseGoalTarget(intent, discovery, { include_denied, include_unserved });
+    const best = scored[0];
+    const alternatives = scored.slice(0, 5).flatMap((c, i) => c.ranked.slice(0, i === 0 ? 4 : 1).map((e) => ({
+      id: c.rec.id, display_name: c.rec.display_name, network: c.rec.network, entity: e.name, entity_score: Number(e.score.toFixed(2)), reason: e.reason, deployment_score: c.score,
+    }))).slice(0, 8);
+    const minScore = validate_schema && key ? 0.6 : 0.75;
+    selected = best ? best.rec : discovery.recommendations[0];
+    if (!best || best.ranked[0].score < minScore) {
+      mapping = { intent, confidence: best ? "low" : "none", goal_specific: false,
+        rationale: [best ? `Best entity ${best.ranked[0].name} only matched by ${best.ranked[0].reason}` : `No candidate deployment has an entity matching "${intent.primary}"`],
+        unmet: ["No confident entity mapping; inspect alternatives or use get_subgraph_detail / get_schema before writing a query."],
+        alternatives, schema_source: "registry_entity_names" };
+      if (!include_denied || !include_unserved) {
+        const hidden = chooseGoalTarget(intent, discovery, { include_denied: true, include_unserved: true, only_extra: true })
+          .filter((c) => c.ranked[0].score >= 0.75 && (c.rec.denied_at || !c.rec.active_allocation_count)).slice(0, 3);
+        if (hidden.length) {
+          mapping.hidden_candidates = hidden.map((c) => ({ id: c.rec.id, display_name: c.rec.display_name, network: c.rec.network, entity: c.ranked[0].name,
+            denied_indexing_rewards: Boolean(c.rec.denied_at), active_allocation_count: c.rec.active_allocation_count || 0 }));
+          mapping.unmet.push("Deployments with a matching entity exist but are excluded by default snapshot filters (denied rewards or zero allocations are NOT proof they cannot be queried); retry with include_denied:true and/or include_unserved:true to consider them.");
+        }
+      }
+    } else {
+      const entity = best.ranked[0];
+      const entityNames = best.entities.map((e) => e.name);
+      let plan = planKeyless({ intent, entity, starter: best.example_query, first: rows, allEntityNames: entityNames });
+      target = resolveQueryTarget(best.rec.ipfs_hash ? { ipfs_hash: best.rec.ipfs_hash } : { subgraph_id: best.rec.id });
+      if (target.error) return { ...target, executed: false };
+      let confidence = "medium";
+      if (validate_schema && key) {
+        gatewayRequests++;
+        const posted = await postGateway({ url: target.query_url, key, query: schemaProbeQuery(entity.name) });
+        const shape = gatewayResultShape(posted, target);
+        const live = shape.error || shape.errors?.length || !shape.data ? null : planWithSchema({ intent, entity, probe: shape.data, first: rows });
+        if (!live || live.errors?.length) {
+          schemaValidation = "failed";
+          liveErrors = live?.errors?.length ? live.errors : [{ http_status: shape.http_status, error: shape.error ?? null, errors: shape.errors, auth_error: shape.auth_error }];
+          plan = null;
+        } else { plan = live; schemaValidation = "validated_fields_and_arguments"; confidence = entity.score >= 0.75 && !live.blocking_unmet?.length ? "high" : "medium"; }
+      } else if (validate_schema) {
+        schemaValidation = "not_checked_no_key";
+      }
+      query = plan?.query ?? null;
+      mapping = { intent, confidence: plan ? confidence : "low", goal_specific: Boolean(plan),
+        entity: entity.name, entity_score: Number(entity.score.toFixed(2)), collection: plan?.collection ?? null,
+        fields: plan?.fields ?? null, order: plan?.order ?? null, where: plan?.where ?? null, field_source: plan?.field_source ?? null,
+        rationale: [`Selected ${best.rec.display_name} (${best.rec.network}) because entity ${entity.name}: ${entity.reason}; protocol text match ${best.text_match}${best.from_recommendation ? "" : "; found by entity-aware candidate search"}`, ...(plan?.rationale || [])],
+        unmet: plan?.unmet || [], filters_not_applied: plan?.blocking_unmet || [], alternatives, schema_source: plan?.field_source === "live_introspection" ? "live_introspection" : "registry_entity_names" };
+      if (liveErrors) mapping.live_schema_errors = liveErrors;
     }
   }
-  if (!selected) return { error: "no_suitable_starter", goal, skipped, execution_attempted: false, executed: false, next_action: executionNextAction(false), discovery_hint: "Use search_subgraphs with an explicit network and inspect diagnostics; no suitable example is not proof that no queryable deployment exists." };
-  // Prefer the immutable crawled deployment over a mutable subgraph id.
-  const target = resolveQueryTarget(selected.ipfs_hash
-    ? { ipfs_hash: selected.ipfs_hash } : { subgraph_id: selected.id });
-  if (target.error) return { ...target, executed: false };
-  const row = target.row || { id: selected.id, ipfs_hash: selected.ipfs_hash };
+  if (selected && !target) {
+    target = resolveQueryTarget(selected.ipfs_hash ? { ipfs_hash: selected.ipfs_hash } : { subgraph_id: selected.id });
+    if (target.error) return { ...target, executed: false };
+  }
+  const row = target?.row || (selected ? { id: selected.id, ipfs_hash: selected.ipfs_hash } : null);
+  const request = query && target ? { method: "POST", query_url: target.query_url, query_url_x402: target.query_url_x402, body: { query, variables: {} } } : null;
   const out = {
     goal,
-    next_action: executionNextAction(),
-    selected: {
-      id: selected.id, display_name: selected.display_name, network: selected.network,
-      ipfs_hash: selected.ipfs_hash, domain: selected.domain, protocol_type: selected.protocol_type,
-      reliability_score: selected.reliability_score, query_volume_30d: selected.query_volume_30d,
-    },
-    query, variables: {}, first, skipped,
-    selection: "First ranked recommendation with a bounded registry starter. Starter is an example, NOT a generated answer to the goal; inspect relevance before executing.",
-    validation: { syntax: "passed", bounded_structure: "passed", live_schema: "not_checked", gateway_execution: "not_attempted" },
+    next_action: executionNextAction(Boolean(query)),
+    selected: selected ? { ...selectedSummary(selected), ...(selected.denied_at ? { denied_indexing_rewards: true } : {}), ...(selected.active_allocation_count === 0 ? { active_allocation_count: 0 } : {}) } : null,
+    query, variables: {}, first: rows, skipped,
+    goal_mapping: mapping,
+    selection: mapping.goal_specific
+      ? "Goal-specific query generated from the requested entity. Keyless plans are checked only against stored entity names and starter fields; validate_schema:true with your own Studio key checks fields and arguments live."
+      : mapping.confidence === "generic_starter" ? "Stored starter returned as a generic example; it may not answer the goal."
+        : "No query returned: the goal could not be mapped confidently. Use goal_mapping.alternatives to choose an entity.",
+    validation: { syntax: query ? "passed" : "not_applicable", bounded_structure: query ? "passed" : "not_applicable", live_schema: schemaValidation, gateway_execution: "not_attempted" },
     execution_attempted: false, executed: false,
-    request: { method: "POST", query_url: target.query_url,
-      query_url_x402: target.query_url_x402, body: { query, variables: {} } },
-    freshness: freshnessFor(row),
+    gateway_requests: gatewayRequests,
+    request,
+    freshness: row ? freshnessFor(row) : null,
   };
+  if (!key) out.onboarding = keyOnboarding(request);
+  else if (query && !execute && !(schemaValidation === "validated_fields_and_arguments" && mapping.filters_not_applied?.length)) {
+    out.next_action.execute_call = { name: "query_for_goal", arguments: { goal, ...(chain ? { chain } : {}), first: rows, validate_schema: true, execute: true },
+      cost: "Uses up to two gateway queries from your own Studio allowance (schema check + execution); never x402." };
+  }
   if (!execute) return out;
   // Explicit execution opt-in is necessary even when the process has a key.
-  if (!studioApiKey()) return { ...out, ...credentialsRequired(target) };
-  const result = await executeQuery({ ipfs_hash: selected.ipfs_hash,
-    subgraph_id: selected.id, query });
+  if (!key) return { ...out, ...credentialsRequired(target || resolveQueryTarget({ subgraph_id: selected.id })), onboarding: keyOnboarding(request) };
+  if (!query) return { ...out, execution_skipped: "no_confident_goal_query" };
+  if (schemaValidation === "failed") return { ...out, execution_skipped: "live_schema_validation_failed" };
+  // Never run a query that silently drops a filter the goal asked for (address
+  // or time range): the rows would look relevant but not answer the goal.
+  if (mapping.filters_not_applied?.length) return { ...out, execution_skipped: "requested_filter_not_applied" };
+  const result = await executeQuery({ ipfs_hash: selected.ipfs_hash, subgraph_id: selected.id, query });
+  out.gateway_requests = gatewayRequests + 1;
   out.execution_attempted = true;
   out.result = result;
   out.validation.gateway_execution = result.http_status >= 200 && result.http_status < 300 &&
@@ -2293,12 +2448,15 @@ const TOOLS = [
   },
   {
     name: "query_for_goal",
-    description: "Prepare a bounded starter query for the first suitable recommend_subgraph result, plus gateway/x402 request payload and cached freshness in one call. Default execute=false makes NO network call, even with a key. Explicit execute=true opts into at most ONE gateway POST with your Studio key; no x402 payment or retries/fallback requests. Pins the crawled deployment when available. Parses syntax and restricts one collection, 1-10 rows, flat fields; does NOT claim live-schema validation or synthesize arbitrary goal-specific GraphQL. The starter may not answer the goal; inspect selected/query. Execution errors/partial data are returned honestly.",
+    description: "Turn a goal into a bounded, goal-specific GraphQL query: maps intent (pool ids, swaps, candles/OHLCV, daily/hourly data, positions, liquidations, tokens, addresses, time ranges, latest/top) to a deployment entity from the registry's crawled entity names, with rationale, confidence, unmet parts and ranked alternatives. Returns query:null instead of a misleading query when no entity maps confidently; goals without entity intent get the stored starter labelled generic. Keyless default makes NO network call. validate_schema=true (your own Studio key) adds ONE scoped introspection request to confirm fields/arguments and add typed ordering/filters; execute=true adds ONE gateway POST. No x402 payment, retries or fallbacks. Without a key, onboarding explains the human-operator key setup.",
     inputSchema: { type: "object", additionalProperties: false, required: ["goal"], properties: {
       goal: { type: "string", minLength: 1, maxLength: 1000 },
       chain: { type: "string" },
-      first: { type: "integer", minimum: 1, maximum: 10, default: 5 },
+      first: { type: "integer", minimum: 1, maximum: 10, description: "Rows to request; defaults to a number in the goal (e.g. top 3) or 5" },
       execute: { type: "boolean", default: false, description: "Explicit opt-in to spend a Studio gateway query; never auto-pays x402" },
+      validate_schema: { type: "boolean", default: false, description: "Opt-in: with your own Studio key, one scoped live introspection request validates the generated fields/arguments before any execution" },
+      include_denied: { type: "boolean", default: false, description: "Also consider deployments with denied indexing rewards (not proof of unavailability) for entity matching" },
+      include_unserved: { type: "boolean", default: false, description: "Also consider deployments with zero active allocations in the snapshot (not a queryability test)" },
     } },
   },
   {

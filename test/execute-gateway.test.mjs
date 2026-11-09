@@ -185,3 +185,12 @@ test("goal-to-data and health tools are wired through keyed MCP", async () => {
   assert.equal(health.freshness.live.status, "metadata_unavailable");
   assert.equal(health.freshness.live.indexed_block_number, null);
 });
+
+test("goal-specific execution over stdio sends the generated query and never echoes the key", async () => {
+  const d = await callTool("query_for_goal", { goal: "Uniswap V4 pool IDs on Arc", chain: "arc", first: 2, execute: true });
+  assert.equal(d.execution_attempted, true);
+  assert.equal(d.goal_mapping.goal_specific, true);
+  assert.match(d.result.data.query, /pools\(first: 2\)/);
+  assert.equal(d.onboarding, undefined);
+  assert.ok(!JSON.stringify(d).includes("test-key"));
+});

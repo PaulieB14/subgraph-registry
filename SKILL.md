@@ -1,6 +1,6 @@
 ---
 name: subgraph-registry-mcp
-description: Use to discover The Graph subgraphs by chain, protocol, entity or contract and prepare bounded GraphQL starters. Includes API-key onboarding and explicitly paid external x402 guidance; discovery never executes queries or signs payments.
+description: Use to discover The Graph subgraphs by chain, protocol, entity or contract and turn a goal into a bounded GraphQL query. Bring-your-own Studio key (set up by a human operator) for execution; discovery never executes queries or signs payments, and x402 is an explicitly paid external option.
 metadata:
   {"openclaw": {"requires": {"bins": ["node"]}, "homepage": "https://github.com/PaulieB14/subgraph-registry"}}
 ---
@@ -34,30 +34,58 @@ Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-m
    empty, inspect `diagnostics` when available; otherwise check registry stats
    and deliberately broaden the relevant `include_*` flag. Never interpret an
    empty snapshot as proof that a chain or queryable Subgraph does not exist.
-3. **Reuse an existing Studio key; otherwise help a human create one.**
-   Open [Studio API Keys](https://thegraph.com/studio/apikeys/) and have the human
-   create/manage the key. There is no automated key-minting API in this server.
-   Store it via the MCP host's secret manager as `THE_GRAPH_STUDIO_API_KEY`
-   (or `GATEWAY_API_KEY`); never ask for it in ordinary chat or put it in tool
-   arguments, source, URLs or logs. Reload only the intended host as its setup
-   requires. A configured key is not proof that it is valid or has free quota.
+3. **Bring your own Studio key — a human handoff.** Keyless discovery and query
+   preparation work without one. Executing queries needs the operator's own Graph
+   Studio API key; this server never ships or shares a key. Studio keys belong to
+   a Studio account managed by a person, so an agent should **not** create
+   accounts, sign up or mint keys itself. Relay this to your human (keyless
+   `query_for_goal` returns the same text as `onboarding.relay_to_human`):
+
+   > To let me run live queries on The Graph with your own quota: sign in to
+   > Subgraph Studio (https://thegraph.com/studio/apikeys/) with a Studio account
+   > you manage, create an API key, and add it to this MCP server's environment or
+   > secret manager as `THE_GRAPH_STUDIO_API_KEY`, then restart the server. Please
+   > don't paste the key into this chat.
+
+   Never ask for the key in ordinary chat or put it in tool arguments, source,
+   URLs or logs. A configured key is not proof that it is valid or has quota.
    [Official pricing](https://thegraph.com/studio-pricing/) advertises **100,000
    free monthly queries**; check the account's current plan and remaining usage.
-   This is not a fresh allowance per key. Studio development endpoints have
-   separate limits; do not promise every endpoint has this allowance.
-4. **Prepare without spending.** If advertised, call
-   `query_for_goal({"goal":"Uniswap v3 pools on Ethereum","first":2,"execute":false})`.
-   Inspect `selected`, `query`, `request` and validation labels. A bounded stored
-   starter is **not** a generated goal-specific answer or a live-schema check.
-   Use local detail/schema metadata and, with a configured key, opt-in schema
-   introspection before relying on fields. With an older six-tool connector,
-   use `recommend_subgraph` / `get_subgraph_detail` and its stored starter instead.
-5. **Execute only when requested and authorized.** With a configured Studio key
-   and execution tool available, use `execute_query` with the selected identifier
-   and reviewed query. A direct keyed client uses the returned fixed gateway URL
-   and `Authorization: Bearer <STUDIO_API_KEY>`; never print the actual header.
-   `query_for_goal` with explicit `execute:true` is another opt-in path after
-   inspecting the starter; preparation alone never sends a query.
+   This is not a fresh allowance per key, and Studio development endpoints have
+   separate limits. See "Host configuration" below for copy-paste examples.
+4. **Prepare a goal-specific query without spending.** Call, for example,
+   `query_for_goal({"goal":"Uniswap V4 pool IDs on Arc","chain":"arc","first":3})`.
+   Read `goal_mapping`: the requested entity (pools, swaps, candles/OHLCV,
+   daily/hourly data, positions, liquidations, tokens, borrows, mints…),
+   `confidence`, `rationale`, `unmet` parts and ranked `alternatives`.
+   - Keyless plans use the registry's crawled entity names: the collection is
+     derived the way graph-node names it, and fields are `id` plus stored-starter
+     fields only when that starter targets the same entity. Ordering, typed
+     filters (time ranges, relation addresses) and aggregation intervals are
+     listed in `unmet` rather than guessed. Confidence is at most `medium`.
+   - With a key, `validate_schema:true` adds ONE scoped introspection request that
+     confirms the collection, fields, `orderBy` and `where` filters, then adds
+     goal-relevant fields and typed filters. Only then is confidence `high`.
+     If a requested address/time filter cannot be applied it appears in
+     `filters_not_applied` and execution is skipped instead of returning
+     unfiltered rows.
+   - `query:null` with `confidence` `low`/`none` means no entity mapped
+     confidently: pick from `alternatives` or inspect `get_subgraph_detail`.
+     `hidden_candidates` lists matching deployments excluded by default filters;
+     opt in with `include_denied` / `include_unserved` (not queryability tests).
+   - Goals without entity intent return the stored starter with
+     `confidence:"generic_starter"`.
+   This goal mapping is in the current source after 0.11.0; published 0.11.0
+   returns its stored starter. With an older six-tool connector, use
+   `recommend_subgraph` / `get_subgraph_detail` and the stored starter instead.
+5. **Execute only when requested and authorized.** With a key configured,
+   keyed `query_for_goal` results include `next_action.execute_call`, e.g.
+   `{"goal":…,"first":3,"validate_schema":true,"execute":true}`: one schema check
+   plus one gateway query from the operator's own allowance, never x402. Execution
+   is skipped when no query mapped confidently or live validation failed.
+   `execute_query` with a reviewed query is the other opt-in path. A direct keyed
+   client uses the returned fixed gateway URL and
+   `Authorization: Bearer <STUDIO_API_KEY>`; never print the actual header.
 6. **Read errors and evidence.** HTTP 200 can contain GraphQL `errors` or partial
    `data`. Report them, don't claim success from HTTP status alone. For missing
    credentials follow step 3; for quota/billing errors stop rather than silently
@@ -83,7 +111,48 @@ do not run the README payment example just because a free/keyed request failed.
 
 - `find_by_contract(address, chain?, limit=3)`: exact normalized EVM manifest lookup; optional chain, limit 1–20. `schema_entities` cover the deployment, not a verified contract/entity mapping. Missing dynamic/substreams coverage is explicit.
 - `check_subgraph_health(id | subgraph_id | ipfs_hash | deployment_id)`: opt-in, Studio-key-only fixed `_meta` request; known IDs pin the crawled deployment. `freshness.live` is measured, process-local, stale after 300 seconds, null before observation. Serving is not chain-head sync. `registry_updated_at` is upstream metadata time, not health/crawl time.
-- `query_for_goal(goal, chain?, first=5, execute=false)`: local recommendation + bounded starter + unsigned request payload. No calls by default, even with a key. Only `execute:true` with a Studio key performs one pinned gateway query. First is 1–10; no retry, fallback execution, arbitrary endpoint or x402 payment. Syntax/structure checks are not live-schema validation; inspect whether the example starter answers the goal. Execution errors/partial data are surfaced.
+- `query_for_goal(goal, chain?, first?, execute=false, validate_schema=false, include_denied=false, include_unserved=false)`: maps goal intent to a deployment entity and returns a bounded query (1–10 rows; `first` defaults to a number in the goal or 5) with `goal_mapping` rationale/confidence/unmet/alternatives, or `query:null` when nothing maps confidently. No calls by default, even with a key. With a key, `validate_schema:true` adds one scoped introspection request and `execute:true` one pinned gateway query; no retry, fallback, arbitrary endpoint or x402 payment. Keyless responses include `onboarding` (human handoff, placeholder-only config and curl). Execution errors/partial data are surfaced.
+
+## Host configuration (bring your own key)
+
+The key is read only from the server process environment
+(`THE_GRAPH_STUDIO_API_KEY`, or `GATEWAY_API_KEY`). Prefer your host's secret
+or environment interpolation over writing the key into a config file; never
+commit a key. Restart the server after setting it, then check that `tools/list`
+now includes `execute_query` (19 tools instead of 10).
+
+- **Cursor** (`~/.cursor/mcp.json` or `.cursor/mcp.json`; `${env:NAME}` is
+  resolved from the environment Cursor was launched with):
+
+  ```json
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+  ```
+
+- **Claude Code** (`.mcp.json` supports `${VAR}` expansion; or
+  `claude mcp add --env THE_GRAPH_STUDIO_API_KEY="$THE_GRAPH_STUDIO_API_KEY" --transport stdio subgraph-registry -- npx -y subgraph-registry-mcp@0.11.0`,
+  which stores the expanded value in `~/.claude.json`):
+
+  ```json
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+  ```
+
+- **Claude Desktop and other stdio hosts** use the same `mcpServers` shape. If the
+  host has no secret/interpolation support, the `env` value is stored as plain
+  text in that local config file: only do this on a machine you control, and
+  keep the file out of version control.
+
+  ```json
+  {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+  ```
+
+Direct HTTP, with the key taken from the environment (never inline it):
+
+```bash
+curl -sS -X POST "https://gateway.thegraph.com/api/subgraphs/id/<SUBGRAPH_ID>" \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $THE_GRAPH_STUDIO_API_KEY" \
+  --data '{"query":"{ pools(first: 3) { id } }"}'
+```
 
 ## Tools
 
@@ -136,7 +205,7 @@ npx subgraph-registry-mcp@0.11.0
 - The downloaded file's SHA-256 is **verified against a hash pinned in the npm package** before loading — see "Verifying the registry" below. A mismatched file is deleted and the server refuses to start.
 - Discovery tools (`search_subgraphs`, `recommend_subgraph`, `get_subgraph_detail`, `list_registry_stats`, `get_schema_changes`, `get_top_subgraph_deployments`, `find_by_contract`, `get_deployment_30day_query_counts`) run entirely against the local database — no external API calls at query time.
 - **Exception — `semantic_search_subgraphs`:** it loads a bundled ONNX embedding model via `@xenova/transformers`. If that bundled model is not present, the runtime downloads it **once** from Hugging Face (`huggingface.co`), then caches it.
-- **Exception — opt-in execute / live schema:** `execute_query*`, `check_subgraph_health`, `query_for_goal` with explicit `execute:true`, and live `__schema` on `get_schema*` POST to `gateway.thegraph.com` **only when** `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) is set AND the caller invoked that tool. Without a key they return `credentials_required` with both URLs and do not touch the network. Discovery tools never take this path.
+- **Exception — opt-in execute / live schema:** `execute_query*`, `check_subgraph_health`, `query_for_goal` with explicit `validate_schema:true` or `execute:true`, and live `__schema` on `get_schema*` POST to `gateway.thegraph.com` **only when** `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`) is set AND the caller invoked that tool. Without a key they return `credentials_required` with both URLs and do not touch the network. Discovery tools never take this path.
 - **Optional local HTTP/SSE server:** default transport is **stdio** (no listener). Passing `--http` or `--http-only` starts a local HTTP/SSE server on port 3848 (`MCP_HTTP_PORT` to change), exposing `/messages`, health, and OpenAPI/manifest endpoints. It is off unless you pass those flags — bind only to trusted/firewalled environments.
 
 ## Verifying the registry
