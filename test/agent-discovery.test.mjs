@@ -179,3 +179,13 @@ test("health cannot spend without a key and invalid contract inputs remain local
   assert.ok(HANDLERS.find_by_contract({ address: "0x123" }).error);
   assert.ok(HANDLERS.find_by_contract({ address: "0x" + "a".repeat(40), chain: " " }).error);
 });
+
+
+test("configured key onboarding is not validation and never exposes the key or spends", () => {
+  process.env.THE_GRAPH_STUDIO_API_KEY = "unit-test-onboarding-secret";
+  const result = HANDLERS.search_subgraphs({ network: "arc", limit: 1 });
+  assert.equal(result.next_action.credentials, "configured_not_validated");
+  assert.equal(result.next_action.action, "prepare_then_explicitly_execute");
+  assert.ok(!JSON.stringify(result).includes("unit-test-onboarding-secret"));
+  assert.equal(requests.length, 0);
+});

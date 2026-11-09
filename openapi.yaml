@@ -145,7 +145,7 @@ paths:
     post:
       operationId: "tool_search_subgraphs"
       summary: "Search and filter the classified subgraph registry (15,000+ subgraphs)."
-      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is cumulative it structurally favours older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
+      description: "Search and filter the classified subgraph registry (15,000+ subgraphs). Filter by domain (defi, nfts, dao, gaming, identity, infrastructure, social, analytics), network (mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche), protocol_type (dex, lending, bridge, staking, options, perpetuals, nft-marketplace, yield-aggregator, governance, name-service), canonical entity type (liquidity_pool, trade, token, position, vault, loan, collateral, liquidation, nft_collection, nft_item, nft_sale, proposal, delegate, domain_name, account, transaction, daily_snapshot, hourly_snapshot), or free-text keyword. Returns subgraphs ranked by reliability score. Discovery only — this tool does not execute GraphQL and never introspects a schema. To run a query, call execute_query (opt-in). To inspect a schema, call get_schema (opt-in). Each result carries the subgraph id, a ready-to-run example_query, and both query routes in `payment_options`: a keyed gateway URL (Authorization: Bearer) or an x402 URL ($0.01 USDC on Base, no key). Pass the id to your own Graph client if you have one. Plus age_days and maturity (new | emerging | established). Because reliability_score is traction-weighted it can favour older deployments, so a separate `emerging` list carries recent matches that ranked below the main cut for age rather than quality — read `emerging_caveat` before offering one to a user."
       tags:
         - "mcp-tools"
       requestBody:
@@ -158,33 +158,42 @@ paths:
               properties:
                 query:
                   type: "string"
-                  description: "Free-text search across names and descriptions"
+                  maxLength: 1000
+                  description: "Free-text search across names and descriptions. A standalone known chain or alias (e.g. arc, ethereum) becomes an explicit network filter unless network is supplied; inferred_network makes this visible"
                 domain:
                   type: "string"
+                  maxLength: 1000
                   description: "Filter by domain: defi, nfts, dao, gaming, identity, infrastructure, social, analytics"
                 network:
                   type: "string"
+                  maxLength: 1000
                   description: "Filter by chain: mainnet, arbitrum-one, base, matic, bsc, optimism, avalanche, etc."
                 protocol_type:
                   type: "string"
+                  maxLength: 1000
                   description: "Filter by protocol type: dex, lending, bridge, staking, options, perpetuals, etc."
                 entity:
                   type: "string"
+                  maxLength: 1000
                   description: "Filter by canonical entity: liquidity_pool, trade, token, position, vault, loan, etc."
                 min_reliability:
                   type: "number"
-                  description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation. NOTE: all four inputs are cumulative, so this score rises with age — setting a floor here filters out good recent subgraphs along with bad ones."
+                  minimum: 0
+                  maximum: 1
+                  description: "Minimum reliability score (0-1). Higher = more query fees, volume, curation signal, and indexer allocation. NOTE: this traction-weighted score can favor older deployments; 30-day volume is a rolling window — setting a floor here filters out good recent subgraphs along with bad ones."
                 limit:
                   type: "integer"
-                  description: "Max results to return (default: 20)"
+                  description: "Max results to return, 1–100 (default: 20); total is returned count, not corpus match count. No offset/cursor pagination."
+                  minimum: 1
+                  maximum: 100
                   default: 20
                 include_unserved:
                   type: "boolean"
-                  description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false."
+                  description: "Include records with zero active allocations in the registry snapshot. Default false is a discovery heuristic, NOT a queryability test; Studio or other serving routes may work without allocations."
                   default: false
                 include_denied:
                   type: "boolean"
-                  description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible."
+                  description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards; not proof of spam or query failure). Default false. When true, each result carries denied: true so the choice stays visible."
                   default: false
                 include_testnets:
                   type: "boolean"
@@ -220,9 +229,11 @@ paths:
               properties:
                 goal:
                   type: "string"
+                  maxLength: 1000
                   description: "What you want to do, e.g. 'query Uniswap pool data on Base'"
                 chain:
                   type: "string"
+                  maxLength: 1000
                   description: "Optional chain filter: mainnet, arbitrum-one, base, matic, etc."
               required:
                 - "goal"
@@ -326,15 +337,17 @@ paths:
                   maximum: 50
                 min_score:
                   type: "number"
+                  minimum: 0
+                  maximum: 1
                   description: "Minimum cosine similarity to include (0-1). Default 0.3."
                   default: 0.3
                 include_unserved:
                   type: "boolean"
-                  description: "Include subgraphs with 0 active indexer allocations (returns 'no allocations' on query). Default false."
+                  description: "Include records with zero active allocations in the registry snapshot. Default false is a discovery heuristic, NOT a queryability test; Studio or other serving routes may work without allocations."
                   default: false
                 include_denied:
                   type: "boolean"
-                  description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards, typically spam, duplicates or deprecations). Default false. When true, each result carries denied: true so the choice stays visible."
+                  description: "Include curation-denied deployments (deniedAt > 0 — denied indexing rewards; not proof of spam or query failure). Default false. When true, each result carries denied: true so the choice stays visible."
                   default: false
                 include_testnets:
                   type: "boolean"
@@ -351,6 +364,8 @@ paths:
                   description: "Pre-filter by protocol type (dex, lending, bridge, staking, options, perpetuals, etc.)"
                 min_reliability:
                   type: "number"
+                  minimum: 0
+                  maximum: 1
                   description: "Pre-filter: minimum reliability score (0-1)."
               required:
                 - "query"

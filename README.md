@@ -4,32 +4,83 @@
   <img width="380" height="200" src="https://glama.ai/mcp/servers/PaulieB14/subgraph-registry/badge" />
 </a>
 
-Agent-friendly semantic classification of all subgraphs on [The Graph Network](https://thegraph.com).
+Discover published subgraphs on [The Graph Network](https://thegraph.com) by chain, protocol, entity or contract, then prepare a bounded GraphQL starter.
 
-Pre-computed index of **15,330 subgraphs** with domain classification, protocol type detection, schema fingerprinting, canonical entity mapping, and composite reliability scoring.
+The bundled snapshot contains **15,452 classified subgraph records**. It is not a live directory of every subgraph: Studio-only deployments, dynamic contracts and later updates may be absent. Availability must be checked separately from ranking.
 
-> **What's new in 0.8.0** — three agent-discovery upgrades:
-> - **[Semantic search](#semantic-search)** via 384-dim embeddings (`semantic_search_subgraphs`)
-> - **[Schema evolution tracking](#schema-evolution)** with stability days surfaced on every result (`get_schema_changes`)
-> - **[OpenAPI 3.1 spec](#openapi)** auto-generated for MCP tools + REST routes, served at `/.well-known/openapi.json`
+## Start here: agents and MCP users
 
-## Publishing a reviewed release
+Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
 
-See [the publish-only release guide](docs/RELEASING.md) for main-only manual npm/ClawHub publication using repository secrets, without a crawl, data rebuild, or main-branch write.
+1. **Connect a pinned, published release** (Node 20 is CI-tested):
+
+   ```json
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.11.0"]}}}
+   ```
+
+   Inspect `tools/list`: Node 0.11.0 exposes **10 tools without a key**, or **19
+   total with a Studio key**. A hosted connector can mount a different subset or
+   corpus; installing npm does not update or restart it.
+2. **Discover explicitly.** Tool-call parameters below work with published 0.11.0:
+
+   ```json
+   {"name":"search_subgraphs","arguments":{"query":"uniswap v3","network":"ethereum","limit":3}}
+   ```
+
+   For newer networks, an explicit discovery opt-in can include zero-allocation
+   snapshot records without probing them:
+
+   ```json
+   {"name":"search_subgraphs","arguments":{"network":"arc","include_unserved":true,"limit":3}}
+   ```
+
+   `arc` is mainnet; `arc-testnet` is distinct. Neither missing rewards/curation nor
+   zero allocations proves unqueryability. Denied/testnet opt-ins remain separate.
+3. **Prepare locally**, if the tool is advertised:
+
+   ```json
+   {"name":"query_for_goal","arguments":{"goal":"Uniswap v3 pools on Ethereum","first":2,"execute":false}}
+   ```
+
+   Inspect the selected deployment, starter and validation labels. A starter is
+   not guaranteed to answer the goal or match a live schema. Older connectors can
+   use recommendation/detail and their stored starter instead.
+4. **Reuse a configured Studio key**, or have a human create one at
+   [Studio API Keys](https://thegraph.com/studio/apikeys/). Store it through the
+   host's secret manager as `THE_GRAPH_STUDIO_API_KEY`; never paste it in chat,
+   source, tool arguments or logs. [Official pricing](https://thegraph.com/studio-pricing/)
+   currently advertises **100,000 free queries/month**; verify the account's plan
+   and remaining allowance. It is not a new quota per key; Studio development
+   endpoints have separate limits. The server does not create keys automatically.
+5. **Execute only when wanted and authorized**, using an advertised execution
+   tool and reviewed fields. Bearer format: `Authorization: Bearer <STUDIO_API_KEY>`.
+   Read GraphQL `errors` and partial `data` even on HTTP 200. On missing
+   credentials/quota, stop and resolve that issue; never silently switch to x402.
+
+### Published release versus current source
+
+**Published npm/ClawHub 0.11.0** includes contract lookup, measured opt-in health,
+and bounded goal preparation. The additional chain-only inference, empty-result
+`diagnostics`, strict search validation and structured `next_action` hints described
+below are **source improvements, not yet included in that published version**.
+They require a future release or running a reviewed source checkout (`npm install`
+then `npm start`, with Node 20 and the bundled database). No crawl is needed.
+Pinned `npx ...@0.11.0` commands intentionally continue using the published code.
+See [the reproducible audit](docs/DISCOVERY_AUDIT.md) for the measured differences.
 
 ## The Problem
 
-Agents querying The Graph need to discover and select the right subgraph before they can query data. Today this requires 3-4 tool calls (search, check volumes, fetch schema, infer structure) before any real work happens. This registry flips that: agents start with structured knowledge, not a blank slate.
+Agents querying The Graph need to discover and select the right subgraph before they can query data. Search results include snapshot query volume, classification, entities and starter queries to reduce extra discovery steps. Live schema relevance, health and successful execution still require separate checks when needed.
 
 ## What It Does
 
-1. **Crawls** all active subgraphs from the Graph Network meta-subgraph
-2. **Fetches** the GraphQL schema for every deployment
+1. **Builds a snapshot** from active published subgraphs in the configured Graph Network meta-subgraph; it does not enumerate all private/Studio deployments
+2. **Attempts to fetch** schema metadata for indexed deployments; missing data remains a coverage limitation
 3. **Extracts contract addresses** from each manifest's `dataSources` and `templates` — agents can answer "which subgraph indexes contract 0x… on chain X?"
-4. **Generates a per-subgraph starter GraphQL query** from the parsed schema (real top entity, real fields, sensible orderBy) — no more generic boilerplate that doesn't compile against most subgraphs
+4. **Stores a starter GraphQL query** from parsed schema metadata where available; it is an example, not a live validation or a goal-specific answer
 5. **Classifies** each subgraph by domain, protocol type, canonical entities, and schema family
 6. **Scores** reliability using on-chain signals (query fees, volume, curation, stake)
-7. **Returns x402 + legacy query URLs** — agents can pay $0.01 USDC on Base per query (no API key) or use a Studio key
+7. **Returns keyed gateway and optional paid x402 routes** — the MCP never signs payments or auto-pays; see the explicit payment-approval warning below
 8. **Publishes** as SQLite database + REST API + MCP server + **per-subgraph JSON-LD at `/.well-known/subgraph/{id}.jsonld`** for ecosystem crawlers
 9. **Generates** visual dashboards and bot-readable category files (auto-updated with each sync)
 
@@ -37,11 +88,15 @@ Agents querying The Graph need to discover and select the right subgraph before 
 
 ## Contract lookup, measured freshness, and goal-to-starter workflow
 
-The **Node MCP server** (stdio and SSE) now exposes three complementary tools.
+Released in **0.11.0**, the **Node MCP server** (stdio and SSE) implements three complementary tools. Health is advertised only when a Studio key is configured; the other two are keyless preparation/discovery tools.
 Existing search/recommend/detail calls remain discovery-only; they never probe or
 execute. No crawler/database migration or Python API change is required.
 
 ### `find_by_contract(address, chain?, limit=3)`
+
+JavaScript examples use a host-provided `mcp.call(name, args)` adapter. For the
+actual MCP SDK `Client.callTool({name, arguments})` flow, see
+[`scripts/audit-discovery.mjs`](scripts/audit-discovery.mjs).
 
 ```js
 await mcp.call("find_by_contract", {
@@ -123,23 +178,72 @@ payload. These tools never sign/pay x402 and accept no arbitrary endpoint URL.
 
 ---
 
+## Agent usability and discovery diagnostics
+
+**Current source; not released in npm 0.11.0.**
+
+The canonical shareable agent guide is [SKILL.md](SKILL.md): pinned installation,
+capability discovery, chain/protocol lookup, human-assisted Studio key setup,
+bounded preparation, opt-in execution and error handling. See the reproducible
+[discovery audit](docs/DISCOVERY_AUDIT.md) for published-package versus connected
+runtime results and which changes here are not released yet.
+
+Search recognizes a standalone known chain/alias (for example `query:"arc"`) as
+a network filter and returns `inferred_network`; an explicit `network` always
+wins. Use `network:"arc"` for mainnet and `network:"arc-testnet"` for testnet.
+Empty searches explain matching snapshot records and overlapping exclusions in
+`diagnostics`. Default allocation/denied/testnet filters remain unchanged;
+`include_unserved:true` deliberately includes zero-allocation records for discovery.
+
+**Rewards, curation and queryability are not interchangeable.** A chain can be
+live and queried before rewards or curation signaling is enabled. Zero
+allocations is not proof of unavailable queries, and positive allocations is not
+a live health check. Reward denial is not proof of spam or query failure.
+Reliability is a traction-weighted ranking input, not a measured uptime or
+reward-eligibility score. Unknown health remains unknown; no discovery probe is
+performed. The published-network corpus cannot include all Studio-only deployments.
+
+Search/recommend/goal responses provide a structured `next_action`: reuse a
+configured key (not assumed valid), or have a human create one at
+[Studio API Keys](https://thegraph.com/studio/apikeys/), then store it in the MCP
+host's secret manager as `THE_GRAPH_STUDIO_API_KEY`. Never paste it in chat or
+logs. [Official Studio pricing](https://thegraph.com/studio-pricing/) currently
+advertises **100,000 free monthly queries**; check the account's remaining quota
+and plan, not a fictitious per-key allowance. Studio development endpoints have
+separate limits. These hints never create a key, execute GraphQL, or auto-pay.
+
+Search `limit` is an integer 1–100 (semantic: 1–50); booleans must be JSON
+booleans. Unsupported offset/cursor arguments are rejected, not silently ignored.
+`total` remains the number returned, not a total-match or pagination promise.
+
 ## Querying with x402 (no API key)
 
-Every result includes `query_url_x402` alongside the legacy `query_url`. The Graph's public x402 gateway (live since 2026-05-08) accepts **$0.01 USDC on Base** per query with zero signup.
+Discovery hits include `query_url_x402` alongside the keyed `query_url`. The returned pricing manifest advertises **$0.01 USDC on Base** per query; a separate external client must validate the gateway's actual payment request and obtain approval before signing. No wallet is needed for discovery or the keyed route.
+
+**Financial capability warning:** this optional external client signs a USDC
+payment authorization and may retry automatically. It is not the registry server.
+Use it only after explicit owner approval of the payment/amount and review of
+the signing client and query. Never fall back to payment on auth/quota failure.
+The example is disabled by default; the keyed Studio route above needs no wallet.
 
 ```js
-// An x402-native agent — discovery to data in two calls
+// Requires a separately configured, reviewed external x402 client.
+const ownerApprovedPaidQuery = false; // set only after explicit payment approval
+if (!ownerApprovedPaidQuery) throw new Error("Payment approval required");
+// Optional paid example, not an automatic discovery-to-payment path.
 const { recommendations } = await mcp.call("recommend_subgraph", {
   goal: "find DEX trades on Arbitrum",
 });
 const top = recommendations[0];
+if (!top?.example_query) throw new Error("No starter; inspect schema first");
+// Inspect the starter against schema and goal before signing any payment.
 
 // POST your GraphQL query. The first call returns HTTP 402 with a
 // base64 `payment-required` header; the x402 client signs the
 // EIP-3009 USDC transfer on Base and retries automatically.
 const data = await x402Fetch(top.query_url_x402, {
   method: "POST",
-  body: JSON.stringify({ query: "{ swaps(first: 5) { id amountUSD } }" }),
+  body: JSON.stringify({ query: top.example_query }),
 });
 ```
 
@@ -180,7 +284,7 @@ Client libraries: [`@graphprotocol/client-x402`](https://www.npmjs.com/package/@
   <img src="docs/charts/reliability-dist.svg" alt="Reliability Distribution" width="480"/>
 </p>
 
-> Charts auto-generated from `registry.db` on each sync. See [`python/generate_docs.py`](python/generate_docs.py).
+> Generated charts/category files retain their own snapshot dates and may lag the bundled database. They are not live serving metrics. The counts below were read from the bundled 0.11.0 database; use `list_registry_stats` to inspect the connected runtime. See [`python/generate_docs.py`](python/generate_docs.py).
 
 ---
 
@@ -192,15 +296,15 @@ Explore subgraphs by use case — each file lists the top 25 subgraphs ranked by
 
 | Domain | Count | File |
 |--------|-------|------|
-| [DeFi](docs/domains/defi.md) | 7,844 | Swaps, pools, lending, vaults, yield |
-| [NFTs](docs/domains/nfts.md) | 1,565 | Collections, marketplaces, sales |
-| Unclassified | 1,333 | Not confidently classified |
-| [Infrastructure](docs/domains/infrastructure.md) | 1,251 | Indexers, oracles, registries |
-| [Identity](docs/domains/identity.md) | 1,061 | ENS, name services, resolvers |
-| [Analytics](docs/domains/analytics.md) | 766 | Snapshots, metrics, historical data |
-| [DAO](docs/domains/dao.md) | 758 | Governance, proposals, voting |
-| [Gaming](docs/domains/gaming.md) | 585 | Players, quests, items, worlds |
-| [Social](docs/domains/social.md) | 167 | Profiles, posts, follows |
+| [DeFi](docs/domains/defi.md) | 7,927 | Swaps, pools, lending, vaults, yield |
+| [NFTs](docs/domains/nfts.md) | 1,611 | Collections, marketplaces, sales |
+| Unclassified | 1,325 | Not confidently classified |
+| [Infrastructure](docs/domains/infrastructure.md) | 1,255 | Indexers, oracles, registries |
+| [Identity](docs/domains/identity.md) | 1,065 | ENS, name services, resolvers |
+| [Analytics](docs/domains/analytics.md) | 755 | Snapshots, metrics, historical data |
+| [DAO](docs/domains/dao.md) | 762 | Governance, proposals, voting |
+| [Gaming](docs/domains/gaming.md) | 594 | Players, quests, items, worlds |
+| [Social](docs/domains/social.md) | 158 | Profiles, posts, follows |
 
 Full index: [`docs/DOMAINS.md`](docs/DOMAINS.md)
 
@@ -210,13 +314,13 @@ Explore subgraphs by blockchain — each file lists the top 25 subgraphs on that
 
 | Network | Count | File |
 |---------|-------|------|
-| [Ethereum](docs/networks/mainnet.md) | 2,484 | Largest ecosystem |
-| [Base](docs/networks/base.md) | 1,841 | Fast-growing L2 |
-| [BSC](docs/networks/bsc.md) | 1,670 | BNB Chain |
-| [Arbitrum](docs/networks/arbitrum-one.md) | 1,437 | Leading L2 |
-| [Polygon](docs/networks/matic.md) | 1,304 | Polygon PoS |
-| [Optimism](docs/networks/optimism.md) | 580 | OP Stack L2 |
-| [Avalanche](docs/networks/avalanche.md) | 453 | C-Chain |
+| [Ethereum](docs/networks/mainnet.md) | 2,502 | Ethereum mainnet |
+| [Base](docs/networks/base.md) | 1,855 | Base mainnet |
+| [BSC](docs/networks/bsc.md) | 1,709 | BNB Chain |
+| [Arbitrum](docs/networks/arbitrum-one.md) | 1,456 | Arbitrum One |
+| [Polygon](docs/networks/matic.md) | 1,314 | Polygon PoS |
+| [Optimism](docs/networks/optimism.md) | 587 | OP Stack L2 |
+| [Avalanche](docs/networks/avalanche.md) | 456 | C-Chain |
 
 Full index: [`docs/NETWORKS.md`](docs/NETWORKS.md)
 
@@ -224,16 +328,16 @@ Full index: [`docs/NETWORKS.md`](docs/NETWORKS.md)
 
 | Type | Count | Description |
 |------|-------|-------------|
-| DEX | 4,411 | Uniswap, Sushi, Curve, Balancer, PancakeSwap |
-| Lending | 1,469 | Aave, Compound, Morpho, Spark, Silo |
-| Staking | 898 | Lido, Rocket Pool, EigenLayer, Graph Network |
-| Bridge | 836 | Hop, Stargate, Across, Wormhole, LayerZero |
-| NFT Marketplace | 450 | OpenSea, Blur, Rarible, Foundation |
-| Yield Aggregator | 425 | Yearn, Beefy, Harvest, Convex |
+| DEX | 4,444 | Uniswap, Sushi, Curve, Balancer, PancakeSwap |
+| Lending | 1,494 | Aave, Compound, Morpho, Spark, Silo |
+| Staking | 928 | Lido, Rocket Pool, EigenLayer, Graph Network |
+| Bridge | 839 | Hop, Stargate, Across, Wormhole, LayerZero |
+| NFT Marketplace | 454 | OpenSea, Blur, Rarible, Foundation |
+| Yield Aggregator | 431 | Yearn, Beefy, Harvest, Convex |
 | Governance | 425 | Snapshot, Tally, Compound Governor |
-| Perpetuals | 273 | GMX, Gains, dYdX, Hyperliquid |
-| Name Service | 227 | ENS, Space ID, Unstoppable Domains |
-| Options | 192 | Premia, Dopex, Lyra, Hegic |
+| Perpetuals | 276 | GMX, Gains, dYdX, Hyperliquid |
+| Name Service | 232 | ENS, Space ID, Unstoppable Domains |
+| Options | 196 | Premia, Dopex, Lyra, Hegic |
 
 ---
 
@@ -248,15 +352,17 @@ Each subgraph gets a composite reliability score (0-1) based on four on-chain si
 | **Curation Signal** | 20% | GRT tokens curated by the community |
 | **Indexer Allocation** | 20% | GRT allocated to this subgraph by indexers |
 
-All values are log-scaled and capped at 1.0. A 0.5 penalty is applied if the subgraph has been denied/deprecated.
+All values are log-scaled and capped at 1.0. A 0.5 penalty is applied when the snapshot records denied indexing rewards. This does not establish deprecation, safety, reward eligibility for a whole chain, or query availability.
 
-**Score tiers:** High (0.7+) = strong signal, real usage | Medium (0.3-0.7) = functional, some activity | Low (<0.3) = minimal signal or test deployment
+Higher scores mean larger combined ranking inputs, not calibrated confidence. No score establishes functionality, safety, testnet status, rewards eligibility or current query availability.
 
-### The score measures traction, so it measures age
+### Traction-weighted ranking can favor older deployments
 
-All four inputs are cumulative — fees and curation accrue, volume needs 30 days
-to exist at all. A subgraph deployed last month therefore scores near zero no
-matter how good it is. Measured on the current corpus (served, non-denied):
+Lifetime fees accumulate, curation/stake are snapshots, and 30-day volume is a
+rolling window (it does not require waiting 30 days to register traffic). Older
+deployments can have a ranking advantage; this is not an uptime or quality test.
+For context, a historical 2026-08-25 snapshot with positive allocations and no
+denied rewards showed:
 
 | Age | Count | Avg reliability |
 |-----|-------|-----------------|
@@ -265,8 +371,9 @@ matter how good it is. Measured on the current corpus (served, non-denied):
 | 90–365 days | 1,100 | 0.225 |
 | > 1 year | 4,034 | 0.313 |
 
-The newest subgraph anywhere in the registry's top 25 is **280 days old** — yet
-59 of those 64 sub-30-day subgraphs are already serving real query volume.
+These are dated observations, not current corpus or health measurements. The
+runtime caveat deliberately avoids frozen claims about the youngest top-ranked
+entry. New networks may serve traffic before rewards or curation are enabled.
 
 Rather than reweight the score and trade a measurable signal for a guess,
 `search_subgraphs` returns young matches in a **separate `emerging` list**
@@ -274,19 +381,21 @@ alongside an `emerging_caveat` explaining that a low score at that age is
 expected rather than damning. Every result also carries `age_days` and
 `maturity` (`new` < 30d, `emerging` < 90d, `established`). This matters most
 for new chains and new protocols, where no mature deployment *can* exist —
-searching "perpetual futures" surfaces years-old Ethereum and BSC deployments
-in the main list and the 40-day-old Monad perps subgraph under `emerging`.
+newer matching deployments can appear separately without being mislabelled as
+bad or unavailable merely because their traction score is lower.
 
-`semantic_search_subgraphs` ranks by cosine similarity rather than reliability,
-so it is already age-neutral — it carries the `maturity` labels but no
-`emerging` list, because a three-week-old subgraph can top it on merit.
+`semantic_search_subgraphs` combines cosine similarity with the reliability
+weight below. It is **not age-neutral**: traction can influence the order. It
+carries maturity labels but no separate `emerging` list; relevance still needs
+review, and neither semantic score nor age establishes health.
 
 ### Ranking
 
 Three tools rank, and each ranks differently on purpose:
 
-- **`search_subgraphs`** — orders by how many of your query terms matched, then
-  by reliability. OR-ing the terms and ordering on reliability alone meant a
+- **`search_subgraphs`** — current source re-ranks candidates using word boundaries
+  and exact distinctive-name preference, then reliability; version 0.11.0 lacks
+  the new exact-name boost and standalone-chain inference. OR-ing the terms and ordering on reliability alone meant a
   popular subgraph matching one incidental word beat a precise match on all
   three, so being *more* specific returned worse answers. Version tokens
   (`v2`, `v3`, `v4`) are kept rather than dropped as too short.
@@ -306,8 +415,8 @@ to the corpus values `mainnet`, `arbitrum-one`, `matic` and `bsc`.
 
 ### Testnets
 
-723 of the 5,425 served subgraphs are on testnets, and their text is nearly
-identical to their mainnet twins', so they compete for the top slot. They are
+Testnet deployments can resemble mainnet twins and compete for the top slot.
+In keyword/semantic search they are
 **excluded by default** and every result carries `testnet: true|false`. Pass
 `include_testnets: true` to see them — and an explicit request for a testnet
 network (`network: "sepolia"`) always wins over the default, so that still
@@ -315,13 +424,17 @@ returns exactly what you asked for.
 
 ## Using the registry from payql
 
+The optional `payql@0.1.5` pin below prevents floating installs; it is not an audit
+or a safety endorsement of that external package. Review it before running, and
+require explicit approval before enabling any funded payment/signing path.
+
 [`payql`](https://www.npmjs.com/package/payql) can use this registry as its
 free discovery source instead of paying for a network-subgraph query. Run the
 registry's HTTP transport and point payql at it:
 
 ```bash
-npx subgraph-registry-mcp --http-only          # serves :3848
-PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql
+npx subgraph-registry-mcp@0.11.0 --http-only          # serves :3848
+PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql@0.1.5
 ```
 
 `POST /graphql` answers in the Graph network subgraph's `subgraphMetadataSearch`
@@ -330,8 +443,8 @@ side, and discovery becomes free and locally-ranked.
 
 ### Denied deployments
 
-Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, usually
-spam, duplicates or deprecations) are **excluded by default** from
+Curation-denied deployments (`deniedAt > 0` — denied indexing rewards, not proof
+of spam, deprecation or query failure) are **excluded by default** from
 `search_subgraphs`, `semantic_search_subgraphs` and `recommend_subgraph`. Pass
 `include_denied: true` to the two search tools to see them; every result then
 carries `denied: true|false` so the choice stays visible.
@@ -342,54 +455,68 @@ carries `denied: true|false` so the choice stays visible.
 
 The registry is available as an MCP server with **dual transport** — stdio for local clients and SSE/HTTP for remote agents.
 
-Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-mcp) (hosted SSE `https://subgraphs.mcp.thegraph.com/sse`), **better discovery**. Schema, execute, contract-lookup and 30-day counts use the **official tool names** so an agent can swap connectors. Search stays on our names (`search_subgraphs`, `recommend_subgraph`, `semantic_search_subgraphs`) because they already beat official `search_subgraphs_by_keyword` (reliability, real `query_volume_30d`, network).
+The Node server provides official-name schema, execute, contract-lookup and
+30-day-count aliases for clients using [graphops/subgraph-mcp](https://github.com/graphops/subgraph-mcp).
+Its discovery names are `search_subgraphs`, `recommend_subgraph` and
+`semantic_search_subgraphs`. Interchangeability is not a guarantee of identical
+ranking, corpus coverage or every remote connector capability.
 
-Official workflow says ALWAYS call `get_deployment_30day_query_counts` before selecting. **Skip that extra round-trip here** — every search/recommend hit already carries `query_volume_30d`. The counts tool still exists under the official name and reads those same registry figures. Official counts have been observed returning 0 for ENS, Lido and Uniswap; we do not copy those zeros.
-
+Every search/recommend hit carries the snapshot's `query_volume_30d`, so a
+separate registry counts call is usually unnecessary. It is historical demand,
+not current serving health; no live volume measurement is performed by discovery.
 
 > The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx subgraph-registry-mcp` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
 
-**Discovery tools (never execute GraphQL, never introspect live schemas):**
+**Ten keyless discovery/preparation tools** (inspect `tools/list` on your actual host; no automatic GraphQL execution or live schema introspection):
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword. Ranked by matched terms, reliability and real `query_volume_30d`.
 - **recommend_subgraph** — natural language goal to best subgraphs (includes `schema_stable_days`)
 - **semantic_search_subgraphs** — vector-similarity search over precomputed embeddings (sentence-transformers/all-MiniLM-L6-v2, 384-dim). Use for fuzzy/paraphrased goals where literal keyword match would miss.
 - **get_subgraph_detail** — full classification for a specific subgraph (includes `schema_changed_at` and crawled `contract_addresses`)
 - **list_registry_stats** — registry overview (domains, networks, counts)
-- **get_schema_changes** — chronological schema-fingerprint history for a subgraph (one row per detected change). Helps agents prefer mature subgraphs whose data contract has been stable.
+- **get_schema_changes** — chronological fingerprint history. Fingerprints use entity names/field counts, not a full semantic schema diff.
+- **find_by_contract** and **get_top_subgraph_deployments** — exact manifest-address discovery, not live contract-to-entity validation
+- **get_deployment_30day_query_counts** — snapshot volumes for known IDs/hashes, not a live volume probe
+- **query_for_goal** — keyless preparation by default; `execute:true` is separately credential-gated
 
-**Opt-in query / schema (caller must invoke; search never auto-queries). Official names for connector swap-in:**
+**Nine additional keyed tools** (19 total). Caller must invoke them; discovery never auto-queries:
 - **execute_query_by_subgraph_id** / **execute_query_by_deployment_id** / **execute_query_by_ipfs_hash** — POST GraphQL to The Graph gateway. Same routing as official (`subgraphs/id` vs `deployments/id`). Requires `THE_GRAPH_STUDIO_API_KEY` (or `GATEWAY_API_KEY`). Without a key, returns `{error: credentials_required, query_url, query_url_x402, hint}` immediately — no hang, no x402 auto-pay. Convenience superset: **execute_query** accepts `id` OR `deployment_id` OR `ipfs_hash`.
 - **get_schema_by_subgraph_id** / **get_schema_by_deployment_id** / **get_schema_by_ipfs_hash** — local `registry_schema` (entities, example_query, fingerprint) with no network when the subgraph is in the corpus; live `__schema` introspection only when a Studio key is set. Convenience superset: **get_schema**.
-- **get_top_subgraph_deployments(contract_address, chain)** — official name. Official `chain` is graph-node ids (`mainnet`, not `ethereum`); we accept both. Top 3 from crawled manifests, ranked by reliability then real 30-day volume (not official query-fees / 0-count oracle). Substreams-powered subgraphs often have no dataSources addresses — that gap is reported, not faked.
-- **get_deployment_30day_query_counts** — official name, `ipfs_hashes` in. Real registry `query_volume_30d`. Unknown hashes return `not_in_registry` rather than a fake 0. Usually unnecessary: the same number is already on every search hit.
+- **check_subgraph_health** — one fixed, opt-in `_meta` request; cache evidence does not prove chain-head sync.
 
-Set `THE_GRAPH_STUDIO_API_KEY` in the MCP host env to enable execute/live-schema. No private key is bundled. The keyed gateway often returns HTTP 200 with a GraphQL error body when auth is missing — `execute_query` surfaces `http_status` and `errors` honestly.
+Set `THE_GRAPH_STUDIO_API_KEY` via the MCP host's secret manager to enable execute/live-schema/health. No private key is bundled. The keyed gateway often returns HTTP 200 with a GraphQL error body when auth is missing — `execute_query` surfaces `http_status` and `errors` honestly.
 
 ### Install
 
-```bash
-# Claude Code
-claude mcp add subgraph-registry -- npx subgraph-registry-mcp
+Node 20 is CI-tested. Pin a reviewed release rather than floating to latest.
+The new source changes described above require a future release; see the audit.
 
-# Claude Desktop
+Claude Code:
+
+```bash
+claude mcp add subgraph-registry -- npx subgraph-registry-mcp@0.11.0
+```
+
+A JSON MCP host configuration (keyless discovery):
+
+```json
 {
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["subgraph-registry-mcp"],
-      "env": {
-        "THE_GRAPH_STUDIO_API_KEY": "your-studio-key"
-      }
+      "args": ["subgraph-registry-mcp@0.11.0"]
     }
   }
 }
-
-# Remote agents (SSE)
-npx subgraph-registry-mcp --http-only
-# Then connect to http://localhost:3848/sse
 ```
 
-The server auto-downloads the pre-built registry (8MB SQLite) from GitHub on first run.
+For a trusted local HTTP/SSE client:
+
+```bash
+npx subgraph-registry-mcp@0.11.0 --http-only
+# Connect to http://localhost:3848/sse; keep the listener firewalled/trusted.
+```
+
+The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; inject a Studio key through your host's secret manager to enable opt-in execution.
 
 ---
 
@@ -407,7 +534,7 @@ Each manifest includes classification, parsed entities, contract addresses (from
 
 ```bash
 # Start the HTTP transport
-npx subgraph-registry-mcp --http-only
+npx subgraph-registry-mcp@0.11.0 --http-only
 
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld
@@ -417,29 +544,37 @@ curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYp
 
 ## Semantic Search
 
-Every subgraph has a precomputed 384-dim embedding from `sentence-transformers/all-MiniLM-L6-v2`, built from its display name, description, canonical entities, top schema entity names, and protocol metadata. At MCP-tool-call time the Node server embeds the query string with the same model (via [@xenova/transformers](https://github.com/xenova/transformers.js), quantized ONNX bundled in the npm package — no first-call download) and ranks rows by cosine similarity.
+Indexed deployments with embeddings have a precomputed 384-dim vector from `sentence-transformers/all-MiniLM-L6-v2`, built from its display name, description, canonical entities, top schema entity names, and protocol metadata. At MCP-tool-call time the Node server embeds the query string with the same model (via [@xenova/transformers](https://github.com/xenova/transformers.js), quantized ONNX bundled in the npm package — no first-call download) and ranks by cosine similarity weighted by snapshot reliability, as described above.
 
 ```js
 const { subgraphs } = await mcp.call("semantic_search_subgraphs", {
   query: "lending positions near liquidation on a Layer 2",
   limit: 5,
 });
-// subgraphs[i].semantic_score is cosine similarity in [0, 1]; >0.5 ~= strong match.
+// semantic_score is raw cosine similarity, not calibrated confidence or live health.
 ```
 
 Use it when:
 - The goal is paraphrased or use-case-shaped (`search_subgraphs` is keyword-only).
 - You're exploring "what data exists for X?" rather than fetching a specific protocol's subgraph.
 
-Same model is shared between Python crawl-time (`fastembed`) and JS runtime (`@xenova/transformers`) — vectors are bitwise-comparable so cosine math gives consistent rankings across runtimes.
+Python crawl-time (`fastembed`) and JS runtime (`@xenova/transformers`) use the
+same model architecture. Float32 versus quantized ONNX inference is **not
+bitwise-identical**, and scores/rankings can differ. If the bundled model is
+missing, the runtime can download from Hugging Face; a normal published package
+bundles it. Do not invoke semantic search in a strictly offline checkout without
+confirming the model files exist.
 
-Embeddings add ~22 MB to `registry.db` (14k × 384 × 4 bytes); model bundle adds ~23 MB to the npm package.
+Embeddings and the model increase package size; inspect the actual tarball rather
+than treating historical size estimates as a current download guarantee.
 
 ---
 
 ## Schema Evolution
 
 Each crawl computes a `schema_fingerprint` (MD5 of sorted `entity:field_count` pairs) per subgraph. Whenever the fingerprint changes from the previous sync, an immutable row is written to `schema_history`. The table is append-only and survives full DB rebuilds.
+
+Illustrative output shape below; the sample counts/timestamps are not live measurements.
 
 ```js
 const history = await mcp.call("get_schema_changes", {
@@ -465,7 +600,7 @@ const history = await mcp.call("get_schema_changes", {
 
 The full API surface (MCP tools + REST routes) is published as OpenAPI 3.1:
 
-- `openapi.yaml` — checked into the repo, single source of truth
+- `openapi.yaml` — checked-in generated specification
 - `data/openapi.json` — bundled with the npm tarball
 - `GET /.well-known/openapi.json` — served by the HTTP transport for live discovery
 
@@ -473,7 +608,11 @@ The spec is regenerated on every release from the declarative `TOOLS[]` + `REST_
 
 ---
 
-## REST API
+## Python REST API (separate local-development service)
+
+These routes belong to `python/server.py` on port 3847, not the Node MCP
+HTTP transport on 3848. The new Node discovery diagnostics/validation are not
+implemented here; for example this Python API has its own offset pagination.
 
 ```
 GET /summary                    Registry overview and stats
@@ -534,7 +673,7 @@ Each category file includes:
 ## Architecture
 
 ```
-Graph Network Subgraph (meta-subgraph, 140M queries/month)
+Configured Graph Network meta-subgraph (published-network metadata)
     |
     v
 crawler.py ---- async httpx, ID-based cursor pagination
@@ -556,32 +695,35 @@ MCP Server (src/index.js, published to npm)
 python/mcp_server.py — local-dev MCP server hitting the same SQLite DB
 ```
 
-## Quick Start (Local Build)
+## Maintainer-only: optional data rebuilds and publication
+
+Normal agent use runs the bundled snapshot; **do not crawl to install or query**.
+The Python crawler/rebuild workflow is separate maintenance: it can make network
+requests, consume gateway allowance, rewrite the database and publish updates.
+Only run it with explicit authorization, suitable credentials and a query budget.
+Keep real credentials in a secret manager; do not paste them into shell history
+or commit a `.env` file. After an intentional rebuild, synchronize the pinned
+hash, package/skill metadata and reviewed release artifacts; do not disable hash
+verification to distribute a changed database.
+
+Inspect maintenance options without starting a crawl:
 
 ```bash
 cd python
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-echo "GATEWAY_API_KEY=your-key-here" > .env
-
-# Full crawl + classify (~11 min)
-python registry.py
-
-# Generate charts and category files
-python generate_docs.py
-
-# Start API server
-python server.py
+python registry.py --help
 ```
 
-## How It Stays Current
+The [update workflow](.github/workflows/update-registry.yml) currently schedules
+incremental maintenance with a five-day day-of-month cron step and a monthly
+full refresh. It also supports manual dispatch; this is not proof a
+particular connected runtime received an update. Generated category files/charts
+can have different snapshot dates. The standalone Python scheduler's default
+weekly loop is separate from the GitHub Actions schedule.
 
-A GitHub Actions workflow runs every 3 days:
-1. Incremental crawl (`updatedAt_gte: lastSyncTimestamp`)
-2. Reclassify new/changed subgraphs
-3. Regenerate SVG charts and category .md files
-4. Commit and push updates
+For publication without a crawl or data rebuild, use the
+[publish-only release guide](docs/RELEASING.md). Its main-only manual workflow uses
+repository secrets and does not write main. Neither this README update nor
+merging these fixes publishes a new npm/ClawHub version.
 
 ## License
 
