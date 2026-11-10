@@ -11,8 +11,9 @@ crawler just to obtain access to publishing credentials.
 1. Review and merge the release metadata/workflow PR through the normal process.
    The new workflow cannot be safely exercised from its unmerged branch.
 2. Confirm main contains the desired stable `x.y.z` in `package.json`, both
-   `server.json` locations, the `SKILL.md` install/hash pins and OpenAPI metadata.
-   Use a new minor version for new compatible tools (patch releases such as **0.13.1** fix behaviour without new tools).
+   `server.json` locations, the `SKILL.md` install/hash pins and frontmatter,
+   `PINNED_NPX_PACKAGE` in `src/index.js` (CI checks it matches) and OpenAPI metadata.
+   Use a new minor version for new compatible tools (patch releases such as **0.13.2** fix behaviour without new tools).
 3. Existing repository secrets `NPM_TOKEN` and `CLAWHUB_CONFIG_JSON` must authorize
    the targets. Their existence is not proof of validity or package scope. Never
    retrieve/copy Aave's secrets or paste a token into chat. A failing CI token
@@ -23,7 +24,7 @@ crawler just to obtain access to publishing credentials.
    gh api repos/PaulieB14/subgraph-registry/commits/main --jq .sha
    # Substitute that exact SHA; this command performs publication when run.
    gh workflow run publish-only.yml --repo PaulieB14/subgraph-registry --ref main \
-     -f version=0.13.1 -f main_sha=FULL_MERGED_MAIN_SHA \
+     -f version=0.13.2 -f main_sha=FULL_MERGED_MAIN_SHA \
      -f publish_npm=true -f publish_clawhub=true
    ```
 

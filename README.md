@@ -15,13 +15,13 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
 1. **Connect a pinned, published release** (Node 20 is CI-tested):
 
    ```json
-   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"]}}}
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.2"]}}}
    ```
 
-   Inspect `tools/list`: Node 0.13.1 exposes **10 tools without a key**, or **19
+   Inspect `tools/list`: Node 0.13.2 exposes **10 tools without a key**, or **19
    total with a Studio key**. A hosted connector can mount a different subset or
    corpus; installing npm does not update or restart it.
-2. **Discover explicitly.** Tool-call parameters below work with published 0.13.1:
+2. **Discover explicitly.** Tool-call parameters below work with published 0.13.2:
 
    ```json
    {"name":"search_subgraphs","arguments":{"query":"uniswap v3","network":"ethereum","limit":3}}
@@ -60,9 +60,16 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
    Read GraphQL `errors` and partial `data` even on HTTP 200. On missing
    credentials/quota, stop and resolve that issue; never silently switch to x402.
 
-### What 0.13.1 adds
+### What 0.13.2 adds
 
-**npm/ClawHub 0.13.1** secures the optional HTTP/SSE transport. It binds
+**npm/ClawHub 0.13.2** hardens installation and network behaviour: dependencies
+are pinned to exact versions, semantic search uses only the bundled model (never
+a download; if it is missing the tool answers with keyword search and says so),
+and a missing `registry.db` is an error unless
+`SUBGRAPH_REGISTRY_ALLOW_DB_DOWNLOAD=1` is set. Generated config examples use the
+literal pinned package `subgraph-registry-mcp@0.13.2`.
+
+**0.13.1** secured the optional HTTP/SSE transport. It binds
 `127.0.0.1` by default and refuses a non-loopback bind unless
 `SUBGRAPH_REGISTRY_HTTP_TOKEN` is set; then every route except `/health` needs
 `Authorization: Bearer <token>` (401 otherwise). See
@@ -262,13 +269,13 @@ Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`; `${env:NAME}` resolves from
 the environment Cursor was started with):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.2"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Code (`.mcp.json` supports `${VAR}` expansion):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.2"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Desktop and other stdio hosts use the same `mcpServers` shape. Without
@@ -276,7 +283,7 @@ interpolation, the `env` value is plain text in that local file — use it only 
 a machine you control and keep the file out of version control:
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.2"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
 ```
 
 Goal-specific planning requires 0.12.0 or later.
@@ -536,7 +543,7 @@ free discovery source instead of paying for a network-subgraph query. Run the
 registry's HTTP transport and point payql at it:
 
 ```bash
-npx -y subgraph-registry-mcp@0.13.1 --http-only          # serves :3848
+npx -y subgraph-registry-mcp@0.13.2 --http-only          # serves :3848
 PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql@0.1.5
 ```
 
@@ -568,7 +575,7 @@ Every search/recommend hit carries the snapshot's `query_volume_30d`, so a
 separate registry counts call is usually unnecessary. It is historical demand,
 not current serving health; no live volume measurement is performed by discovery.
 
-> The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx -y subgraph-registry-mcp@0.13.1` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
+> The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx -y subgraph-registry-mcp@0.13.2` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
 
 **Ten keyless discovery/preparation tools** (inspect `tools/list` on your actual host; no automatic GraphQL execution or live schema introspection):
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword. Ranked by matched terms, reliability and real `query_volume_30d`.
@@ -595,7 +602,7 @@ Node 20 is CI-tested. Pin a reviewed release rather than floating to latest.
 Claude Code:
 
 ```bash
-claude mcp add subgraph-registry -- npx -y subgraph-registry-mcp@0.13.1
+claude mcp add subgraph-registry -- npx -y subgraph-registry-mcp@0.13.2
 ```
 
 A JSON MCP host configuration (keyless discovery):
@@ -605,7 +612,7 @@ A JSON MCP host configuration (keyless discovery):
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["-y", "subgraph-registry-mcp@0.13.1"]
+      "args": ["-y", "subgraph-registry-mcp@0.13.2"]
     }
   }
 }
@@ -614,7 +621,7 @@ A JSON MCP host configuration (keyless discovery):
 For a local HTTP/SSE client:
 
 ```bash
-npx -y subgraph-registry-mcp@0.13.1 --http-only
+npx -y subgraph-registry-mcp@0.13.2 --http-only
 # Listens on http://127.0.0.1:3848/sse (loopback only).
 ```
 
@@ -640,13 +647,13 @@ The default transport is stdio, with no listener. `--http`, `--http-only` or
 
 ```bash
 SUBGRAPH_REGISTRY_HTTP_TOKEN="$(openssl rand -hex 32)" MCP_HTTP_HOST=0.0.0.0 \
-  npx -y subgraph-registry-mcp@0.13.1 --http-only
+  npx -y subgraph-registry-mcp@0.13.2 --http-only
 curl -H "Authorization: Bearer $SUBGRAPH_REGISTRY_HTTP_TOKEN" http://<host>:3848/.well-known/openapi.json
 ```
 
 Prefer TLS (a reverse proxy) for any non-local network.
 
-The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; see [host configuration](#bring-your-own-key-host-configuration) to add your own Studio key for opt-in execution.
+The npm package bundles the SQLite registry and offline model. Nothing is downloaded at runtime by default. If the bundled registry is missing the server stops with an error; set `SUBGRAPH_REGISTRY_ALLOW_DB_DOWNLOAD=1` to fetch it from GitHub instead (hash-verified). The example configuration is keyless; see [host configuration](#bring-your-own-key-host-configuration) to add your own Studio key for opt-in execution.
 
 ---
 
@@ -664,7 +671,7 @@ Each manifest includes classification, parsed entities, contract addresses (from
 
 ```bash
 # Start the HTTP transport
-npx -y subgraph-registry-mcp@0.13.1 --http-only
+npx -y subgraph-registry-mcp@0.13.2 --http-only
 
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld
@@ -690,10 +697,11 @@ Use it when:
 
 Python crawl-time (`fastembed`) and JS runtime (`@xenova/transformers`) use the
 same model architecture. Float32 versus quantized ONNX inference is **not
-bitwise-identical**, and scores/rankings can differ. If the bundled model is
-missing, the runtime can download from Hugging Face; a normal published package
-bundles it. Do not invoke semantic search in a strictly offline checkout without
-confirming the model files exist.
+bitwise-identical**, and scores/rankings can differ. Semantic search uses only
+the bundled model and never downloads one (remote model loading is disabled). If
+the bundled files are missing, `semantic_search_subgraphs` returns keyword-search
+results with `search_mode: "keyword_fallback"` and a `semantic_unavailable`
+explanation.
 
 Embeddings and the model increase package size; inspect the actual tarball rather
 than treating historical size estimates as a current download guarantee.
