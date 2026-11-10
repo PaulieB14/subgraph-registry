@@ -54,7 +54,7 @@ jobs:
       - name: Run agent workflow, gateway and release regressions
         # Gateway responses are mocked; usability checks use credential-free SDK
         # stdio calls against the read-only bundled corpus. No key, payment or live query.
-        run: node --test test/agent-discovery.test.mjs test/execute-gateway.test.mjs test/release-only.test.mjs test/discovery-usability.test.mjs
+        run: node --test test/agent-discovery.test.mjs test/execute-gateway.test.mjs test/release-only.test.mjs test/discovery-usability.test.mjs test/goal-query.test.mjs test/health-spam.test.mjs
 
       - name: Smoke-test the installed bin (the one that was broken)
         # npm pack -> install -> drive node_modules/.bin/ through a real MCP

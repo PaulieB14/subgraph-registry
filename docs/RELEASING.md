@@ -47,10 +47,10 @@ crawler just to obtain access to publishing credentials.
   has a pre-existing ENS ranking assertion mismatch with the bundled snapshot;
   this workflow runs the same focused suites as CI plus the release safety tests,
   rather than claiming that unrelated assertion was fixed.
-- `npm pack --ignore-scripts` is inspected against thirteen explicit public files.
+- `npm pack --ignore-scripts` is inspected against fourteen explicit public files.
   Every packed file's bytes and archive SHA-512 are checked. Dependencies/model/DB
   are the existing reviewed package contents; no data rebuild occurs.
-- The ClawHub staging folder is an explicit ten-file allowlist: instructions,
+- The ClawHub staging folder is an explicit eleven-file allowlist: instructions,
   README/license, server sources and public metadata. It omits DB/model binaries,
   tests, CI, dashboard code and credential/config files, preserving the existing
   instruction/server discovery listing without depending on broad ignore rules.

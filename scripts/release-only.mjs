@@ -10,13 +10,13 @@ import { spawnSync } from "node:child_process";
 export const PACKAGE = "subgraph-registry-mcp";
 export const SLUG = "subgraph-registry";
 export const NPM_FILES = ["LICENSE", "README.md", "package.json", "openapi.yaml",
-  "src/index.js", "src/agent-discovery.js", "src/goal-query.js", "data/openapi.json", "data/registry.db",
+  "src/index.js", "src/agent-discovery.js", "src/goal-query.js", "src/token-quality.js", "data/openapi.json", "data/registry.db",
   ...["config.json", "tokenizer.json", "tokenizer_config.json", "onnx/model_quantized.onnx"]
     .map((p) => `data/models/Xenova/all-MiniLM-L6-v2/${p}`)];
 // Retain public skill instructions + server sources/metadata. Explicit allowlist
 // excludes binaries, CI, tests, local auth files, and unrelated dashboard code.
 export const SKILL_FILES = ["SKILL.md", "README.md", "LICENSE", "package.json", "server.json",
-  "openapi.yaml", "data/openapi.json", "src/index.js", "src/agent-discovery.js", "src/goal-query.js"];
+  "openapi.yaml", "data/openapi.json", "src/index.js", "src/agent-discovery.js", "src/goal-query.js", "src/token-quality.js"];
 const hash = (bytes, alg = "sha256", enc = "hex") => createHash(alg).update(bytes).digest(enc);
 const json = (path) => JSON.parse(readFileSync(path, "utf8"));
 const check = (ok, message) => { if (!ok) throw new Error(message); };
