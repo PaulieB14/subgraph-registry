@@ -15,13 +15,13 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
 1. **Connect a pinned, published release** (Node 20 is CI-tested):
 
    ```json
-   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"]}}}
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"]}}}
    ```
 
-   Inspect `tools/list`: Node 0.12.0 exposes **10 tools without a key**, or **19
+   Inspect `tools/list`: Node 0.13.0 exposes **10 tools without a key**, or **19
    total with a Studio key**. A hosted connector can mount a different subset or
    corpus; installing npm does not update or restart it.
-2. **Discover explicitly.** Tool-call parameters below work with published 0.12.0:
+2. **Discover explicitly.** Tool-call parameters below work with published 0.13.0:
 
    ```json
    {"name":"search_subgraphs","arguments":{"query":"uniswap v3","network":"ethereum","limit":3}}
@@ -60,9 +60,18 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
    Read GraphQL `errors` and partial `data` even on HTTP 200. On missing
    credentials/quota, stop and resolve that issue; never silently switch to x402.
 
-### What 0.12.0 adds
+### What 0.13.0 adds
 
-**npm/ClawHub 0.12.0** adds goal-specific `query_for_goal` planning (entity
+**npm/ClawHub 0.13.0** makes `query_for_goal` skip deployments that time out,
+have failing indexers or are more than 2 hours behind, and fall back to the next
+deployment that fits the goal. Skips are reported in
+`goal_mapping.skipped_deployments`, and `recommend_subgraph` also drops recently
+failed deployments. Token and pool results carry `token_quality` spam flags
+(`spam_handling`, `trusted_tokens`); flagged rows move last by default and are
+never removed. A chain named late in a long goal is no longer ignored. The
+bundled registry database is unchanged.
+
+**0.12.0** added goal-specific `query_for_goal` planning (entity
 mapping, confidence, `unmet`/`filters_not_applied`, alternatives, optional
 `validate_schema`) and human-handoff bring-your-own-key onboarding. It also ships
 the discovery fixes merged after 0.11.0: chain-only inference, empty-result
@@ -246,13 +255,13 @@ Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`; `${env:NAME}` resolves from
 the environment Cursor was started with):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Code (`.mcp.json` supports `${VAR}` expansion):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Desktop and other stdio hosts use the same `mcpServers` shape. Without
@@ -260,7 +269,7 @@ interpolation, the `env` value is plain text in that local file — use it only 
 a machine you control and keep the file out of version control:
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.12.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
 ```
 
 Goal-specific planning requires 0.12.0 or later.
@@ -520,7 +529,7 @@ free discovery source instead of paying for a network-subgraph query. Run the
 registry's HTTP transport and point payql at it:
 
 ```bash
-npx subgraph-registry-mcp@0.12.0 --http-only          # serves :3848
+npx subgraph-registry-mcp@0.13.0 --http-only          # serves :3848
 PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql@0.1.5
 ```
 
@@ -579,7 +588,7 @@ Node 20 is CI-tested. Pin a reviewed release rather than floating to latest.
 Claude Code:
 
 ```bash
-claude mcp add subgraph-registry -- npx subgraph-registry-mcp@0.12.0
+claude mcp add subgraph-registry -- npx subgraph-registry-mcp@0.13.0
 ```
 
 A JSON MCP host configuration (keyless discovery):
@@ -589,7 +598,7 @@ A JSON MCP host configuration (keyless discovery):
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["subgraph-registry-mcp@0.12.0"]
+      "args": ["subgraph-registry-mcp@0.13.0"]
     }
   }
 }
@@ -598,7 +607,7 @@ A JSON MCP host configuration (keyless discovery):
 For a trusted local HTTP/SSE client:
 
 ```bash
-npx subgraph-registry-mcp@0.12.0 --http-only
+npx subgraph-registry-mcp@0.13.0 --http-only
 # Connect to http://localhost:3848/sse; keep the listener firewalled/trusted.
 ```
 
@@ -620,7 +629,7 @@ Each manifest includes classification, parsed entities, contract addresses (from
 
 ```bash
 # Start the HTTP transport
-npx subgraph-registry-mcp@0.12.0 --http-only
+npx subgraph-registry-mcp@0.13.0 --http-only
 
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld
