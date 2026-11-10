@@ -15,13 +15,13 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
 1. **Connect a pinned, published release** (Node 20 is CI-tested):
 
    ```json
-   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"]}}}
+   {"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"]}}}
    ```
 
-   Inspect `tools/list`: Node 0.13.0 exposes **10 tools without a key**, or **19
+   Inspect `tools/list`: Node 0.13.1 exposes **10 tools without a key**, or **19
    total with a Studio key**. A hosted connector can mount a different subset or
    corpus; installing npm does not update or restart it.
-2. **Discover explicitly.** Tool-call parameters below work with published 0.13.0:
+2. **Discover explicitly.** Tool-call parameters below work with published 0.13.1:
 
    ```json
    {"name":"search_subgraphs","arguments":{"query":"uniswap v3","network":"ethereum","limit":3}}
@@ -60,9 +60,16 @@ Share the canonical [SKILL.md](SKILL.md) for the complete agent workflow.
    Read GraphQL `errors` and partial `data` even on HTTP 200. On missing
    credentials/quota, stop and resolve that issue; never silently switch to x402.
 
-### What 0.13.0 adds
+### What 0.13.1 adds
 
-**npm/ClawHub 0.13.0** makes `query_for_goal` skip deployments that time out,
+**npm/ClawHub 0.13.1** secures the optional HTTP/SSE transport. It binds
+`127.0.0.1` by default and refuses a non-loopback bind unless
+`SUBGRAPH_REGISTRY_HTTP_TOKEN` is set; then every route except `/health` needs
+`Authorization: Bearer <token>` (401 otherwise). See
+[HTTP transport security](#http-transport-security). Stdio (the default) is
+unchanged.
+
+**0.13.0** made `query_for_goal` skip deployments that time out,
 have failing indexers or are more than 2 hours behind, and fall back to the next
 deployment that fits the goal. Skips are reported in
 `goal_mapping.skipped_deployments`, and `recommend_subgraph` also drops recently
@@ -255,13 +262,13 @@ Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`; `${env:NAME}` resolves from
 the environment Cursor was started with):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${env:THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Code (`.mcp.json` supports `${VAR}` expansion):
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"${THE_GRAPH_STUDIO_API_KEY}"}}}}
 ```
 
 Claude Desktop and other stdio hosts use the same `mcpServers` shape. Without
@@ -269,7 +276,7 @@ interpolation, the `env` value is plain text in that local file — use it only 
 a machine you control and keep the file out of version control:
 
 ```json
-{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.0"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
+{"mcpServers":{"subgraph-registry":{"command":"npx","args":["-y","subgraph-registry-mcp@0.13.1"],"env":{"THE_GRAPH_STUDIO_API_KEY":"<your Studio API key>"}}}}
 ```
 
 Goal-specific planning requires 0.12.0 or later.
@@ -529,7 +536,7 @@ free discovery source instead of paying for a network-subgraph query. Run the
 registry's HTTP transport and point payql at it:
 
 ```bash
-npx subgraph-registry-mcp@0.13.0 --http-only          # serves :3848
+npx -y subgraph-registry-mcp@0.13.1 --http-only          # serves :3848
 PAYQL_REGISTRY_URL=http://127.0.0.1:3848/graphql npx -y payql@0.1.5
 ```
 
@@ -561,7 +568,7 @@ Every search/recommend hit carries the snapshot's `query_volume_30d`, so a
 separate registry counts call is usually unnecessary. It is historical demand,
 not current serving health; no live volume measurement is performed by discovery.
 
-> The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx subgraph-registry-mcp` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
+> The shipped server is the Node implementation in [`src/index.js`](src/index.js); that's what `npx -y subgraph-registry-mcp@0.13.1` runs and what's published to npm. A Python equivalent in [`python/mcp_server.py`](python/mcp_server.py) is kept for local development against the same SQLite database — bug fixes and new tools should land in the Node version first.
 
 **Ten keyless discovery/preparation tools** (inspect `tools/list` on your actual host; no automatic GraphQL execution or live schema introspection):
 - **search_subgraphs** — filter by domain, network, protocol type, entity, or keyword. Ranked by matched terms, reliability and real `query_volume_30d`.
@@ -588,7 +595,7 @@ Node 20 is CI-tested. Pin a reviewed release rather than floating to latest.
 Claude Code:
 
 ```bash
-claude mcp add subgraph-registry -- npx subgraph-registry-mcp@0.13.0
+claude mcp add subgraph-registry -- npx -y subgraph-registry-mcp@0.13.1
 ```
 
 A JSON MCP host configuration (keyless discovery):
@@ -598,18 +605,46 @@ A JSON MCP host configuration (keyless discovery):
   "mcpServers": {
     "subgraph-registry": {
       "command": "npx",
-      "args": ["subgraph-registry-mcp@0.13.0"]
+      "args": ["-y", "subgraph-registry-mcp@0.13.1"]
     }
   }
 }
 ```
 
-For a trusted local HTTP/SSE client:
+For a local HTTP/SSE client:
 
 ```bash
-npx subgraph-registry-mcp@0.13.0 --http-only
-# Connect to http://localhost:3848/sse; keep the listener firewalled/trusted.
+npx -y subgraph-registry-mcp@0.13.1 --http-only
+# Listens on http://127.0.0.1:3848/sse (loopback only).
 ```
+
+### HTTP transport security
+
+The default transport is stdio, with no listener. `--http`, `--http-only` or
+`MCP_HTTP_PORT` start an HTTP/SSE listener (0.13.1+):
+
+- **Loopback by default.** It binds `127.0.0.1`. Without a token, requests are
+  accepted only from a loopback socket with a loopback `Host` header, which
+  blocks DNS-rebinding requests from browser pages.
+- **Remote binds need a token.** If `MCP_HTTP_HOST` is anything other than a
+  loopback address (for example `0.0.0.0`), the server refuses to start unless
+  `SUBGRAPH_REGISTRY_HTTP_TOKEN` is set to a random secret of at least 24
+  characters.
+- **Bearer auth.** With a token set, every route except `/health` (`/sse`,
+  `/messages`, `/graphql`, OpenAPI and JSON-LD) requires
+  `Authorization: Bearer <token>`. The token is compared in constant time;
+  anything else gets `401`. The token is never logged or echoed.
+- No unauthenticated remote caller can reach a tool, so none can spend the
+  operator's Studio key. The access token is separate from the Studio key;
+  never reuse the Studio key as the token.
+
+```bash
+SUBGRAPH_REGISTRY_HTTP_TOKEN="$(openssl rand -hex 32)" MCP_HTTP_HOST=0.0.0.0 \
+  npx -y subgraph-registry-mcp@0.13.1 --http-only
+curl -H "Authorization: Bearer $SUBGRAPH_REGISTRY_HTTP_TOKEN" http://<host>:3848/.well-known/openapi.json
+```
+
+Prefer TLS (a reverse proxy) for any non-local network.
 
 The npm package bundles the SQLite registry and offline model. The server downloads the registry from GitHub only if the bundled file is missing, and verifies its pinned hash. The example configuration is keyless; see [host configuration](#bring-your-own-key-host-configuration) to add your own Studio key for opt-in execution.
 
@@ -629,7 +664,7 @@ Each manifest includes classification, parsed entities, contract addresses (from
 
 ```bash
 # Start the HTTP transport
-npx subgraph-registry-mcp@0.13.0 --http-only
+npx -y subgraph-registry-mcp@0.13.1 --http-only
 
 # Fetch the manifest for Uniswap V3 Mainnet
 curl http://localhost:3848/.well-known/subgraph/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV.jsonld

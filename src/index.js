@@ -31,7 +31,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { basename, dirname, join } from "path";
 import { existsSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from "fs";
 import { get as httpsGet } from "https";
-import { createHash } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -3002,9 +3002,82 @@ function createServer() {
 }
 
 // ── SSE/HTTP Transport (OpenClaw + remote agents) ──────────
+//
+// Security model (0.13.1+):
+// - Binds 127.0.0.1 unless MCP_HTTP_HOST says otherwise.
+// - A non-loopback bind is REFUSED unless SUBGRAPH_REGISTRY_HTTP_TOKEN is set
+//   (at least 24 characters). Then every route except /health requires
+//   `Authorization: Bearer <token>` (constant-time compare) or gets 401, so no
+//   unauthenticated remote caller can reach a tool that spends the operator's
+//   Studio key.
+// - Without a token, requests are also rejected unless they arrive from a
+//   loopback socket with a loopback Host header (blocks DNS rebinding from a
+//   browser page).
+// The token is never logged or echoed.
 
-function startHttpTransport(port) {
+export const HTTP_TOKEN_ENV = "SUBGRAPH_REGISTRY_HTTP_TOKEN";
+export const MIN_HTTP_TOKEN_LENGTH = 24;
+
+export function isLoopbackHost(host) {
+  const h = String(host || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  return h === "localhost" || h === "::1" || /^127(\.\d{1,3}){3}$/.test(h) || /^::ffff:127(\.\d{1,3}){3}$/.test(h);
+}
+
+function hostHeaderName(value) {
+  const v = String(value || "").trim().toLowerCase();
+  if (v.startsWith("[")) return v.slice(1, v.indexOf("]"));
+  return v.replace(/:\d+$/, "");
+}
+
+export function resolveHttpSecurity(env = process.env) {
+  const host = (env.MCP_HTTP_HOST || "127.0.0.1").trim();
+  const rawToken = env[HTTP_TOKEN_ENV];
+  const token = typeof rawToken === "string" && rawToken.trim() ? rawToken.trim() : null;
+  const loopback = isLoopbackHost(host);
+  if (token && token.length < MIN_HTTP_TOKEN_LENGTH) {
+    return { ok: false, host, loopback, error: `${HTTP_TOKEN_ENV} must be at least ${MIN_HTTP_TOKEN_LENGTH} characters.` };
+  }
+  if (!loopback && !token) {
+    return {
+      ok: false, host, loopback,
+      error: `Refusing to bind HTTP transport to non-loopback host ${host} without ${HTTP_TOKEN_ENV}. ` +
+        `Set ${HTTP_TOKEN_ENV} to a long random secret (clients send Authorization: Bearer <token>), ` +
+        "or unset MCP_HTTP_HOST to bind 127.0.0.1 only.",
+    };
+  }
+  return { ok: true, host, loopback, token, auth: token ? "bearer_token" : "loopback_only" };
+}
+
+function tokenMatches(expected, header) {
+  const m = /^Bearer\s+(\S+)\s*$/i.exec(String(header || ""));
+  if (!m) return false;
+  // Hash both sides so lengths match and the compare is constant-time.
+  const a = createHash("sha256").update(expected).digest();
+  const b = createHash("sha256").update(m[1]).digest();
+  return timingSafeEqual(a, b);
+}
+
+export function httpAuthMiddleware(security) {
+  return (req, res, next) => {
+    if (req.path === "/health") return next();
+    if (security.token) {
+      if (tokenMatches(security.token, req.headers.authorization)) return next();
+      res.set("WWW-Authenticate", 'Bearer realm="subgraph-registry"');
+      res.status(401).json({ error: "unauthorized", hint: "Send Authorization: Bearer <token>." });
+      return;
+    }
+    // No token configured: loopback callers only, with a loopback Host header.
+    if (isLoopbackHost(req.socket?.remoteAddress) && isLoopbackHost(hostHeaderName(req.headers.host))) return next();
+    res.set("WWW-Authenticate", 'Bearer realm="subgraph-registry"');
+    res.status(401).json({ error: "unauthorized", hint: `Loopback only. Set ${HTTP_TOKEN_ENV} to allow authenticated remote access.` });
+  };
+}
+
+export function createHttpApp(security = resolveHttpSecurity()) {
+  if (!security.ok) throw new Error(security.error);
   const app = express();
+  app.disable("x-powered-by");
+  app.use(httpAuthMiddleware(security));
   const sessions = new Map();
 
   app.get("/sse", async (req, res) => {
@@ -3160,32 +3233,25 @@ function startHttpTransport(port) {
     });
   });
 
-  // Bind loopback unless told otherwise.
-  //
-  // This used to be `app.listen(port, cb)` with no host, which binds ALL
-  // interfaces — while the very next line printed "localhost". Verified:
-  // the log said localhost:3903 and lsof said *:3903. That gap is the whole
-  // problem, because since v0.9.13 the process can hold a Studio API key, and
-  // /sse and /messages have no authentication. Anyone on the LAN could open a
-  // session and spend the operator's Graph quota, with the startup message
-  // reassuring them it was local-only.
-  //
-  // Discovery over HTTP is still fine to expose deliberately — set
-  // MCP_HTTP_HOST=0.0.0.0 — but that is now a decision rather than a default,
-  // and the log reports what was actually bound.
-  const host = process.env.MCP_HTTP_HOST || "127.0.0.1";
+  return app;
+}
+
+function startHttpTransport(port) {
+  // History: this once bound all interfaces while logging "localhost", and
+  // /sse and /messages had no authentication, so anyone on the LAN could
+  // spend the operator's Graph quota. Now loopback is the default and a
+  // non-loopback bind requires a bearer token (see resolveHttpSecurity).
+  const security = resolveHttpSecurity();
+  if (!security.ok) {
+    console.error(`Fatal: ${security.error}`);
+    process.exit(1);
+  }
+  const app = createHttpApp(security);
+  const host = security.host;
   app.listen(port, host, () => {
     const shown = host === "0.0.0.0" || host === "::" ? `<this-host>:${port}` : `${host}:${port}`;
-    console.error(`SSE transport listening on http://${shown}/sse (bound to ${host})`);
+    console.error(`SSE transport listening on http://${shown}/sse (bound to ${host}; auth: ${security.auth})`);
     console.error(`Well-known manifest at http://${shown}/.well-known/subgraph/{id}.jsonld`);
-    if (host !== "127.0.0.1" && host !== "localhost" && studioApiKey()) {
-      console.error(
-        "WARNING: bound to a non-loopback interface with a Studio API key set. " +
-        "/sse and /messages are unauthenticated, so anyone who can reach this port " +
-        "can execute queries billed to that key. Put it behind a proxy that authenticates, " +
-        "or unset the key to serve discovery only.",
-      );
-    }
   });
 }
 
