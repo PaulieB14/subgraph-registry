@@ -40,6 +40,11 @@ const __dirname = dirname(__filename);
 // drifted to "0.8.20" while the package shipped 0.8.31 — eleven releases of
 // every MCP client being told the wrong server version, which is the kind of
 // thing that only surfaces when someone is debugging something else.
+// Literal, exact-version npx spec used in generated config examples. Bumped
+// with package.json at release time; test/scanner-hygiene.test.mjs asserts the
+// two agree, so a stale pin fails CI instead of shipping.
+export const PINNED_NPX_PACKAGE = "subgraph-registry-mcp@0.13.2";
+
 const PKG_VERSION = (() => {
   try {
     return JSON.parse(
@@ -56,7 +61,15 @@ const OPENAPI_JSON_PATH = join(DATA_DIR, "openapi.json");
 // Bundled with the npm package so runtime semantic search has zero
 // network dependency. Same model fastembed uses at crawl time
 // (Xenova/all-MiniLM-L6-v2) — vectors are bitwise-comparable.
-const EMBEDDING_MODEL_DIR = join(DATA_DIR, "models", "Xenova", "all-MiniLM-L6-v2");
+let EMBEDDING_MODEL_ROOT = join(DATA_DIR, "models");
+let EMBEDDING_MODEL_DIR = join(EMBEDDING_MODEL_ROOT, "Xenova", "all-MiniLM-L6-v2");
+// Test hook: point the embedder at another model root (e.g. an empty dir to
+// exercise the fail-closed path). Not read from the environment.
+export function setEmbeddingModelRootForTests(root) {
+  EMBEDDING_MODEL_ROOT = root || join(DATA_DIR, "models");
+  EMBEDDING_MODEL_DIR = join(EMBEDDING_MODEL_ROOT, "Xenova", "all-MiniLM-L6-v2");
+  _embedderPromise = null;
+}
 const GITHUB_DB_URL =
   "https://github.com/PaulieB14/subgraph-registry/raw/main/python/data/registry.db";
 
@@ -197,8 +210,16 @@ async function ensureDb() {
     verifyDbOrThrow(DB_PATH);
     return;
   }
+  // The npm package and the git repo both ship data/registry.db, so this path
+  // only runs on a damaged install. Fail closed unless explicitly opted in.
+  if (process.env.SUBGRAPH_REGISTRY_ALLOW_DB_DOWNLOAD !== "1") {
+    throw new Error(
+      `registry.db not found at ${DB_PATH}. Reinstall ${PINNED_NPX_PACKAGE} (it bundles the database). ` +
+      "To fetch it from GitHub instead (hash-verified), set SUBGRAPH_REGISTRY_ALLOW_DB_DOWNLOAD=1.",
+    );
+  }
   mkdirSync(DATA_DIR, { recursive: true });
-  console.error("Registry not found locally. Downloading from GitHub...");
+  console.error("Registry not found locally. Downloading from GitHub (SUBGRAPH_REGISTRY_ALLOW_DB_DOWNLOAD=1)...");
   await downloadFile(GITHUB_DB_URL, DB_PATH);
   console.error("Downloaded registry.db — verifying SHA-256...");
   verifyDbOrThrow(DB_PATH);
@@ -595,7 +616,7 @@ function keyOnboarding(request) {
       "Restart this MCP server; execute-capable tools then appear in tools/list",
       "Call query_for_goal again with validate_schema:true and execute:true",
     ],
-    mcp_config_example: { mcpServers: { "subgraph-registry": { command: "npx", args: ["-y", `subgraph-registry-mcp@${PKG_VERSION}`],
+    mcp_config_example: { mcpServers: { "subgraph-registry": { command: "npx", args: ["-y", PINNED_NPX_PACKAGE],
       env: { THE_GRAPH_STUDIO_API_KEY: "<set from your host's secret manager>" } } } },
     ...(request ? { curl_example: `curl -sS -X POST '${request.query_url}' -H 'Content-Type: application/json' -H "Authorization: Bearer $THE_GRAPH_STUDIO_API_KEY" --data '${JSON.stringify(request.body).replace(/'/g, "'\\''")}'` } : {}),
     alternatives: "Without a key, discovery and query preparation still work. x402 is a separate, explicitly paid route; this server never signs or auto-pays it.",
@@ -1352,6 +1373,12 @@ function listRegistryStats() {
 
 let _embedderPromise = null;
 
+export const BUNDLED_MODEL_FILES = ["config.json", "tokenizer.json", "tokenizer_config.json", "onnx/model_quantized.onnx"];
+
+export function missingBundledModelFiles(dir = EMBEDDING_MODEL_DIR) {
+  return BUNDLED_MODEL_FILES.filter((f) => !existsSync(join(dir, f)));
+}
+
 async function getEmbedder() {
   // Lazy single-load; ~23 MB ONNX. First call latency ~1-2s on cold
   // start, subsequent calls are ~5-20ms per query embed.
@@ -1360,15 +1387,20 @@ async function getEmbedder() {
       // Dynamic import keeps the cold-start cost off the critical
       // path of tools that don't need embeddings (search_subgraphs,
       // get_subgraph_detail, list_registry_stats).
-      const { pipeline, env } = await import("@xenova/transformers");
-      // Prefer the locally-bundled model so the package works offline
-      // and at zero-egress hosting. Falls back to the HF hub if the
-      // bundled dir is missing (e.g. running from a git checkout
-      // before the model stage step has run).
-      if (existsSync(EMBEDDING_MODEL_DIR)) {
-        env.localModelPath = join(DATA_DIR, "models");
-        env.allowRemoteModels = false;
+      // Bundled model only (0.13.2+). Remote model downloads are disabled
+      // unconditionally; if the bundled files are missing we fail closed and
+      // semantic_search_subgraphs falls back to keyword search.
+      const missing = missingBundledModelFiles();
+      if (missing.length) {
+        const err = new Error(`Bundled embedding model missing (${missing.join(", ")}); remote model downloads are disabled.`);
+        err.code = "BUNDLED_MODEL_MISSING";
+        throw err;
       }
+      const { pipeline, env } = await import("@xenova/transformers");
+      env.localModelPath = EMBEDDING_MODEL_ROOT;
+      env.allowLocalModels = true;
+      env.allowRemoteModels = false;
+      env.useBrowserCache = false;
       const extractor = await pipeline(
         "feature-extraction",
         "Xenova/all-MiniLM-L6-v2",
@@ -1424,7 +1456,27 @@ async function semanticSearchSubgraphs(args = {}) {
     protocol_type = "", min_reliability = 0,
   } = args;
 
-  const qvec = await embedQuery(query);
+  let qvec;
+  try {
+    qvec = await embedQuery(query);
+  } catch (err) {
+    _embedderPromise = null;
+    if (err?.code !== "BUNDLED_MODEL_MISSING") throw err;
+    // Fail closed: never download a model. Answer with keyword search and say so.
+    const kw = searchSubgraphs({
+      query, limit, include_unserved, include_denied, include_testnets, domain, network,
+      protocol_type, min_reliability,
+    });
+    return {
+      ...kw,
+      search_mode: "keyword_fallback",
+      semantic_unavailable: {
+        reason: "bundled_model_missing",
+        detail: err.message,
+        fix: "Reinstall the exact published package (npx -y " + PINNED_NPX_PACKAGE + "), which bundles the model. No download is attempted.",
+      },
+    };
+  }
 
   // SQL pre-filter shaves ~14k → <1k rows for narrow queries (e.g.
   // "lending positions on Arbitrum"). Cosine math runs only on the
