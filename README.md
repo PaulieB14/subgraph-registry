@@ -186,8 +186,31 @@ How it maps a goal:
    time filter cannot be applied, it is listed in
    `goal_mapping.filters_not_applied` and execution is skipped
    (`requested_filter_not_applied`) rather than returning unfiltered rows. Probe
-   errors (including auth/quota bodies on HTTP 200) mark validation `failed`,
-   return `query:null` and block execution.
+   errors caused by auth, quota or payment mark validation `failed`, return
+   `query:null` and block execution, with no fallback.
+   **Healthy-alternative fallback (0.13.0+).** The probe also reads `_meta`. If a
+   deployment times out, returns indexer errors (`bad indexers`,
+   `indexing_error`, unavailable) or is more than 2 hours behind, it is skipped
+   and the next deployment whose entities fit the goal is tried: at most 3
+   deployments and 6 gateway requests per call. Every skip is listed in
+   `goal_mapping.skipped_deployments` with its reason and evidence, plus
+   `fallback_used` and `deployment_health`. Failures are remembered in the
+   process for 5 minutes, so `recommend_subgraph` also drops the deployment
+   and lists it in `skipped_unhealthy`. If every fitting deployment that
+   answered is stale, the freshest stale one is used with a warning.
+   Reward-denial, curation and chains without indexing rewards (such as Arc)
+   are never treated as unhealthy.
+   **Spam-token flags (0.13.0+).** Token and pool results are checked for
+   likely spam: URL or lure words (claim, visit, airdrop…) in a symbol or name,
+   TVL above $100B, TVL with almost no volume, and very low activity. Pool
+   queries select `token0`/`token1 { id symbol name }` so the token side can be
+   checked. A small per-chain known-good list (WETH, USDC, USDT, DAI, WBTC…)
+   plus `trusted_tokens` is never flagged. `token_quality` lists flagged rows,
+   reasons and original positions. With `spam_handling:"flag_and_push_down"`
+   (the default), flagged rows move after the others; `flag_only` keeps the
+   gateway order and `off` disables the check. Rows are never removed. When
+   `first` is not given for a top-N token or pool goal, up to twice as many rows
+   are fetched (`goal_mapping.first_fetched`) so good rows remain after push-down.
 5. **No confident mapping** returns `query:null`, `confidence` `low`/`none`, and
    ranked `alternatives`. Matching deployments hidden by default filters appear
    in `hidden_candidates`; `include_denied` / `include_unserved` opt them in

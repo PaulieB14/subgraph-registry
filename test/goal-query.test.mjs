@@ -4,7 +4,7 @@ import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { parse } from "graphql";
 import { collectionName, parseGoal, planWithSchema, schemaProbeQuery } from "../src/goal-query.js";
-import { HANDLERS } from "../src/index.js";
+import { HANDLERS, resetHealthObservationsForTests } from "../src/index.js";
 
 const KEYS = ["THE_GRAPH_STUDIO_API_KEY", "GRAPH_STUDIO_API_KEY", "GATEWAY_API_KEY", "SUBGRAPH_REGISTRY_MOCK_GATEWAY"];
 const FAKE_KEY = "goal-test-secret-value-123";
@@ -13,6 +13,7 @@ const saved = { ...process.env };
 let requests;
 let responder;
 beforeEach(() => {
+  resetHealthObservationsForTests();
   for (const k of KEYS) delete process.env[k];
   requests = [];
   responder = () => ({ data: { _meta: { block: { number: 1, timestamp: 1 } } } });
@@ -211,7 +212,9 @@ test("probe auth/GraphQL failures stop before execution and never claim validati
   assert.equal(out.validation.live_schema, "failed");
   assert.equal(out.query, null);
   assert.equal(out.execution_attempted, false);
-  assert.equal(out.execution_skipped, "no_confident_goal_query");
+  assert.equal(out.execution_skipped, "auth_or_quota_error");
+  assert.equal(out.goal_mapping.stop_reason, "auth_or_quota");
+  assert.deepEqual(out.goal_mapping.skipped_deployments, []);
   assert.equal(out.goal_mapping.live_schema_errors[0].auth_error, true);
   assert.ok(!JSON.stringify(out).includes(FAKE_KEY));
 });

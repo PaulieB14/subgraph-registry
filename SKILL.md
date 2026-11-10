@@ -69,6 +69,16 @@ Same abilities as [graphops/subgraph-mcp](https://github.com/graphops/subgraph-m
      If a requested address/time filter cannot be applied it appears in
      `filters_not_applied` and execution is skipped instead of returning
      unfiltered rows.
+   - A deployment that times out, has failing indexers or is over 2 hours
+     behind is skipped for the next deployment that fits the goal (at most 3
+     deployments and 6 requests). Read `goal_mapping.skipped_deployments` and
+     `fallback_used`. Reward or curation status is never treated as unhealthy.
+     Auth/quota errors stop without fallback.
+   - Token/pool results carry `token_quality`: likely spam rows (URL or lure
+     names, implausible TVL, TVL without volume, low activity) are flagged
+     and, by default, moved last. Nothing is removed. Use
+     `spam_handling:"flag_only"`/`"off"` and `trusted_tokens` to adjust; still
+     verify contract addresses.
    - `query:null` with `confidence` `low`/`none` means no entity mapped
      confidently: pick from `alternatives` or inspect `get_subgraph_detail`.
      `hidden_candidates` lists matching deployments excluded by default filters;
