@@ -54,11 +54,18 @@ const spec = {
   servers: [
     {
       url: "http://localhost:3848",
-      description: "Local MCP HTTP transport (default port)",
+      description: "Local MCP HTTP transport (default port). Binds 127.0.0.1 by default; a non-loopback bind requires SUBGRAPH_REGISTRY_HTTP_TOKEN and then every route except /health needs Authorization: Bearer <token> (401 otherwise).",
     },
   ],
   paths: {},
   components: {
+    securitySchemes: {
+      httpToken: {
+        type: "http",
+        scheme: "bearer",
+        description: "Required when the server is started with SUBGRAPH_REGISTRY_HTTP_TOKEN (mandatory for non-loopback binds). This is the server access token, not a Studio API key.",
+      },
+    },
     schemas: {
       ToolError: {
         type: "object",

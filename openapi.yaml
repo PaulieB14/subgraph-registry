@@ -5,7 +5,7 @@ openapi: "3.1.0"
 info:
   title: "Subgraph Registry"
   description: "Agent-friendly subgraph discovery on The Graph Network. 15,330 classified subgraphs with semantic search, reliability scoring, 30-day query volume and schema-evolution tracking. Discovery only: returns subgraph ids and starter queries, which you run with a Graph Studio API key (Authorization: Bearer) or over x402 ($0.01 USDC on Base, no key)."
-  version: "0.13.0"
+  version: "0.13.1"
   license:
     name: "MIT"
   contact:
@@ -13,7 +13,7 @@ info:
     url: "https://github.com/PaulieB14/subgraph-registry"
 servers:
   - url: "http://localhost:3848"
-    description: "Local MCP HTTP transport (default port)"
+    description: "Local MCP HTTP transport (default port). Binds 127.0.0.1 by default; a non-loopback bind requires SUBGRAPH_REGISTRY_HTTP_TOKEN and then every route except /health needs Authorization: Bearer <token> (401 otherwise)."
 paths:
   "/mcp/tools/find_by_contract":
     post:
@@ -984,6 +984,11 @@ paths:
               schema:
                 "$ref": "#/components/schemas/ToolError"
 components:
+  securitySchemes:
+    httpToken:
+      type: "http"
+      scheme: "bearer"
+      description: "Required when the server is started with SUBGRAPH_REGISTRY_HTTP_TOKEN (mandatory for non-loopback binds). This is the server access token, not a Studio API key."
   schemas:
     ToolError:
       type: "object"
