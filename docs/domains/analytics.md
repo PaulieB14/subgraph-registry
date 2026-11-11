@@ -2,7 +2,7 @@
 domain: analytics
 count: 755
 percentage: 4.9
-updated: 2026-11-06
+updated: 2026-11-11
 ---
 
 # Analytics Subgraphs
@@ -13,31 +13,31 @@ updated: 2026-11-06
 
 | Name | Network | Protocol | Reliability | 30d Queries |
 |------|---------|----------|-------------|-------------|
-| Gnosis Blocks | gnosis | general | 0.84 | 745,408 |
-| Arbitrum One Blocks | arbitrum-one | dex | 0.82 | 699,035 |
-| Ethereum Blocks | mainnet | dex | 0.80 | 393,440 |
-| Compoundor Polygon | matic | lending | 0.80 | 214,739 |
-| Compoundor Arbitrum | arbitrum-one | lending | 0.80 | 359,027 |
-| Compoundor Base | base | lending | 0.79 | 420,377 |
-| WOOFi Arbitrum | arbitrum-one | dex | 0.79 | 846,269 |
-| holiverse-analytics | matic | dex | 0.78 | 1,640,766 |
-| Compoundor Optimism | optimism | lending | 0.78 | 186,006 |
-| Compoundor Mainnet | mainnet | lending | 0.78 | 252,501 |
-| maticblocks | matic | dex | 0.77 | 13,441 |
-| Compoundor BNB | bsc | lending | 0.77 | 211,633 |
-| orizon | bsc | staking | 0.77 | 557,084 |
-| WOOFi Sonic Staging | sonic | dex | 0.74 | 808,329 |
-| WOOFi Optimism Testing | optimism | dex | 0.74 | 849,067 |
-| fna-metrcis2 | bsc | staking | 0.74 | 123,372 |
-| WOOFi Base | base | dex | 0.74 | 846,497 |
-| phi-statistics | bsc | staking | 0.74 | 81,770 |
-| WOOFi Linea | linea | dex | 0.73 | 716,574 |
-| WOOFi Polygon | matic | dex | 0.73 | 847,572 |
-| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 115,945 |
-| WOOFi AVAX | avalanche | dex | 0.72 | 845,023 |
-| Connext Mainnet | mainnet | bridge | 0.71 | 293 |
-| Orbs TWAP - BSC | bsc | general | 0.71 | 221,079 |
-| WOOFi BSC | bsc | dex | 0.70 | 822,670 |
+| Gnosis Blocks | gnosis | general | 0.84 | 732,916 |
+| Arbitrum One Blocks | arbitrum-one | dex | 0.82 | 680,197 |
+| Compoundor Polygon | matic | lending | 0.80 | 215,255 |
+| Ethereum Blocks | mainnet | dex | 0.80 | 358,537 |
+| Compoundor Arbitrum | arbitrum-one | lending | 0.80 | 355,004 |
+| Compoundor Base | base | lending | 0.79 | 444,603 |
+| WOOFi Arbitrum | arbitrum-one | dex | 0.78 | 799,642 |
+| holiverse-analytics | matic | dex | 0.78 | 1,636,585 |
+| Compoundor Optimism | optimism | lending | 0.78 | 186,852 |
+| Compoundor Mainnet | mainnet | lending | 0.78 | 254,227 |
+| maticblocks | matic | dex | 0.77 | 13,438 |
+| Compoundor BNB | bsc | lending | 0.77 | 213,301 |
+| orizon | bsc | staking | 0.76 | 323,796 |
+| WOOFi Sonic Staging | sonic | dex | 0.74 | 760,929 |
+| fna-metrcis2 | bsc | staking | 0.74 | 128,200 |
+| WOOFi Optimism Testing | optimism | dex | 0.74 | 802,025 |
+| WOOFi Base | base | dex | 0.74 | 799,533 |
+| WOOFi Linea | linea | dex | 0.73 | 695,477 |
+| phi-statistics | bsc | staking | 0.73 | 63,822 |
+| WOOFi Polygon | matic | dex | 0.73 | 800,572 |
+| Connext Mainnet | mainnet | bridge | 0.72 | 404 |
+| Arbitrum Blocks | arbitrum-one | dex | 0.72 | 116,124 |
+| WOOFi AVAX | avalanche | dex | 0.72 | 799,485 |
+| Orbs TWAP - BSC | bsc | general | 0.71 | 232,177 |
+| WOOFi BSC | bsc | dex | 0.70 | 775,341 |
 
 ## Query This Domain
 
