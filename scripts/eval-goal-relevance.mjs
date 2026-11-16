@@ -24,7 +24,7 @@ function rootOf(query) {
 export const GOAL_CASES = [
   ["Arc Uniswap V4 pool IDs", { goal: "Uniswap V4 pool IDs on Arc", chain: "arc", first: 3 }, (r) => r?.collection === "pools" && r.fields.join() === "id"],
   ["Ethereum Uniswap V3 pool IDs", { goal: "Uniswap v3 liquidity pool ids on Ethereum", first: 3 }, (r) => r?.collection === "pools" && r.fields.join() === "id"],
-  ["Arc OHLCV default filters explain hidden match", { goal: "OHLCV candles for Uniswap v4 pools on Arc", chain: "arc", first: 2 }, (r, out) => r === null && out.goal_mapping?.hidden_candidates?.some((c) => c.entity === "Candle")],
+  ["Arc OHLCV planned by default with snapshot note", { goal: "OHLCV candles for Uniswap v4 pools on Arc", chain: "arc", first: 2 }, (r, out) => r?.collection === "candles" && out.goal_mapping?.snapshot_note === "no_active_allocation_or_denied_rewards_not_a_health_signal"],
   ["Arc OHLCV candles with opt-in", { goal: "OHLCV candles for Uniswap v4 pools on Arc", chain: "arc", first: 2, include_denied: true }, (r) => r?.collection === "candles"],
   ["latest swaps", { goal: "latest Uniswap v3 swaps on Ethereum", first: 2 }, (r) => r?.collection === "swaps"],
   ["daily pool volume", { goal: "Uniswap v3 daily pool volume on Ethereum", first: 2 }, (r) => r?.collection === "poolDayDatas"],

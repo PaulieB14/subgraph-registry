@@ -161,7 +161,7 @@ const REAL = { id: "0x2222222222222222222222222222222222222222", symbol: "PEPE",
 
 test("token heuristics flag spam with reasons; allowlist and trusted_tokens are never flagged", () => {
   const checks = assessRows([EASE, WETH, LURE, REAL], { network: "mainnet" });
-  assert.deepEqual(checks[0].reasons.sort(), ["implausible_tvl_usd", "symbol_contains_url_or_domain", "tvl_without_trading_volume"].sort());
+  assert.deepEqual(checks[0].reasons.sort(), ["implausible_tvl_usd", "symbol_contains_url_or_domain", "tvl_without_trading_volume", "tvl_per_transaction_implausible"].sort());
   assert.equal(checks[1].flagged, false); assert.equal(checks[1].allowlisted, true);
   assert.ok(checks[2].reasons.includes("name_contains_url_or_domain") && checks[2].reasons.includes("name_contains_lure_word") && checks[2].reasons.includes("low_activity"));
   assert.equal(checks[3].flagged, false);

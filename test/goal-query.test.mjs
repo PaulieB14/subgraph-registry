@@ -94,11 +94,13 @@ test("observed failure: pool IDs return pools{id}, not tokens or pool-manager co
 
 test("observed failure: OHLCV intent explains hidden candle deployment, then maps to candles on explicit opt-in", async () => {
   const goal = "OHLCV candles for Uniswap v4 pools on Arc";
+  // 0.13.5: allocation/rewards snapshots only rank, they never exclude a
+  // queryable chain, so the candle deployment is planned by default with a note.
   const hidden = await HANDLERS.query_for_goal({ goal, chain: "arc" });
-  assert.equal(hidden.query, null, "no misleading poolManagers query");
-  assert.equal(hidden.request, null);
-  assert.ok(hidden.goal_mapping.hidden_candidates.some((c) => c.entity === "Candle" && c.network === "arc"));
-  assert.match(hidden.goal_mapping.unmet.join(" "), /NOT proof they cannot be queried/);
+  assert.equal(roots(hidden.query)[0].name.value, "candles", "no misleading poolManagers query");
+  assert.equal(hidden.selected.denied_indexing_rewards, true);
+  assert.match(hidden.goal_mapping.unmet.join(" "), /not a health signal/);
+  assert.equal(hidden.goal_mapping.snapshot_note, "no_active_allocation_or_denied_rewards_not_a_health_signal");
   const opted = await HANDLERS.query_for_goal({ goal, chain: "arc", include_denied: true, first: 2 });
   assert.equal(roots(opted.query)[0].name.value, "candles");
   assert.equal(opted.selected.denied_indexing_rewards, true);
@@ -123,7 +125,10 @@ test("other goals and chains map to the requested entity", async () => {
   const fields = roots(ens.query)[0].selectionSet.selections.map((f) => f.name.value);
   assert.ok(!fields.includes("parent") && !fields.includes("subdomains"), "likely relations need sub-selections and are dropped keylessly");
   const latest = await HANDLERS.query_for_goal({ goal: "latest Uniswap v3 swaps on Ethereum" });
-  assert.match(latest.goal_mapping.unmet.join(" "), /ordering/);
+  assert.equal(latest.goal_mapping.order.field, "timestamp");
+  assert.equal(latest.goal_mapping.order.direction, "desc");
+  assert.equal(latest.goal_mapping.field_source, "bundled_family_catalog");
+  assert.ok(!/ordering/.test(latest.goal_mapping.unmet.join(" ")));
   assert.equal(requests.length, 0);
 });
 
