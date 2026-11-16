@@ -1,16 +1,16 @@
 ---
 type: network-index
-updated: 2026-11-11
-total_subgraphs: 15461
+updated: 2026-11-16
+total_subgraphs: 15465
 ---
 
 # Subgraph Networks
 
 | Network | Count | % | File |
 |---------|-------|---|------|
-| Ethereum | 2,506 | 16.2% | [View](networks/mainnet.md) |
+| Ethereum | 2,507 | 16.2% | [View](networks/mainnet.md) |
 | Base | 1,855 | 12.0% | [View](networks/base.md) |
-| BSC | 1,710 | 11.1% | [View](networks/bsc.md) |
+| BSC | 1,711 | 11.1% | [View](networks/bsc.md) |
 | Arbitrum | 1,457 | 9.4% | [View](networks/arbitrum-one.md) |
 | Polygon | 1,315 | 8.5% | [View](networks/matic.md) |
 | Optimism | 587 | 3.8% | [View](networks/optimism.md) |
