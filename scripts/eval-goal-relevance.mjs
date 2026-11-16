@@ -58,4 +58,6 @@ try {
   const report = { entry, count: results.length, passed: results.filter((x) => x.passed).length, results };
   if (output) writeFileSync(output, JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({ summary: true, count: report.count, passed: report.passed }));
+  // Non-zero exit when any case fails, so CI gates (scripts/ci-gate.sh) can rely on it.
+  process.exitCode = report.passed === report.count ? 0 : 1;
 } finally { await client.close(); }

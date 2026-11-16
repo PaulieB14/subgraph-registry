@@ -14,6 +14,11 @@ on:
         options:
           - incremental
           - full
+      dry_run:
+        description: "Dry run: crawl, regenerate, bump and run the test gate, but do NOT commit, push, tag or publish (use with --ref <branch> to try workflow changes)"
+        required: false
+        default: false
+        type: boolean
 
 # Serialize runs — two concurrent crawls race on python/data/sync-state.json
 # and the second one's rebase hits a merge conflict, leaving git in detached
@@ -185,8 +190,25 @@ jobs:
       - name: Generate charts and category docs
         run: python python/generate_docs.py
 
+      - name: Test gate (must pass before anything is committed, tagged or published)
+        # The commit below carries [skip ci], so test.yml never runs on the
+        # scheduled data commit and 0.13.3/0.13.4 were published untested. This
+        # runs the same checks against the regenerated, version-bumped tree
+        # BEFORE the commit step. A failure here fails the job, so the Commit,
+        # Publish to npm and Publish to ClawHub steps below never execute.
+        # No secrets: the gateway/npm/ClawHub/x402 credentials are not exposed to
+        # this step (they are scoped to the sync and publish steps only), the
+        # script unsets them anyway, gateway calls in the tests are mocked, and
+        # the audits use only the bundled corpus.
+        run: |
+          pip install pytest
+          bash scripts/ci-gate.sh
+
       - name: Commit updated registry, hash, version, and docs
         id: commit
+        # Skipped entirely on a dry run, which leaves `committed` unset (empty) so
+        # both publish steps below are skipped too.
+        if: ${{ !inputs.dry_run }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
