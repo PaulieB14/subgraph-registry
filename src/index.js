@@ -43,7 +43,7 @@ const __dirname = dirname(__filename);
 // Literal, exact-version npx spec used in generated config examples. Bumped
 // with package.json at release time; test/scanner-hygiene.test.mjs asserts the
 // two agree, so a stale pin fails CI instead of shipping.
-export const PINNED_NPX_PACKAGE = "subgraph-registry-mcp@0.13.5";
+export const PINNED_NPX_PACKAGE = "subgraph-registry-mcp@0.13.6";
 
 const PKG_VERSION = (() => {
   try {

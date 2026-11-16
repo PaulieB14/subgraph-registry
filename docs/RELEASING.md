@@ -24,7 +24,7 @@ crawler just to obtain access to publishing credentials.
    gh api repos/PaulieB14/subgraph-registry/commits/main --jq .sha
    # Substitute that exact SHA; this command performs publication when run.
    gh workflow run publish-only.yml --repo PaulieB14/subgraph-registry --ref main \
-     -f version=0.13.5 -f main_sha=FULL_MERGED_MAIN_SHA \
+     -f version=0.13.6 -f main_sha=FULL_MERGED_MAIN_SHA \
      -f publish_npm=true -f publish_clawhub=true
    ```
 
