@@ -28,8 +28,8 @@ else
   exit 1
 fi
 
-step "node test suite (all of test/)"
-node --test test/
+step "node test suite (every test/*.test.mjs)"
+node --test test/*.test.mjs
 
 step "discovery audit"
 node scripts/audit-discovery.mjs > /dev/null
